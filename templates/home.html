@@ -1,0 +1,19 @@
+```html
+{% extends 'base.html' %}
+
+{% block title %}SociaFam - Home{% endblock %}
+
+{% block content %}
+<div class="jumbotron text-center">
+    <h1>Welcome to SociaFam</h1>
+    {% if user.is_authenticated %}
+        <p>Hello, {{ user.username }}! Explore your feed, connect with friends, or play games.</p>
+        <a href="{{ url_for('profile') }}" class="btn btn-primary">Go to Profile</a>
+    {% else %}
+        <p>Your all-in-one social hub. Sign up or log in to get started!</p>
+        <a href="{{ url_for('signup') }}" class="btn btn-primary">Sign Up</a>
+        <a href="{{ url_for('login') }}" class="btn btn-secondary">Log In</a>
+    {% endif %}
+</div>
+{% endblock %}
+```
