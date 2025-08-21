@@ -1,7 +1,9 @@
-django
-djangorestframework
-djangorestframework-simplejwt
-django-cors-headers
-mysqlclient
-django-otp
+flask
+flask-sqlalchemy
+flask-login
+flask-jwt-extended
+flask-cors
+flask-socketio
+python-decouple
+pyotp
 qrcode[pil]
