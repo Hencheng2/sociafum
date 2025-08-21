@@ -1,6 +1,6 @@
 # SociaFam
 
-SociaFam is a comprehensive social networking platform inspired by Facebook, Instagram, and WhatsApp. It allows users to connect, share posts, stories, and reels, chat in real-time, play games, join groups, attend events, and more. Built with Django (backend), React (frontend), and MySQL (database), it emphasizes security, scalability, and user experience.
+SociaFam is a social networking platform inspired by Facebook, Instagram, and WhatsApp. It enables users to connect, share posts, stories, and reels, chat in real-time, play games, join groups, attend events, and more. Built with Flask (backend), HTML/CSS/JavaScript (frontend), and SQLite (database), it prioritizes simplicity, security, and user experience.
 
 ## Features
 - User profiles with customizable bios and photos
@@ -14,8 +14,6 @@ SociaFam is a comprehensive social networking platform inspired by Facebook, Ins
 
 ## Prerequisites
 - Python 3.10+
-- Node.js 18+
-- MySQL 8+
 - Git
 
 ## Setup Instructions
@@ -25,29 +23,17 @@ cd sociafam</repository-url>
 text2. Set up Python virtual environment:
 python -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
-text3. Install backend dependencies:
+text3. Install dependencies:
 pip install -r requirements.txt
-text4. Set up MySQL database:
-mysql -u root -p
-CREATE DATABASE sociafam_db;
-text5. Configure `backend/settings.py` with your MySQL credentials.
-6. Run migrations and create superuser:
-python manage.py makemigrations
-python manage.py migrate
-python manage.py createsuperuser
-text7. Install frontend dependencies:
-cd frontend
-npm install
-text8. Start backend server:
-cd ../
-python manage.py runserver
-text9. Start frontend server (in another terminal):
-cd frontend
-npm start
-text## Access
-- Backend: http://127.0.0.1:8000
-- Frontend: http://localhost:3000
-- Admin: http://127.0.0.1:8000/admin
+text4. Create a `.env` file in the root directory with:
+FLASK_SECRET_KEY=your-secret-key-here
+textGenerate a secret key: `python -c 'import secrets; print(secrets.token_hex(32))'`
+5. Initialize the SQLite database:
+python app.py
+text(This creates `sociafam.db` on first run.)
+6. Start the Flask server:
+python app.py
+text7. Access the app at `http://127.0.0.1:5000`.
 
 ## Development Phases
 1. **Phase 1**: Setup, authentication (login/signup/2FA), core structure
@@ -59,7 +45,7 @@ text## Access
 7. **Phase 7**: Polish, testing, deployment prep
 
 ## Contributing
-Contributions are welcome! Please submit a pull request or open an issue.
+Contributions are welcome! Submit a pull request or open an issue.
 
 ## License
-MIT License (or specify your preferred license)
+MIT License
