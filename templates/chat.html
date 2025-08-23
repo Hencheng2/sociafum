@@ -1,0 +1,212 @@
+{% extends "base.html" %}
+
+{% block title %}Chat with {{ user.username }} - SociaFam{% endblock %}
+
+{% block extra_css %}
+<style>
+    .chat-container {
+        display: flex;
+        flex-direction: column;
+        height: calc(100vh - 70px);
+        background-color: white;
+    }
+    
+    .chat-header {
+        display: flex;
+        align-items: center;
+        padding: 15px 20px;
+        border-bottom: 1px solid #e4e6eb;
+    }
+    
+    .chat-back {
+        margin-right: 15px;
+        font-size: 20px;
+        cursor: pointer;
+    }
+    
+    .chat-user-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        margin-right: 15px;
+    }
+    
+    .chat-user-info {
+        flex-grow: 1;
+    }
+    
+    .chat-user-name {
+        font-weight: 600;
+        margin-bottom: 2px;
+    }
+    
+    .chat-user-status {
+        font-size: 14px;
+        color: #65676b;
+    }
+    
+    .chat-header-actions {
+        display: flex;
+        gap: 15px;
+    }
+    
+    .chat-header-action {
+        font-size: 18px;
+        color: #65676b;
+        cursor: pointer;
+    }
+    
+    .chat-messages {
+        flex-grow: 1;
+        padding: 20px;
+        overflow-y: auto;
+        background-color: #f0f2f5;
+    }
+    
+    .message {
+        margin-bottom: 15px;
+        max-width: 70%;
+    }
+    
+    .message.sent {
+        margin-left: auto;
+    }
+    
+    .message.received {
+        margin-right: auto;
+    }
+    
+    .message-content {
+        padding: 10px 15px;
+        border-radius: 18px;
+        margin-bottom: 5px;
+    }
+    
+    .message.sent .message-content {
+        background-color: #1877f2;
+        color: white;
+    }
+    
+    .message.received .message-content {
+        background-color: white;
+        color: #1c1e21;
+        border: 1px solid #e4e6eb;
+    }
+    
+    .message-time {
+        font-size: 12px;
+        color: #65676b;
+        padding: 0 5px;
+    }
+    
+    .chat-input-container {
+        display: flex;
+        align-items: center;
+        padding: 15px 20px;
+        border-top: 1px solid #e4e6eb;
+        background-color: white;
+    }
+    
+    .chat-input-action {
+        font-size: 20px;
+        color: #65676b;
+        margin-right: 15px;
+        cursor: pointer;
+    }
+    
+    .chat-input {
+        flex-grow: 1;
+    }
+    
+    .chat-input input {
+        width: 100%;
+        padding: 12px;
+        border: 1px solid #dddfe2;
+        border-radius: 20px;
+        outline: none;
+    }
+    
+    .chat-send {
+        margin-left: 15px;
+    }
+    
+    .chat-send button {
+        background-color: #1877f2;
+        color: white;
+        border: none;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="chat-container" id="chatContainer" data-user-id="{{ user.id }}">
+    <div class="chat-header">
+        <div class="chat-back" onclick="history.back()">
+            <i class="fas fa-arrow-left"></i>
+        </div>
+        
+        <img src="{{ url_for('get_profile_image', user_id=user.id) }}" alt="{{ user.username }}" class="chat-user-avatar">
+        
+        <div class="chat-user-info">
+            <div class="chat-user-name">{{ user.real_name or user.username }}</div>
+            <div class="chat-user-status">Online</div>
+        </div>
+        
+        <div class="chat-header-actions">
+            <div class="chat-header-action">
+                <i class="fas fa-phone"></i>
+            </div>
+            <div class="chat-header-action">
+                <i class="fas fa-video"></i>
+            </div>
+            <div class="chat-header-action">
+                <i class="fas fa-info-circle"></i>
+            </div>
+        </div>
+    </div>
+    
+    <div class="chat-messages" id="messagesContainer">
+        {% for message in messages %}
+        <div class="message {% if message.sender_id == current_user.id %}sent{% else %}received{% endif %}">
+            <div class="message-content">{{ message.content }}</div>
+            <div class="message-time">{{ message.created_at|timesince }}</div>
+        </div>
+        {% endfor %}
+    </div>
+    
+    <div class="chat-input-container">
+        <div class="chat-input-action">
+            <i class="fas fa-plus"></i>
+        </div>
+        
+        <div class="chat-input-action">
+            <i class="fas fa-image"></i>
+        </div>
+        
+        <div class="chat-input-action">
+            <i class="fas fa-camera"></i>
+        </div>
+        
+        <div class="chat-input">
+            <input type="text" placeholder="Type a message..." id="messageInput">
+        </div>
+        
+        <div class="chat-send">
+            <button id="sendButton">
+                <i class="fas fa-paper-plane"></i>
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/chat.js') }}"></script>
+{% endblock %}
