@@ -14,7 +14,7 @@ class User(UserMixin, db.Model):
     email = db.Column(db.String(120), unique=True, index=True)
     password_hash = db.Column(db.String(128), nullable=False)
     real_name = db.Column(db.String(100))
-    profile_pic = db.Column(db.LargeBinary)  # Store image as binary data
+    profile_pic = db.Column(db.LargeBinary)
     profile_pic_filename = db.Column(db.String(200))
     bio = db.Column(db.Text)
     unique_key = db.Column(db.String(4), unique=True, nullable=False)
@@ -36,6 +36,18 @@ class User(UserMixin, db.Model):
     
     # Privacy settings
     profile_locked = db.Column(db.Boolean, default=False)
+    post_privacy = db.Column(db.String(20), default='public')  # public, friends, only_me
+    
+    # Notification settings
+    email_notifications = db.Column(db.Boolean, default=True)
+    push_notifications = db.Column(db.Boolean, default=True)
+    like_notifications = db.Column(db.Boolean, default=True)
+    comment_notifications = db.Column(db.Boolean, default=True)
+    follow_notifications = db.Column(db.Boolean, default=True)
+    message_notifications = db.Column(db.Boolean, default=True)
+    
+    # Theme preference
+    theme = db.Column(db.String(10), default='light')  # 'light' or 'dark'
     
     # Relationships
     posts = db.relationship('Post', backref='author', lazy='dynamic', foreign_keys='Post.user_id')
@@ -46,6 +58,7 @@ class User(UserMixin, db.Model):
     received_messages = db.relationship('Message', backref='receiver', lazy='dynamic', foreign_keys='Message.receiver_id')
     followers = db.relationship('Follow', foreign_keys='Follow.followed_id', backref='followed', lazy='dynamic')
     following = db.relationship('Follow', foreign_keys='Follow.follower_id', backref='follower', lazy='dynamic')
+    blocked_users = db.relationship('BlockedUser', foreign_keys='BlockedUser.user_id', backref='user', lazy='dynamic')
     
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -73,6 +86,25 @@ class User(UserMixin, db.Model):
         if follow:
             db.session.delete(follow)
     
+    def is_blocked(self, user):
+        return self.blocked_users.filter_by(blocked_user_id=user.id).first() is not None
+    
+    def block(self, user):
+        if not self.is_blocked(user):
+            blocked = BlockedUser(user_id=self.id, blocked_user_id=user.id)
+            db.session.add(blocked)
+            
+            # Unfollow if following
+            if self.is_following(user):
+                self.unfollow(user)
+            if user.is_following(self):
+                user.unfollow(self)
+    
+    def unblock(self, user):
+        blocked = self.blocked_users.filter_by(blocked_user_id=user.id).first()
+        if blocked:
+            db.session.delete(blocked)
+    
     def __repr__(self):
         return f'<User {self.username}>'
 
@@ -81,9 +113,9 @@ class Post(db.Model):
     
     id = db.Column(db.Integer, primary_key=True)
     content = db.Column(db.Text)
-    image = db.Column(db.LargeBinary)  # Store image as binary data
+    image = db.Column(db.LargeBinary)
     image_filename = db.Column(db.String(200))
-    video = db.Column(db.LargeBinary)  # Store video as binary data
+    video = db.Column(db.LargeBinary)
     video_filename = db.Column(db.String(200))
     is_reel = db.Column(db.Boolean, default=False)
     is_private = db.Column(db.Boolean, default=False)
@@ -105,9 +137,9 @@ class Story(db.Model):
     
     id = db.Column(db.Integer, primary_key=True)
     content = db.Column(db.Text)
-    image = db.Column(db.LargeBinary)  # Store image as binary data
+    image = db.Column(db.LargeBinary)
     image_filename = db.Column(db.String(200))
-    video = db.Column(db.LargeBinary)  # Store video as binary data
+    video = db.Column(db.LargeBinary)
     video_filename = db.Column(db.String(200))
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -191,7 +223,7 @@ class Group(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
     description = db.Column(db.Text)
-    profile_pic = db.Column(db.LargeBinary)  # Store image as binary data
+    profile_pic = db.Column(db.LargeBinary)
     profile_pic_filename = db.Column(db.String(200))
     unique_link = db.Column(db.String(50), unique=True, nullable=False)
     created_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
@@ -246,8 +278,19 @@ class Notification(db.Model):
     content = db.Column(db.Text, nullable=False)
     is_read = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    type = db.Column(db.String(50))  # like, comment, follow, message, etc.
-    related_id = db.Column(db.Integer)  # ID of related entity
+    type = db.Column(db.String(50))
+    related_id = db.Column(db.Integer)
     
     def __repr__(self):
         return f'<Notification {self.id}>'
+
+class BlockedUser(db.Model):
+    __tablename__ = 'blocked_users'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    blocked_user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    def __repr__(self):
+        return f'<BlockedUser {self.user_id} blocked {self.blocked_user_id}>'
