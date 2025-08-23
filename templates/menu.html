@@ -1,0 +1,316 @@
+{% extends "base.html" %}
+
+{% block title %}Menu - SociaFam{% endblock %}
+
+{% block extra_css %}
+<style>
+    .menu-container {
+        max-width: 600px;
+        margin: 0 auto;
+    }
+    
+    .menu-header {
+        background-color: white;
+        border-radius: 8px;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+    
+    .menu-title {
+        font-size: 24px;
+        font-weight: 600;
+        margin-bottom: 20px;
+    }
+    
+    .menu-user {
+        display: flex;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+    
+    .menu-user-avatar {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        margin-right: 15px;
+    }
+    
+    .menu-user-info {
+        flex-grow: 1;
+    }
+    
+    .menu-user-name {
+        font-weight: 600;
+        margin-bottom: 5px;
+    }
+    
+    .menu-user-username {
+        color: #65676b;
+    }
+    
+    .menu-user-stats {
+        display: flex;
+        gap: 15px;
+        margin-top: 10px;
+    }
+    
+    .menu-user-stat {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .menu-user-stat-value {
+        font-weight: 600;
+    }
+    
+    .menu-user-stat-label {
+        font-size: 14px;
+        color: #65676b;
+    }
+    
+    .menu-sections {
+        background-color: white;
+        border-radius: 8px;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+    }
+    
+    .menu-section {
+        border-bottom: 1px solid #e4e6eb;
+    }
+    
+    .menu-section:last-child {
+        border-bottom: none;
+    }
+    
+    .menu-section-title {
+        padding: 15px 20px;
+        font-weight: 600;
+        background-color: #f0f2f5;
+    }
+    
+    .menu-item {
+        display: flex;
+        align-items: center;
+        padding: 15px 20px;
+        border-bottom: 1px solid #e4e6eb;
+        cursor: pointer;
+        transition: background-color 0.3s;
+    }
+    
+    .menu-item:last-child {
+        border-bottom: none;
+    }
+    
+    .menu-item:hover {
+        background-color: #f0f2f5;
+    }
+    
+    .menu-item-icon {
+        width: 40px;
+        text-align: center;
+        margin-right: 15px;
+        color: #65676b;
+        font-size: 18px;
+    }
+    
+    .menu-item-content {
+        flex-grow: 1;
+    }
+    
+    .menu-item-title {
+        font-weight: 600;
+        margin-bottom: 5px;
+    }
+    
+    .menu-item-description {
+        font-size: 14px;
+        color: #65676b;
+    }
+    
+    .menu-item-arrow {
+        color: #65676b;
+    }
+    
+    .menu-logout {
+        margin-top: 20px;
+        text-align: center;
+    }
+    
+    .menu-logout button {
+        padding: 12px 30px;
+        background-color: #e41e3f;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="menu-container">
+    <div class="menu-header">
+        <h1 class="menu-title">Menu</h1>
+        
+        <div class="menu-user">
+            <img src="{{ url_for('get_profile_image', user_id=current_user.id) }}" alt="{{ current_user.username }}" class="menu-user-avatar">
+            
+            <div class="menu-user-info">
+                <div class="menu-user-name">{{ current_user.real_name or current_user.username }}</div>
+                <div class="menu-user-username">@{{ current_user.username }}</div>
+                
+                <div class="menu-user-stats">
+                    <div class="menu-user-stat">
+                        <div class="menu-user-stat-value">{{ current_user.posts.count() }}</div>
+                        <div class="menu-user-stat-label">Posts</div>
+                    </div>
+                    <div class="menu-user-stat">
+                        <div class="menu-user-stat-value">{{ current_user.followers.count() }}</div>
+                        <div class="menu-user-stat-label">Followers</div>
+                    </div>
+                    <div class="menu-user-stat">
+                        <div class="menu-user-stat-value">{{ current_user.following.count() }}</div>
+                        <div class="menu-user-stat-label">Following</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="menu-sections">
+        <div class="menu-section">
+            <div class="menu-section-title">Help & Support</div>
+            
+            <div class="menu-item">
+                <div class="menu-item-icon">
+                    <i class="fas fa-info-circle"></i>
+                </div>
+                <div class="menu-item-content">
+                    <div class="menu-item-title">Account Status</div>
+                    <div class="menu-item-description">Check your account status and violations</div>
+                </div>
+                <div class="menu-item-arrow">
+                    <i class="fas fa-chevron-right"></i>
+                </div>
+            </div>
+            
+            <div class="menu-item">
+                <div class="menu-item-icon">
+                    <i class="fas fa-headset"></i>
+                </div>
+                <div class="menu-item-content">
+                    <div class="menu-item-title">Support Inbox</div>
+                    <div class="menu-item-description">Contact support for help</div>
+                </div>
+                <div class="menu-item-arrow">
+                    <i class="fas fa-chevron-right"></i>
+                </div>
+            </div>
+            
+            <div class="menu-item">
+                <div class="menu-item-icon">
+                    <i class="fas fa-file-alt"></i>
+                </div>
+                <div class="menu-item-content">
+                    <div class="menu-item-title">Terms and Policies</div>
+                    <div class="menu-item-description">Read our terms of service and policies</div>
+                </div>
+                <div class="menu-item-arrow">
+                    <i class="fas fa-chevron-right"></i>
+                </div>
+            </div>
+        </div>
+        
+        <div class="menu-section">
+            <div class="menu-section-title">Settings & Privacy</div>
+            
+            <div class="menu-item">
+                <div class="menu-item-icon">
+                    <i class="fas fa-cog"></i>
+                </div>
+                <div class="menu-item-content">
+                    <div class="menu-item-title">Settings</div>
+                    <div class="menu-item-description">Manage your account settings</div>
+                </div>
+                <div class="menu-item-arrow">
+                    <i class="fas fa-chevron-right"></i>
+                </div>
+            </div>
+            
+            <div class="menu-item">
+                <div class="menu-item-icon">
+                    <i class="fas fa-lock"></i>
+                </div>
+                <div class="menu-item-content">
+                    <div class="menu-item-title">Privacy</div>
+                    <div class="menu-item-description">Manage your privacy settings</div>
+                </div>
+                <div class="menu-item-arrow">
+                    <i class="fas fa-chevron-right"></i>
+                </div>
+            </div>
+            
+            <div class="menu-item">
+                <div class="menu-item-icon">
+                    <i class="fas fa-ban"></i>
+                </div>
+                <div class="menu-item-content">
+                    <div class="menu-item-title">Blocking</div>
+                    <div class="menu-item-description">Manage blocked users</div>
+                </div>
+                <div class="menu-item-arrow">
+                    <i class="fas fa-chevron-right"></i>
+                </div>
+            </div>
+            
+            <div class="menu-item">
+                <div class="menu-item-icon">
+                    <i class="fas fa-bell"></i>
+                </div>
+                <div class="menu-item-content">
+                    <div class="menu-item-title">Notifications</div>
+                    <div class="menu-item-description">Manage your notification preferences</div>
+                </div>
+                <div class="menu-item-arrow">
+                    <i class="fas fa-chevron-right"></i>
+                </div>
+            </div>
+            
+            <div class="menu-item">
+                <div class="menu-item-icon">
+                    <i class="fas fa-moon"></i>
+                </div>
+                <div class="menu-item-content">
+                    <div class="menu-item-title">Theme</div>
+                    <div class="menu-item-description">Change between light and dark mode</div>
+                </div>
+                <div class="menu-item-arrow">
+                    <i class="fas fa-chevron-right"></i>
+                </div>
+            </div>
+            
+            <div class="menu-item">
+                <div class="menu-item-icon">
+                    <i class="fas fa-key"></i>
+                </div>
+                <div class="menu-item-content">
+                    <div class="menu-item-title">Change Password</div>
+                    <div class="menu-item-description">Update your password</div>
+                </div>
+                <div class="menu-item-arrow">
+                    <i class="fas fa-chevron-right"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="menu-logout">
+        <button onclick="location.href='{{ url_for('logout') }}'">Log Out</button>
+    </div>
+</div>
+{% endblock %}
