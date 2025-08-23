@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Story - SociaFam</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        .story-viewer-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: black;
+            z-index: 2000;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .story-viewer-progress {
+            display: flex;
+            gap: 5px;
+            padding: 15px;
+        }
+        
+        .story-progress-bar {
+            flex-grow: 1;
+            height: 3px;
+            background-color: rgba(255, 255, 255, 0.4);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+        
+        .story-progress-fill {
+            height: 100%;
+            background-color: white;
+            width: 0%;
+            transition: width 0.1s linear;
+        }
+        
+        .story-progress-fill.active {
+            animation: progress 5s linear forwards;
+        }
+        
+        .story-viewer-content {
+            flex-grow: 1;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .story-media {
+            max-width: 100%;
+            max-height: 100%;
+        }
+        
+        .story-viewer-info {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            right: 20px;
+            display: flex;
+            align-items: center;
+            color: white;
+        }
+        
+        .story-user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 2px solid white;
+            margin-right: 10px;
+        }
+        
+        .story-user-name {
+            font-weight: 600;
+            margin-right: 10px;
+        }
+        
+        .story-time {
+            font-size: 14px;
+            opacity: 0.8;
+        }
+        
+        .story-viewer-actions {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            right: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: white;
+        }
+        
+        .story-action {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: rgba(255, 255, 255, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+        
+        .story-reply {
+            flex-grow: 1;
+            margin: 0 15px;
+        }
+        
+        .story-reply input {
+            width: 100%;
+            padding: 10px 15px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 20px;
+            background-color: transparent;
+            color: white;
+            outline: none;
+        }
+        
+        .story-reply input::placeholder {
+            color: rgba(255, 255, 255, 0.7);
+        }
+        
+        @keyframes progress {
+            from { width: 0%; }
+            to { width: 100%; }
+        }
+        
+        .story-viewer-close {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+        }
+        
+        .story-viewer-nav {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 30%;
+            cursor: pointer;
+        }
+        
+        .story-viewer-nav.prev {
+            left: 0;
+        }
+        
+        .story-viewer-nav.next {
+            right: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="story-viewer-container">
+        <div class="story-viewer-progress" id="storyProgress">
+            <!-- Progress bars will be added dynamically -->
+        </div>
+        
+        <div class="story-viewer-content">
+            <div class="story-viewer-nav prev" onclick="prevStory()"></div>
+            <div class="story-viewer-nav next" onclick="nextStory()"></div>
+            
+            <div class="story-viewer-close" onclick="closeStory()">
+                <i class="fas fa-times"></i>
+            </div>
+            
+            <div class="story-viewer-info">
+                <img src="{{ url_for('get_profile_image', user_id=story.author.id) }}" alt="{{ story.author.username }}" class="story-user-avatar">
+                <div class="story-user-name">{{ story.author.username }}</div>
+                <div class="story-time">{{ story.created_at|timesince }}</div>
+            </div>
+            
+            <div class="story-media">
+                {% if story.image %}
+                <img src="{{ url_for('get_post_image', post_id=story.id) }}" alt="Story" class="story-media">
+                {% elif story.video %}
+                <video src="{{ url_for('get_post_video', post_id=story.id) }}" class="story-media" autoplay controls></video>
+                {% endif %}
+            </div>
+            
+            <div class="story-viewer-actions">
+                <div class="story-action">
+                    <i class="fas fa-heart"></i>
+                </div>
+                
+                <div class="story-reply">
+                    <input type="text" placeholder="Send message">
+                </div>
+                
+                <div class="story-action">
+                    <i class="fas fa-paper-plane"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentStoryIndex = 0;
+        let stories = [];
+        let progressInterval;
+        
+        // Load stories from server (in a real implementation)
+        function loadStories() {
+            // This would fetch stories from the server
+            // For now, we'll just use the current story
+            stories = [{
+                id: {{ story.id }},
+                author: {
+                    id: {{ story.author.id }},
+                    username: '{{ story.author.username }}'
+                },
+                created_at: '{{ story.created_at.isoformat() }}',
+                image: {% if story.image %}true{% else %}false{% endif %},
+                video: {% if story.video %}true{% else %}false{% endif %}
+            }];
+            
+            initProgressBars();
+        }
+        
+        function initProgressBars() {
+            const progressContainer = document.getElementById('storyProgress');
+            progressContainer.innerHTML = '';
+            
+            stories.forEach((story, index) => {
+                const progressBar = document.createElement('div');
+                progressBar.className = 'story-progress-bar';
+                
+                const progressFill = document.createElement('div');
+                progressFill.className = 'story-progress-fill';
+                if (index === currentStoryIndex) {
+                    progressFill.classList.add('active');
+                }
+                
+                progressBar.appendChild(progressFill);
+                progressContainer.appendChild(progressBar);
+            });
+            
+            startProgress();
+        }
+        
+        function startProgress() {
+            clearInterval(progressInterval);
+            
+            progressInterval = setInterval(() => {
+                nextStory();
+            }, 5000);
+        }
+        
+        function pauseProgress() {
+            clearInterval(progressInterval);
+        }
+        
+        function nextStory() {
+            if (currentStoryIndex < stories.length - 1) {
+                currentStoryIndex++;
+                showStory();
+            } else {
+                closeStory();
+            }
+        }
+        
+        function prevStory() {
+            if (currentStoryIndex > 0) {
+                currentStoryIndex--;
+                showStory();
+            }
+        }
+        
+        function showStory() {
+            // In a real implementation, this would load the story content
+            initProgressBars();
+        }
+        
+        function closeStory() {
+            window.history.back();
+        }
+        
+        // Handle keyboard events
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'ArrowRight') {
+                nextStory();
+            } else if (e.key === 'ArrowLeft') {
+                prevStory();
+            } else if (e.key === 'Escape') {
+                closeStory();
+            }
+        });
+        
+        // Handle swipe events for mobile
+        let touchStartX = 0;
+        
+        document.addEventListener('touchstart', function(e) {
+            touchStartX = e.touches[0].clientX;
+            pauseProgress();
+        });
+        
+        document.addEventListener('touchend', function(e) {
+            const touchEndX = e.changedTouches[0].clientX;
+            const diffX = touchEndX - touchStartX;
+            
+            if (Math.abs(diffX) > 50) {
+                if (diffX > 0) {
+                    prevStory();
+                } else {
+                    nextStory();
+                }
+            } else {
+                startProgress();
+            }
+        });
+        
+        // Load stories when page is ready
+        window.addEventListener('load', loadStories);
+    </script>
+</body>
+</html>
