@@ -1,0 +1,265 @@
+{% extends "base.html" %}
+
+{% block title %}Friends - SociaFam{% endblock %}
+
+{% block extra_css %}
+<style>
+    .friends-container {
+        max-width: 800px;
+        margin: 0 auto;
+    }
+    
+    .friends-tabs {
+        display: flex;
+        border-bottom: 1px solid #e4e6eb;
+        margin-bottom: 20px;
+    }
+    
+    .friends-tab {
+        padding: 10px 20px;
+        cursor: pointer;
+        border-bottom: 2px solid transparent;
+    }
+    
+    .friends-tab.active {
+        border-bottom-color: #1877f2;
+        color: #1877f2;
+        font-weight: 600;
+    }
+    
+    .friends-tab-badge {
+        background-color: #e41e3f;
+        color: white;
+        border-radius: 10px;
+        padding: 2px 6px;
+        font-size: 12px;
+        margin-left: 5px;
+    }
+    
+    .friends-list {
+        display: grid;
+        gap: 15px;
+    }
+    
+    .friend-item {
+        display: flex;
+        align-items: center;
+        padding: 15px;
+        background-color: white;
+        border-radius: 8px;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    }
+    
+    .friend-avatar {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        margin-right: 15px;
+    }
+    
+    .friend-info {
+        flex-grow: 1;
+    }
+    
+    .friend-name {
+        font-weight: 600;
+        margin-bottom: 5px;
+    }
+    
+    .friend-mutual {
+        font-size: 14px;
+        color: #65676b;
+        margin-bottom: 5px;
+    }
+    
+    .friend-actions {
+        display: flex;
+        gap: 10px;
+    }
+    
+    .friend-action {
+        padding: 8px 12px;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+    }
+    
+    .friend-action-primary {
+        background-color: #1877f2;
+        color: white;
+        border: none;
+    }
+    
+    .friend-action-secondary {
+        background-color: #e4e6eb;
+        color: #4b4f56;
+        border: none;
+    }
+    
+    .friend-action-danger {
+        background-color: #e41e3f;
+        color: white;
+        border: none;
+    }
+    
+    .friends-search {
+        margin-bottom: 20px;
+    }
+    
+    .friends-search input {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #dddfe2;
+        border-radius: 20px;
+        outline: none;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="friends-container">
+    <h1>Friends</h1>
+    
+    <div class="friends-tabs">
+        <div class="friends-tab {% if tab == 'followers' %}active{% endif %}" data-tab="followers">
+            Followers <span class="friends-tab-badge">{{ followers|length }}</span>
+        </div>
+        <div class="friends-tab {% if tab == 'following' %}active{% endif %}" data-tab="following">
+            Following <span class="friends-tab-badge">{{ following|length }}</span>
+        </div>
+        <div class="friends-tab {% if tab == 'friends' %}active{% endif %}" data-tab="friends">
+            Friends <span class="friends-tab-badge">{{ friends|length }}</span>
+        </div>
+        <div class="friends-tab {% if tab == 'requests' %}active{% endif %}" data-tab="requests">
+            Requests <span class="friends-tab-badge">{{ friend_requests|length }}</span>
+        </div>
+        <div class="friends-tab {% if tab == 'suggested' %}active{% endif %}" data-tab="suggested">
+            Suggested
+        </div>
+    </div>
+    
+    <div class="friends-search">
+        <input type="text" placeholder="Search friends..." id="friendsSearch">
+    </div>
+    
+    <div class="friends-list">
+        {% if tab == 'followers' %}
+            {% for follow in followers %}
+            <div class="friend-item">
+                <img src="{{ url_for('get_profile_image', user_id=follow.follower.id) }}" alt="{{ follow.follower.username }}" class="friend-avatar">
+                <div class="friend-info">
+                    <div class="friend-name">{{ follow.follower.real_name or follow.follower.username }}</div>
+                    <div class="friend-mutual">@{{ follow.follower.username }}</div>
+                    <div class="friend-mutual">{{ follow.follower.followers.count() }} followers</div>
+                </div>
+                <div class="friend-actions">
+                    <button class="friend-action friend-action-primary">Message</button>
+                    <button class="friend-action friend-action-secondary">Block</button>
+                </div>
+            </div>
+            {% endfor %}
+        
+        {% elif tab == 'following' %}
+            {% for follow in following %}
+            <div class="friend-item">
+                <img src="{{ url_for('get_profile_image', user_id=follow.followed.id) }}" alt="{{ follow.followed.username }}" class="friend-avatar">
+                <div class="friend-info">
+                    <div class="friend-name">{{ follow.followed.real_name or follow.followed.username }}</div>
+                    <div class="friend-mutual">@{{ follow.followed.username }}</div>
+                    <div class="friend-mutual">{{ follow.followed.followers.count() }} followers</div>
+                </div>
+                <div class="friend-actions">
+                    <button class="friend-action friend-action-primary">Message</button>
+                    <button class="friend-action friend-action-secondary">Unfollow</button>
+                    <button class="friend-action friend-action-danger">Block</button>
+                </div>
+            </div>
+            {% endfor %}
+        
+        {% elif tab == 'friends' %}
+            {% for friend in friends %}
+            <div class="friend-item">
+                <img src="{{ url_for('get_profile_image', user_id=friend.id) }}" alt="{{ friend.username }}" class="friend-avatar">
+                <div class="friend-info">
+                    <div class="friend-name">{{ friend.real_name or friend.username }}</div>
+                    <div class="friend-mutual">@{{ friend.username }}</div>
+                    <div class="friend-mutual">{{ friend.followers.count() }} followers</div>
+                </div>
+                <div class="friend-actions">
+                    <button class="friend-action friend-action-primary">Message</button>
+                    <button class="friend-action friend-action-secondary">Unfollow</button>
+                    <button class="friend-action friend-action-danger">Block</button>
+                </div>
+            </div>
+            {% endfor %}
+        
+        {% elif tab == 'requests' %}
+            {% for request in friend_requests %}
+            <div class="friend-item">
+                <img src="{{ url_for('get_profile_image', user_id=request.id) }}" alt="{{ request.username }}" class="friend-avatar">
+                <div class="friend-info">
+                    <div class="friend-name">{{ request.real_name or request.username }}</div>
+                    <div class="friend-mutual">@{{ request.username }}</div>
+                    <div class="friend-mutual">{{ request.followers.count() }} followers</div>
+                </div>
+                <div class="friend-actions">
+                    <button class="friend-action friend-action-primary">Accept</button>
+                    <button class="friend-action friend-action-secondary">Decline</button>
+                    <button class="friend-action friend-action-danger">Block</button>
+                </div>
+            </div>
+            {% endfor %}
+        
+        {% elif tab == 'suggested' %}
+            {% for suggested in suggested_friends %}
+            <div class="friend-item">
+                <img src="{{ url_for('get_profile_image', user_id=suggested.id) }}" alt="{{ suggested.username }}" class="friend-avatar">
+                <div class="friend-info">
+                    <div class="friend-name">{{ suggested.real_name or suggested.username }}</div>
+                    <div class="friend-mutual">@{{ suggested.username }}</div>
+                    <div class="friend-mutual">{{ suggested.followers.count() }} followers</div>
+                </div>
+                <div class="friend-actions">
+                    <button class="friend-action friend-action-primary">Follow</button>
+                    <button class="friend-action friend-action-secondary">Remove</button>
+                    <button class="friend-action friend-action-danger">Block</button>
+                </div>
+            </div>
+            {% endfor %}
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Handle friends tabs
+    document.querySelectorAll('.friends-tab').forEach(tab => {
+        tab.addEventListener('click', function() {
+            const tabName = this.dataset.tab;
+            window.location.href = `{{ url_for('friends') }}?tab=${tabName}`;
+        });
+    });
+    
+    // Handle friends search
+    const searchInput = document.getElementById('friendsSearch');
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase();
+            const friendItems = document.querySelectorAll('.friend-item');
+            
+            friendItems.forEach(item => {
+                const friendName = item.querySelector('.friend-name').textContent.toLowerCase();
+                const friendUsername = item.querySelector('.friend-mutual').textContent.toLowerCase();
+                
+                if (friendName.includes(searchTerm) || friendUsername.includes(searchTerm)) {
+                    item.style.display = 'flex';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        });
+    }
+</script>
+{% endblock %}
