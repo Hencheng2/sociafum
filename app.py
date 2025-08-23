@@ -1,6 +1,6 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, Response
 from flask_login import LoginManager, current_user, login_user, logout_user, login_required
-from models import db, User, Post, Story, Comment, Like, Follow, Message, Group, Notification
+from models import db, User, Post, Story, Comment, Like, Follow, Message, Group, Notification, BlockedUser
 from config import Config
 import os
 from datetime import datetime, timedelta
@@ -475,6 +475,105 @@ def search():
 @login_required
 def menu():
     return render_template('menu.html')
+
+@app.route('/settings')
+@login_required
+def settings():
+    blocked_users = current_user.blocked_users.all()
+    blocked_users_info = []
+    
+    for blocked in blocked_users:
+        user = User.query.get(blocked.blocked_user_id)
+        if user:
+            blocked_users_info.append(user)
+    
+    return render_template('settings.html', blocked_users=blocked_users_info)
+
+@app.route('/save-settings', methods=['POST'])
+@login_required
+def save_settings():
+    tab = request.form.get('tab', 'privacy')
+    
+    if tab == 'privacy':
+        # Update privacy settings
+        current_user.profile_locked = bool(request.form.get('profile_locked'))
+        current_user.post_privacy = request.form.get('post_privacy', 'public')
+        
+        db.session.commit()
+        flash('Privacy settings updated successfully', 'success')
+    
+    elif tab == 'notifications':
+        # Update notification settings
+        current_user.email_notifications = bool(request.form.get('email_notifications'))
+        current_user.push_notifications = bool(request.form.get('push_notifications'))
+        current_user.like_notifications = bool(request.form.get('like_notifications'))
+        current_user.comment_notifications = bool(request.form.get('comment_notifications'))
+        current_user.follow_notifications = bool(request.form.get('follow_notifications'))
+        current_user.message_notifications = bool(request.form.get('message_notifications'))
+        
+        db.session.commit()
+        flash('Notification settings updated successfully', 'success')
+    
+    elif tab == 'password':
+        # Change password
+        current_password = request.form.get('current_password')
+        new_password = request.form.get('new_password')
+        confirm_password = request.form.get('confirm_password')
+        
+        if not current_user.check_password(current_password):
+            flash('Current password is incorrect', 'error')
+            return redirect(url_for('settings') + '?tab=password')
+        
+        if new_password != confirm_password:
+            flash('New passwords do not match', 'error')
+            return redirect(url_for('settings') + '?tab=password')
+        
+        # Validate password strength
+        if len(new_password) < 6 or not any(char.isdigit() for char in new_password) or not any(char in '!@#$%^&*()_+-=[]{}|;:,.<>?`~' for char in new_password):
+            flash('Password must be at least 6 characters with numbers and special characters', 'error')
+            return redirect(url_for('settings') + '?tab=password')
+        
+        current_user.set_password(new_password)
+        db.session.commit()
+        
+        flash('Password changed successfully', 'success')
+    
+    elif tab == 'theme':
+        # Toggle theme
+        current_user.theme = 'dark' if current_user.theme == 'light' else 'light'
+        db.session.commit()
+        flash('Theme updated successfully', 'success')
+    
+    return redirect(url_for('settings') + f'?tab={tab}')
+
+@app.route('/block-user/<int:user_id>', methods=['POST'])
+@login_required
+def block_user(user_id):
+    user_to_block = User.query.get_or_404(user_id)
+    
+    if current_user.id == user_id:
+        return jsonify({'success': False, 'message': 'You cannot block yourself'})
+    
+    if current_user.is_blocked(user_to_block):
+        return jsonify({'success': False, 'message': 'User already blocked'})
+    
+    current_user.block(user_to_block)
+    db.session.commit()
+    
+    return jsonify({'success': True, 'message': 'User blocked successfully'})
+
+@app.route('/unblock-user/<int:user_id>', methods=['POST'])
+@login_required
+def unblock_user(user_id):
+    user_to_unblock = User.query.get_or_404(user_id)
+    
+    if not current_user.is_blocked(user_to_unblock):
+        return jsonify({'success': False, 'message': 'User is not blocked'})
+    
+    current_user.unblock(user_to_unblock)
+    db.session.commit()
+    
+    return jsonify({'success': True, 'message': 'User unblocked successfully'})
 
 @app.route('/admin')
 @login_required
