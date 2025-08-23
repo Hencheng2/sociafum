@@ -1,0 +1,363 @@
+{% extends "base.html" %}
+
+{% block title %}{{ user.username }} - SociaFam{% endblock %}
+
+{% block extra_css %}
+<style>
+    .profile-container {
+        max-width: 900px;
+        margin: 0 auto;
+    }
+    
+    .profile-header {
+        background-color: white;
+        border-radius: 8px;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+    
+    .profile-cover {
+        height: 200px;
+        background-color: #f0f2f5;
+        border-radius: 8px 8px 0 0;
+        margin: -20px -20px 20px -20px;
+        position: relative;
+    }
+    
+    .profile-cover img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        border-radius: 8px 8px 0 0;
+    }
+    
+    .profile-info {
+        display: flex;
+        align-items: flex-start;
+    }
+    
+    .profile-avatar {
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        border: 4px solid white;
+        margin-right: 20px;
+        margin-top: -60px;
+        background-color: white;
+    }
+    
+    .profile-details {
+        flex-grow: 1;
+    }
+    
+    .profile-name {
+        font-size: 24px;
+        font-weight: 600;
+        margin-bottom: 5px;
+    }
+    
+    .profile-username {
+        color: #65676b;
+        margin-bottom: 10px;
+    }
+    
+    .profile-stats {
+        display: flex;
+        gap: 20px;
+        margin-bottom: 15px;
+    }
+    
+    .profile-stat {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .profile-stat-value {
+        font-weight: 600;
+        font-size: 18px;
+    }
+    
+    .profile-stat-label {
+        font-size: 14px;
+        color: #65676b;
+    }
+    
+    .profile-actions {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 15px;
+    }
+    
+    .profile-bio {
+        margin-bottom: 15px;
+        line-height: 1.5;
+    }
+    
+    .profile-mutual {
+        display: flex;
+        align-items: center;
+        margin-bottom: 15px;
+    }
+    
+    .profile-mutual-friends {
+        display: flex;
+        margin-right: 10px;
+    }
+    
+    .profile-mutual-avatar {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        border: 2px solid white;
+        margin-left: -5px;
+    }
+    
+    .profile-mutual-text {
+        font-size: 14px;
+        color: #65676b;
+    }
+    
+    .profile-tabs {
+        display: flex;
+        border-bottom: 1px solid #e4e6eb;
+        margin-bottom: 20px;
+    }
+    
+    .profile-tab {
+        padding: 15px 20px;
+        cursor: pointer;
+        border-bottom: 2px solid transparent;
+    }
+    
+    .profile-tab.active {
+        border-bottom-color: #1877f2;
+        color: #1877f2;
+        font-weight: 600;
+    }
+    
+    .profile-content {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+    }
+    
+    .profile-post {
+        aspect-ratio: 1;
+        background-color: white;
+        border-radius: 8px;
+        overflow: hidden;
+        position: relative;
+        cursor: pointer;
+    }
+    
+    .profile-post img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    
+    .profile-post video {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    
+    .profile-post-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.3);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        transition: opacity 0.3s;
+    }
+    
+    .profile-post:hover .profile-post-overlay {
+        opacity: 1;
+    }
+    
+    .profile-post-stats {
+        display: flex;
+        gap: 15px;
+        color: white;
+    }
+    
+    .profile-post-stat {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+    
+    .profile-locked {
+        text-align: center;
+        padding: 40px;
+        background-color: white;
+        border-radius: 8px;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    }
+    
+    .profile-locked i {
+        font-size: 48px;
+        color: #65676b;
+        margin-bottom: 15px;
+    }
+    
+    .profile-locked p {
+        font-size: 18px;
+        color: #65676b;
+        margin-bottom: 20px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="profile-container">
+    {% if locked %}
+    <div class="profile-locked">
+        <i class="fas fa-lock"></i>
+        <p>This profile is locked. Follow {{ user.username }} to see their content.</p>
+        <button class="btn btn-primary follow-btn" data-user-id="{{ user.id }}">
+            Follow
+        </button>
+    </div>
+    {% else %}
+    <div class="profile-header">
+        <div class="profile-cover">
+            <!-- Cover photo would go here -->
+        </div>
+        
+        <div class="profile-info">
+            <img src="{{ url_for('get_profile_image', user_id=user.id) }}" alt="{{ user.username }}" class="profile-avatar">
+            
+            <div class="profile-details">
+                <div class="profile-name">{{ user.real_name or user.username }}</div>
+                <div class="profile-username">@{{ user.username }}</div>
+                
+                <div class="profile-stats">
+                    <div class="profile-stat">
+                        <div class="profile-stat-value">{{ user.posts.count() }}</div>
+                        <div class="profile-stat-label">Posts</div>
+                    </div>
+                    <div class="profile-stat">
+                        <div class="profile-stat-value">{{ user.followers.count() }}</div>
+                        <div class="profile-stat-label">Followers</div>
+                    </div>
+                    <div class="profile-stat">
+                        <div class="profile-stat-value">{{ user.following.count() }}</div>
+                        <div class="profile-stat-label">Following</div>
+                    </div>
+                </div>
+                
+                <div class="profile-actions">
+                    {% if user.id == current_user.id %}
+                    <a href="{{ url_for('edit_profile') }}" class="btn btn-secondary">Edit Profile</a>
+                    <button class="btn btn-secondary">Share Profile</button>
+                    {% else %}
+                    <button class="btn btn-primary follow-btn" data-user-id="{{ user.id }}">
+                        {% if current_user.is_following(user) %}Following{% else %}Follow{% endif %}
+                    </button>
+                    <button class="btn btn-secondary">Message</button>
+                    {% endif %}
+                </div>
+                
+                {% if user.bio %}
+                <div class="profile-bio">
+                    {{ user.bio }}
+                </div>
+                {% endif %}
+                
+                {% if mutual_friends > 0 %}
+                <div class="profile-mutual">
+                    <div class="profile-mutual-friends">
+                        <!-- Mutual friends avatars would go here -->
+                        <img src="{{ url_for('static', filename='images/default-profile.png') }}" alt="Mutual friend" class="profile-mutual-avatar">
+                        <img src="{{ url_for('static', filename='images/default-profile.png') }}" alt="Mutual friend" class="profile-mutual-avatar">
+                        <img src="{{ url_for('static', filename='images/default-profile.png') }}" alt="Mutual friend" class="profile-mutual-avatar">
+                    </div>
+                    <div class="profile-mutual-text">
+                        {{ mutual_friends }} mutual friends
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="profile-tabs">
+        <div class="profile-tab active" data-tab="posts">Posts</div>
+        <div class="profile-tab" data-tab="reels">Reels</div>
+        <div class="profile-tab" data-tab="saved">Saved</div>
+        <div class="profile-tab" data-tab="tagged">Tagged</div>
+    </div>
+    
+    <div class="profile-content">
+        {% for post in posts %}
+        <div class="profile-post">
+            {% if post.image %}
+            <img src="{{ url_for('get_post_image', post_id=post.id) }}" alt="Post">
+            {% elif post.video %}
+            <video src="{{ url_for('get_post_video', post_id=post.id) }}"></video>
+            {% else %}
+            <div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background-color: #f0f2f5;">
+                <i class="fas fa-file-alt" style="font-size: 24px; color: #65676b;"></i>
+            </div>
+            {% endif %}
+            
+            <div class="profile-post-overlay">
+                <div class="profile-post-stats">
+                    <div class="profile-post-stat">
+                        <i class="fas fa-heart"></i>
+                        <span>{{ post.likes.count() }}</span>
+                    </div>
+                    <div class="profile-post-stat">
+                        <i class="fas fa-comment"></i>
+                        <span>{{ post.comments.count() }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Handle follow button
+    const followButton = document.querySelector('.follow-btn');
+    if (followButton) {
+        followButton.addEventListener('click', function() {
+            const userId = this.dataset.userId;
+            followUser(userId, this);
+        });
+    }
+    
+    // Handle profile tabs
+    document.querySelectorAll('.profile-tab').forEach(tab => {
+        tab.addEventListener('click', function() {
+            const tabName = this.dataset.tab;
+            
+            // Remove active class from all tabs
+            document.querySelectorAll('.profile-tab').forEach(t => t.classList.remove('active'));
+            
+            // Add active class to clicked tab
+            this.classList.add('active');
+            
+            // Load content for this tab
+            loadProfileTab(tabName);
+        });
+    });
+    
+    function loadProfileTab(tabName) {
+        // In a real implementation, this would fetch content for the selected tab
+        console.log('Loading tab:', tabName);
+    }
+</script>
+{% endblock %}
