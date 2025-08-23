@@ -1,0 +1,407 @@
+{% extends "base.html" %}
+
+{% block title %}Search - SociaFam{% endblock %}
+
+{% block extra_css %}
+<style>
+    .search-container {
+        max-width: 800px;
+        margin: 0 auto;
+    }
+    
+    .search-header {
+        background-color: white;
+        border-radius: 8px;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+    
+    .search-title {
+        font-size: 24px;
+        font-weight: 600;
+        margin-bottom: 20px;
+    }
+    
+    .search-form {
+        display: flex;
+        margin-bottom: 20px;
+    }
+    
+    .search-input {
+        flex-grow: 1;
+        padding: 12px;
+        border: 1px solid #dddfe2;
+        border-radius: 20px 0 0 20px;
+        outline: none;
+        font-size: 16px;
+    }
+    
+    .search-button {
+        padding: 12px 20px;
+        background-color: #1877f2;
+        color: white;
+        border: none;
+        border-radius: 0 20px 20px 0;
+        cursor: pointer;
+    }
+    
+    .search-tabs {
+        display: flex;
+        border-bottom: 1px solid #e4e6eb;
+        margin-bottom: 20px;
+    }
+    
+    .search-tab {
+        padding: 10px 20px;
+        cursor: pointer;
+        border-bottom: 2px solid transparent;
+    }
+    
+    .search-tab.active {
+        border-bottom-color: #1877f2;
+        color: #1877f2;
+        font-weight: 600;
+    }
+    
+    .search-results {
+        background-color: white;
+        border-radius: 8px;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+        padding: 20px;
+    }
+    
+    .search-section {
+        margin-bottom: 30px;
+    }
+    
+    .search-section-title {
+        font-size: 18px;
+        font-weight: 600;
+        margin-bottom: 15px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid #e4e6eb;
+    }
+    
+    .search-users {
+        display: grid;
+        gap: 15px;
+    }
+    
+    .search-user {
+        display: flex;
+        align-items: center;
+        padding: 15px;
+        border-radius: 8px;
+        border: 1px solid #e4e6eb;
+        cursor: pointer;
+        transition: background-color 0.3s;
+    }
+    
+    .search-user:hover {
+        background-color: #f0f2f5;
+    }
+    
+    .search-user-avatar {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        margin-right: 15px;
+    }
+    
+    .search-user-info {
+        flex-grow: 1;
+    }
+    
+    .search-user-name {
+        font-weight: 600;
+        margin-bottom: 5px;
+    }
+    
+    .search-user-username {
+        color: #65676b;
+        margin-bottom: 5px;
+    }
+    
+    .search-user-stats {
+        font-size: 14px;
+        color: #65676b;
+    }
+    
+    .search-user-action {
+        margin-left: 15px;
+    }
+    
+    .search-posts {
+        display: grid;
+        gap: 15px;
+    }
+    
+    .search-post {
+        display: flex;
+        padding: 15px;
+        border-radius: 8px;
+        border: 1px solid #e4e6eb;
+        cursor: pointer;
+        transition: background-color 0.3s;
+    }
+    
+    .search-post:hover {
+        background-color: #f0f2f5;
+    }
+    
+    .search-post-content {
+        flex-grow: 1;
+    }
+    
+    .search-post-text {
+        margin-bottom: 10px;
+        line-height: 1.4;
+    }
+    
+    .search-post-meta {
+        display: flex;
+        align-items: center;
+        font-size: 14px;
+        color: #65676b;
+    }
+    
+    .search-post-author {
+        display: flex;
+        align-items: center;
+        margin-right: 15px;
+    }
+    
+    .search-post-author-avatar {
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        margin-right: 5px;
+    }
+    
+    .search-post-date {
+        margin-right: 15px;
+    }
+    
+    .search-post-stats {
+        display: flex;
+        gap: 10px;
+    }
+    
+    .search-post-stat {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+    
+    .search-groups {
+        display: grid;
+        gap: 15px;
+    }
+    
+    .search-group {
+        display: flex;
+        align-items: center;
+        padding: 15px;
+        border-radius: 8px;
+        border: 1px solid #e4e6eb;
+        cursor: pointer;
+        transition: background-color 0.3s;
+    }
+    
+    .search-group:hover {
+        background-color: #f0f2f5;
+    }
+    
+    .search-group-avatar {
+        width: 50px;
+        height: 50px;
+        border-radius: 8px;
+        margin-right: 15px;
+    }
+    
+    .search-group-info {
+        flex-grow: 1;
+    }
+    
+    .search-group-name {
+        font-weight: 600;
+        margin-bottom: 5px;
+    }
+    
+    .search-group-members {
+        font-size: 14px;
+        color: #65676b;
+    }
+    
+    .search-empty {
+        text-align: center;
+        padding: 40px;
+        color: #65676b;
+    }
+    
+    .search-empty i {
+        font-size: 48px;
+        margin-bottom: 15px;
+    }
+    
+    .search-empty p {
+        font-size: 18px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="search-container">
+    <div class="search-header">
+        <h1 class="search-title">Search</h1>
+        
+        <form class="search-form" method="GET" action="{{ url_for('search') }}">
+            <input type="text" class="search-input" name="q" value="{{ query }}" placeholder="Search for people, posts, or groups...">
+            <button type="submit" class="search-button">Search</button>
+        </form>
+        
+        <div class="search-tabs">
+            <div class="search-tab active" data-tab="all">All</div>
+            <div class="search-tab" data-tab="people">People</div>
+            <div class="search-tab" data-tab="posts">Posts</div>
+            <div class="search-tab" data-tab="groups">Groups</div>
+        </div>
+    </div>
+    
+    <div class="search-results">
+        {% if query %}
+            {% if users or posts or groups %}
+                {% if users %}
+                <div class="search-section">
+                    <h2 class="search-section-title">People</h2>
+                    
+                    <div class="search-users">
+                        {% for user in users %}
+                        <div class="search-user" onclick="location.href='{{ url_for('profile', username=user.username) }}'">
+                            <img src="{{ url_for('get_profile_image', user_id=user.id) }}" alt="{{ user.username }}" class="search-user-avatar">
+                            
+                            <div class="search-user-info">
+                                <div class="search-user-name">{{ user.real_name or user.username }}</div>
+                                <div class="search-user-username">@{{ user.username }}</div>
+                                <div class="search-user-stats">{{ user.followers.count() }} followers</div>
+                            </div>
+                            
+                            <div class="search-user-action">
+                                <button class="btn btn-primary">Follow</button>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+                
+                {% if posts %}
+                <div class="search-section">
+                    <h2 class="search-section-title">Posts</h2>
+                    
+                    <div class="search-posts">
+                        {% for post in posts %}
+                        <div class="search-post" onclick="location.href='#'">
+                            <div class="search-post-content">
+                                <div class="search-post-text">{{ post.content|truncate(200) }}</div>
+                                
+                                <div class="search-post-meta">
+                                    <div class="search-post-author">
+                                        <img src="{{ url_for('get_profile_image', user_id=post.author.id) }}" alt="{{ post.author.username }}" class="search-post-author-avatar">
+                                        <span>{{ post.author.username }}</span>
+                                    </div>
+                                    
+                                    <div class="search-post-date">{{ post.created_at|timesince }}</div>
+                                    
+                                    <div class="search-post-stats">
+                                        <div class="search-post-stat">
+                                            <i class="fas fa-heart"></i>
+                                            <span>{{ post.likes.count() }}</span>
+                                        </div>
+                                        <div class="search-post-stat">
+                                            <i class="fas fa-comment"></i>
+                                            <span>{{ post.comments.count() }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+                
+                {% if groups %}
+                <div class="search-section">
+                    <h2 class="search-section-title">Groups</h2>
+                    
+                    <div class="search-groups">
+                        {% for group in groups %}
+                        <div class="search-group" onclick="location.href='#'">
+                            <img src="{{ url_for('static', filename='images/default-group.png') }}" alt="{{ group.name }}" class="search-group-avatar">
+                            
+                            <div class="search-group-info">
+                                <div class="search-group-name">{{ group.name }}</div>
+                                <div class="search-group-members">{{ group.members.count() }} members</div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+            {% else %}
+                <div class="search-empty">
+                    <i class="fas fa-search"></i>
+                    <p>No results found for "{{ query }}"</p>
+                    <p>Try searching for something else</p>
+                </div>
+            {% endif %}
+        {% else %}
+            <div class="search-empty">
+                <i class="fas fa-search"></i>
+                <p>Search for people, posts, or groups</p>
+                <p>Enter a search term in the box above</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Handle search tabs
+    document.querySelectorAll('.search-tab').forEach(tab => {
+        tab.addEventListener('click', function() {
+            const tabName = this.dataset.tab;
+            
+            // Remove active class from all tabs
+            document.querySelectorAll('.search-tab').forEach(t => t.classList.remove('active'));
+            
+            // Add active class to clicked tab
+            this.classList.add('active');
+            
+            // Filter results based on tab
+            filterSearchResults(tabName);
+        });
+    });
+    
+    function filterSearchResults(tabName) {
+        const sections = document.querySelectorAll('.search-section');
+        
+        sections.forEach(section => {
+            if (tabName === 'all') {
+                section.style.display = 'block';
+            } else if (tabName === 'people' && section.querySelector('.search-users')) {
+                section.style.display = 'block';
+            } else if (tabName === 'posts' && section.querySelector('.search-posts')) {
+                section.style.display = 'block';
+            } else if (tabName === 'groups' && section.querySelector('.search-groups')) {
+                section.style.display = 'block';
+            } else {
+                section.style.display = 'none';
+            }
+        });
+    }
+</script>
+{% endblock %}
