@@ -1,0 +1,644 @@
+{% extends "base.html" %}
+
+{% block title %}Settings - SociaFam{% endblock %}
+
+{% block extra_css %}
+<style>
+    .settings-container {
+        max-width: 800px;
+        margin: 0 auto;
+    }
+    
+    .settings-header {
+        background-color: white;
+        border-radius: 8px;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+    
+    .settings-title {
+        font-size: 24px;
+        font-weight: 600;
+        margin-bottom: 20px;
+    }
+    
+    .settings-tabs {
+        display: flex;
+        border-bottom: 1px solid #e4e6eb;
+        margin-bottom: 20px;
+        overflow-x: auto;
+    }
+    
+    .settings-tab {
+        padding: 10px 20px;
+        cursor: pointer;
+        border-bottom: 2px solid transparent;
+        white-space: nowrap;
+    }
+    
+    .settings-tab.active {
+        border-bottom-color: #1877f2;
+        color: #1877f2;
+        font-weight: 600;
+    }
+    
+    .settings-content {
+        background-color: white;
+        border-radius: 8px;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+        padding: 20px;
+    }
+    
+    .settings-section {
+        margin-bottom: 30px;
+    }
+    
+    .settings-section-title {
+        font-size: 18px;
+        font-weight: 600;
+        margin-bottom: 15px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid #e4e6eb;
+    }
+    
+    .settings-option {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 15px 0;
+        border-bottom: 1px solid #e4e6eb;
+    }
+    
+    .settings-option:last-child {
+        border-bottom: none;
+    }
+    
+    .settings-option-info {
+        flex-grow: 1;
+    }
+    
+    .settings-option-name {
+        font-weight: 600;
+        margin-bottom: 5px;
+    }
+    
+    .settings-option-description {
+        font-size: 14px;
+        color: #65676b;
+    }
+    
+    .settings-option-action {
+        margin-left: 15px;
+    }
+    
+    .form-group {
+        margin-bottom: 20px;
+    }
+    
+    .form-label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 600;
+    }
+    
+    .form-control {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #dddfe2;
+        border-radius: 6px;
+        font-size: 16px;
+    }
+    
+    .form-select {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #dddfe2;
+        border-radius: 6px;
+        font-size: 16px;
+        background-color: white;
+    }
+    
+    .form-help {
+        font-size: 14px;
+        color: #65676b;
+        margin-top: 5px;
+    }
+    
+    .password-strength {
+        margin-top: 10px;
+        height: 5px;
+        background-color: #e4e6eb;
+        border-radius: 3px;
+        overflow: hidden;
+    }
+    
+    .password-strength-bar {
+        height: 100%;
+        width: 0%;
+        transition: width 0.3s;
+    }
+    
+    .password-weak .password-strength-bar {
+        background-color: #e41e3f;
+        width: 33%;
+    }
+    
+    .password-medium .password-strength-bar {
+        background-color: #f7b928;
+        width: 66%;
+    }
+    
+    .password-strong .password-strength-bar {
+        background-color: #42b72a;
+        width: 100%;
+    }
+    
+    .settings-form-submit {
+        text-align: right;
+        margin-top: 20px;
+    }
+    
+    .settings-form-submit button {
+        padding: 10px 20px;
+        background-color: #1877f2;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-weight: 600;
+        cursor: pointer;
+    }
+    
+    .blocked-item {
+        display: flex;
+        align-items: center;
+        padding: 15px 0;
+        border-bottom: 1px solid #e4e6eb;
+    }
+    
+    .blocked-item:last-child {
+        border-bottom: none;
+    }
+    
+    .blocked-avatar {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        margin-right: 15px;
+    }
+    
+    .blocked-info {
+        flex-grow: 1;
+    }
+    
+    .blocked-name {
+        font-weight: 600;
+        margin-bottom: 5px;
+    }
+    
+    .blocked-username {
+        color: #65676b;
+    }
+    
+    .blocked-action {
+        margin-left: 15px;
+    }
+    
+    .settings-empty {
+        text-align: center;
+        padding: 40px;
+        color: #65676b;
+    }
+    
+    .settings-empty i {
+        font-size: 48px;
+        margin-bottom: 15px;
+    }
+    
+    .settings-empty p {
+        font-size: 18px;
+    }
+    
+    /* Switch styles */
+    .switch {
+        position: relative;
+        display: inline-block;
+        width: 50px;
+        height: 24px;
+    }
+    
+    .switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+    
+    .slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: #ccc;
+        transition: .4s;
+        border-radius: 24px;
+    }
+    
+    .slider:before {
+        position: absolute;
+        content: "";
+        height: 16px;
+        width: 16px;
+        left: 4px;
+        bottom: 4px;
+        background-color: white;
+        transition: .4s;
+        border-radius: 50%;
+    }
+    
+    input:checked + .slider {
+        background-color: #1877f2;
+    }
+    
+    input:checked + .slider:before {
+        transform: translateX(26px);
+    }
+    
+    /* Hide all tabs by default */
+    .settings-tab-content {
+        display: none;
+    }
+    
+    .settings-tab-content.active {
+        display: block;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="settings-container">
+    <div class="settings-header">
+        <h1 class="settings-title">Settings</h1>
+        
+        <div class="settings-tabs">
+            <div class="settings-tab active" data-tab="privacy">Privacy</div>
+            <div class="settings-tab" data-tab="notifications">Notifications</div>
+            <div class="settings-tab" data-tab="blocked">Blocked Users</div>
+            <div class="settings-tab" data-tab="password">Password</div>
+            <div class="settings-tab" data-tab="theme">Theme</div>
+        </div>
+    </div>
+    
+    <div class="settings-content">
+        <!-- Privacy Tab -->
+        <div class="settings-tab-content active" id="privacy-tab">
+            <form method="POST" action="{{ url_for('save_settings') }}">
+                <input type="hidden" name="tab" value="privacy">
+                
+                <div class="settings-section">
+                    <h2 class="settings-section-title">Profile Privacy</h2>
+                    
+                    <div class="settings-option">
+                        <div class="settings-option-info">
+                            <div class="settings-option-name">Private Account</div>
+                            <div class="settings-option-description">Only approved followers can see your posts</div>
+                        </div>
+                        <div class="settings-option-action">
+                            <label class="switch">
+                                <input type="checkbox" name="profile_locked" {% if current_user.profile_locked %}checked{% endif %}>
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="settings-section">
+                    <h2 class="settings-section-title">Post Privacy</h2>
+                    
+                    <div class="settings-option">
+                        <div class="settings-option-info">
+                            <div class="settings-option-name">Who can see your future posts?</div>
+                            <div class="settings-option-description">Control the default audience for your posts</div>
+                        </div>
+                        <div class="settings-option-action">
+                            <select name="post_privacy" class="form-select">
+                                <option value="public" {% if current_user.post_privacy == 'public' %}selected{% endif %}>Public</option>
+                                <option value="friends" {% if current_user.post_privacy == 'friends' %}selected{% endif %}>Friends</option>
+                                <option value="only_me" {% if current_user.post_privacy == 'only_me' %}selected{% endif %}>Only Me</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="settings-form-submit">
+                    <button type="submit">Save Privacy Settings</button>
+                </div>
+            </form>
+        </div>
+        
+        <!-- Notifications Tab -->
+        <div class="settings-tab-content" id="notifications-tab">
+            <form method="POST" action="{{ url_for('save_settings') }}">
+                <input type="hidden" name="tab" value="notifications">
+                
+                <div class="settings-section">
+                    <h2 class="settings-section-title">Email Notifications</h2>
+                    
+                    <div class="settings-option">
+                        <div class="settings-option-info">
+                            <div class="settings-option-name">Email Notifications</div>
+                            <div class="settings-option-description">Receive notifications via email</div>
+                        </div>
+                        <div class="settings-option-action">
+                            <label class="switch">
+                                <input type="checkbox" name="email_notifications" {% if current_user.email_notifications %}checked{% endif %}>
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="settings-section">
+                    <h2 class="settings-section-title">Push Notifications</h2>
+                    
+                    <div class="settings-option">
+                        <div class="settings-option-info">
+                            <div class="settings-option-name">Push Notifications</div>
+                            <div class="settings-option-description">Receive notifications on your device</div>
+                        </div>
+                        <div class="settings-option-action">
+                            <label class="switch">
+                                <input type="checkbox" name="push_notifications" {% if current_user.push_notifications %}checked{% endif %}>
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="settings-section">
+                    <h2 class="settings-section-title">Notification Types</h2>
+                    
+                    <div class="settings-option">
+                        <div class="settings-option-info">
+                            <div class="settings-option-name">Likes</div>
+                            <div class="settings-option-description">When someone likes your post</div>
+                        </div>
+                        <div class="settings-option-action">
+                            <label class="switch">
+                                <input type="checkbox" name="like_notifications" {% if current_user.like_notifications %}checked{% endif %}>
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="settings-option">
+                        <div class="settings-option-info">
+                            <div class="settings-option-name">Comments</div>
+                            <div class="settings-option-description">When someone comments on your post</div>
+                        </div>
+                        <div class="settings-option-action">
+                            <label class="switch">
+                                <input type="checkbox" name="comment_notifications" {% if current_user.comment_notifications %}checked{% endif %}>
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="settings-option">
+                        <div class="settings-option-info">
+                            <div class="settings-option-name">Follows</div>
+                            <div class="settings-option-description">When someone follows you</div>
+                        </div>
+                        <div class="settings-option-action">
+                            <label class="switch">
+                                <input type="checkbox" name="follow_notifications" {% if current_user.follow_notifications %}checked{% endif %}>
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="settings-option">
+                        <div class="settings-option-info">
+                            <div class="settings-option-name">Messages</div>
+                            <div class="settings-option-description">When someone sends you a message</div>
+                        </div>
+                        <div class="settings-option-action">
+                            <label class="switch">
+                                <input type="checkbox" name="message_notifications" {% if current_user.message_notifications %}checked{% endif %}>
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="settings-form-submit">
+                    <button type="submit">Save Notification Settings</button>
+                </div>
+            </form>
+        </div>
+        
+        <!-- Blocked Users Tab -->
+        <div class="settings-tab-content" id="blocked-tab">
+            <div class="settings-section">
+                <h2 class="settings-section-title">Blocked Users</h2>
+                
+                {% if blocked_users %}
+                    {% for user in blocked_users %}
+                    <div class="blocked-item">
+                        <img src="{{ url_for('get_profile_image', user_id=user.id) }}" alt="{{ user.username }}" class="blocked-avatar">
+                        
+                        <div class="blocked-info">
+                            <div class="blocked-name">{{ user.real_name or user.username }}</div>
+                            <div class="blocked-username">@{{ user.username }}</div>
+                        </div>
+                        
+                        <div class="blocked-action">
+                            <button class="btn btn-secondary unblock-btn" data-user-id="{{ user.id }}">Unblock</button>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="settings-empty">
+                        <i class="fas fa-ban"></i>
+                        <p>No blocked users</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Password Tab -->
+        <div class="settings-tab-content" id="password-tab">
+            <form method="POST" action="{{ url_for('save_settings') }}">
+                <input type="hidden" name="tab" value="password">
+                
+                <div class="form-group">
+                    <label class="form-label" for="current_password">Current Password</label>
+                    <input type="password" class="form-control" id="current_password" name="current_password" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="new_password">New Password</label>
+                    <input type="password" class="form-control" id="new_password" name="new_password" required>
+                    <div class="form-help">Must be at least 6 characters with numbers and special characters</div>
+                    <div class="password-strength">
+                        <div class="password-strength-bar"></div>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="confirm_password">Confirm New Password</label>
+                    <input type="password" class="form-control" id="confirm_password" name="confirm_password" required>
+                </div>
+                
+                <div class="settings-form-submit">
+                    <button type="submit">Change Password</button>
+                </div>
+            </form>
+        </div>
+        
+        <!-- Theme Tab -->
+        <div class="settings-tab-content" id="theme-tab">
+            <form method="POST" action="{{ url_for('save_settings') }}">
+                <input type="hidden" name="tab" value="theme">
+                
+                <div class="settings-section">
+                    <h2 class="settings-section-title">Theme Preferences</h2>
+                    
+                    <div class="settings-option">
+                        <div class="settings-option-info">
+                            <div class="settings-option-name">Dark Mode</div>
+                            <div class="settings-option-description">Switch between light and dark themes</div>
+                        </div>
+                        <div class="settings-option-action">
+                            <label class="switch">
+                                <input type="checkbox" name="theme_toggle" {% if current_user.theme == 'dark' %}checked{% endif %}>
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="settings-form-submit">
+                    <button type="submit">Save Theme Preferences</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Tab functionality
+    document.querySelectorAll('.settings-tab').forEach(tab => {
+        tab.addEventListener('click', function() {
+            const tabName = this.dataset.tab;
+            
+            // Remove active class from all tabs
+            document.querySelectorAll('.settings-tab').forEach(t => t.classList.remove('active'));
+            
+            // Add active class to clicked tab
+            this.classList.add('active');
+            
+            // Hide all tab content
+            document.querySelectorAll('.settings-tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            // Show selected tab content
+            document.getElementById(`${tabName}-tab`).classList.add('active');
+            
+            // Update URL hash
+            window.location.hash = tabName;
+        });
+    });
+    
+    // Check URL hash on page load
+    window.addEventListener('load', function() {
+        const hash = window.location.hash.substring(1);
+        if (hash) {
+            const tab = document.querySelector(`.settings-tab[data-tab="${hash}"]`);
+            if (tab) {
+                tab.click();
+            }
+        }
+    });
+    
+    // Unblock user functionality
+    document.querySelectorAll('.unblock-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const userId = this.dataset.userId;
+            
+            fetch(`/unblock-user/${userId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Remove the blocked user from the list
+                    this.closest('.blocked-item').remove();
+                    
+                    // Show success message
+                    alert('User unblocked successfully');
+                    
+                    // If no more blocked users, show empty state
+                    if (document.querySelectorAll('.blocked-item').length === 0) {
+                        const emptyHTML = `
+                            <div class="settings-empty">
+                                <i class="fas fa-ban"></i>
+                                <p>No blocked users</p>
+                            </div>
+                        `;
+                        document.getElementById('blocked-tab').innerHTML = `
+                            <div class="settings-section">
+                                <h2 class="settings-section-title">Blocked Users</h2>
+                                ${emptyHTML}
+                            </div>
+                        `;
+                    }
+                } else {
+                    alert(data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while unblocking the user');
+            });
+        });
+    });
+    
+    // Password strength indicator
+    const passwordInput = document.getElementById('new_password');
+    const passwordStrength = document.querySelector('.password-strength');
+    
+    if (passwordInput && passwordStrength) {
+        passwordInput.addEventListener('input', function() {
+            const password = this.value;
+            let strength = 0;
+            
+            // Length check
+            if (password.length >= 6) strength++;
+            
+            // Number check
+            if (/\d/.test(password)) strength++;
+            
+            // Special character check
+            if (/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) strength++;
+            
+            // Update strength indicator
+            passwordStrength.className = 'password-strength';
+            if (strength === 1) {
+                passwordStrength.classList.add('password-weak');
+            } else if (strength === 2) {
+                passwordStrength.classList.add('password-medium');
+            } else if (strength >= 3) {
+                passwordStrength.classList.add('password-strong');
+            }
+        });
+    }
+</script>
+{% endblock %}
