@@ -1,6 +1,6 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, Response
 from flask_login import LoginManager, current_user, login_user, logout_user, login_required
-from models import db, User, Post, Story, Comment, Like, Follow, Message, Group, Notification, BlockedUser
+from models import db, User, Post, Story, Comment, Like, Follow, Message, Group, Notification, BlockedUser, GroupMember
 from config import Config
 import os
 from datetime import datetime, timedelta, timezone
