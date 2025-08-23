@@ -1,1 +1,258 @@
+{% extends "base.html" %}
 
+{% block title %}Inbox - SociaFam{% endblock %}
+
+{% block extra_css %}
+<style>
+    .inbox-container {
+        display: flex;
+        height: calc(100vh - 70px);
+    }
+    
+    .inbox-sidebar {
+        width: 350px;
+        border-right: 1px solid #e4e6eb;
+        background-color: white;
+        overflow-y: auto;
+    }
+    
+    .inbox-main {
+        flex-grow: 1;
+        background-color: #f0f2f5;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .inbox-tabs {
+        display: flex;
+        border-bottom: 1px solid #e4e6eb;
+        padding: 0 20px;
+    }
+    
+    .inbox-tab {
+        padding: 15px 20px;
+        cursor: pointer;
+        border-bottom: 2px solid transparent;
+    }
+    
+    .inbox-tab.active {
+        border-bottom-color: #1877f2;
+        color: #1877f2;
+        font-weight: 600;
+    }
+    
+    .inbox-tab-badge {
+        background-color: #e41e3f;
+        color: white;
+        border-radius: 10px;
+        padding: 2px 6px;
+        font-size: 12px;
+        margin-left: 5px;
+    }
+    
+    .inbox-search {
+        padding: 15px 20px;
+        border-bottom: 1px solid #e4e6eb;
+    }
+    
+    .inbox-search input {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #dddfe2;
+        border-radius: 20px;
+        outline: none;
+    }
+    
+    .inbox-chats {
+        flex-grow: 1;
+        overflow-y: auto;
+    }
+    
+    .chat-item {
+        display: flex;
+        align-items: center;
+        padding: 15px 20px;
+        border-bottom: 1px solid #e4e6eb;
+        cursor: pointer;
+    }
+    
+    .chat-item:hover {
+        background-color: #f0f2f5;
+    }
+    
+    .chat-item.unread {
+        background-color: #f0f2f5;
+        font-weight: 600;
+    }
+    
+    .chat-avatar {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        margin-right: 15px;
+    }
+    
+    .chat-info {
+        flex-grow: 1;
+    }
+    
+    .chat-name {
+        font-weight: 600;
+        margin-bottom: 5px;
+    }
+    
+    .chat-preview {
+        font-size: 14px;
+        color: #65676b;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 200px;
+    }
+    
+    .chat-meta {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+    }
+    
+    .chat-time {
+        font-size: 12px;
+        color: #65676b;
+        margin-bottom: 5px;
+    }
+    
+    .chat-badge {
+        background-color: #1877f2;
+        color: white;
+        border-radius: 50%;
+        width: 20px;
+        height: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+    }
+    
+    .inbox-empty {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+        color: #65676b;
+    }
+    
+    .inbox-empty i {
+        font-size: 48px;
+        margin-bottom: 15px;
+    }
+    
+    .inbox-empty p {
+        font-size: 18px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="inbox-container">
+    <div class="inbox-sidebar">
+        <div class="inbox-tabs">
+            <div class="inbox-tab {% if tab == 'chats' %}active{% endif %}" data-tab="chats">
+                Chats <span class="inbox-tab-badge">{{ chats|sum(attribute='unread_count') }}</span>
+            </div>
+            <div class="inbox-tab {% if tab == 'groups' %}active{% endif %}" data-tab="groups">
+                Groups <span class="inbox-tab-badge">0</span>
+            </div>
+            <div class="inbox-tab {% if tab == 'new' %}active{% endif %}" data-tab="new">
+                New
+            </div>
+        </div>
+        
+        <div class="inbox-search">
+            <input type="text" placeholder="Search messages..." id="inboxSearch">
+        </div>
+        
+        <div class="inbox-chats">
+            {% if tab == 'chats' %}
+                {% for chat in chats %}
+                <div class="chat-item {% if chat.unread_count > 0 %}unread{% endif %}" onclick="location.href='{{ url_for('chat', user_id=chat.user.id) }}'">
+                    <img src="{{ url_for('get_profile_image', user_id=chat.user.id) }}" alt="{{ chat.user.username }}" class="chat-avatar">
+                    <div class="chat-info">
+                        <div class="chat-name">{{ chat.user.real_name or chat.user.username }}</div>
+                        <div class="chat-preview">{{ chat.last_message.content|truncate(30) }}</div>
+                    </div>
+                    <div class="chat-meta">
+                        <div class="chat-time">{{ chat.last_message.created_at|timesince }}</div>
+                        {% if chat.unread_count > 0 %}
+                        <div class="chat-badge">{{ chat.unread_count }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            
+            {% elif tab == 'groups' %}
+                {% for group in groups %}
+                <div class="chat-item" onclick="location.href='#'">
+                    <img src="{{ url_for('static', filename='images/default-group.png') }}" alt="{{ group.name }}" class="chat-avatar">
+                    <div class="chat-info">
+                        <div class="chat-name">{{ group.name }}</div>
+                        <div class="chat-preview">Last message preview...</div>
+                    </div>
+                    <div class="chat-meta">
+                        <div class="chat-time">2h ago</div>
+                        <div class="chat-badge">3</div>
+                    </div>
+                </div>
+                {% endfor %}
+            
+            {% elif tab == 'new' %}
+                <div class="inbox-empty">
+                    <i class="fas fa-comment-medical"></i>
+                    <p>Start a new conversation</p>
+                    <button class="btn btn-primary mt-3">New Message</button>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <div class="inbox-main">
+        <div class="inbox-empty">
+            <i class="fas fa-comments"></i>
+            <p>Select a conversation to start messaging</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Handle inbox tabs
+    document.querySelectorAll('.inbox-tab').forEach(tab => {
+        tab.addEventListener('click', function() {
+            const tabName = this.dataset.tab;
+            window.location.href = `{{ url_for('inbox') }}?tab=${tabName}`;
+        });
+    });
+    
+    // Handle inbox search
+    const searchInput = document.getElementById('inboxSearch');
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase();
+            const chatItems = document.querySelectorAll('.chat-item');
+            
+            chatItems.forEach(item => {
+                const chatName = item.querySelector('.chat-name').textContent.toLowerCase();
+                const chatPreview = item.querySelector('.chat-preview').textContent.toLowerCase();
+                
+                if (chatName.includes(searchTerm) || chatPreview.includes(searchTerm)) {
+                    item.style.display = 'flex';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        });
+    }
+</script>
+{% endblock %}
