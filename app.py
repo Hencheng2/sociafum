@@ -3,7 +3,7 @@ from flask_login import LoginManager, current_user, login_user, logout_user, log
 from models import db, User, Post, Story, Comment, Like, Follow, Message, Group, Notification, BlockedUser
 from config import Config
 import os
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from werkzeug.utils import secure_filename
 import uuid
 import base64
@@ -17,6 +17,44 @@ app.config.from_object(Config)
 db.init_app(app)
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
+
+from datetime import datetime, timezone
+
+# Add this function to create a timesince filter
+def timesince(dt, default="just now"):
+    """
+    Returns string representing "time since" e.g.
+    3 days ago, 5 hours ago etc.
+    """
+    if dt is None:
+        return default
+    
+    now = datetime.now(timezone.utc)
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    
+    diff = now - dt
+    
+    periods = (
+        (diff.days // 365, "year", "years"),
+        (diff.days // 30, "month", "months"),
+        (diff.days // 7, "week", "weeks"),
+        (diff.days, "day", "days"),
+        (diff.seconds // 3600, "hour", "hours"),
+        (diff.seconds // 60, "minute", "minutes"),
+        (diff.seconds, "second", "seconds"),
+    )
+    
+    for period, singular, plural in periods:
+        if period:
+            return f"{period} {singular if period == 1 else plural} ago"
+    
+    return default
+
+# Register the filter with Jinja2
+@app.template_filter('timesince')
+def timesince_filter(dt):
+    return timesince(dt)
 
 @login_manager.user_loader
 def load_user(user_id):
