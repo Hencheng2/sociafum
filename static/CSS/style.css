@@ -1,314 +1,377 @@
-/* Reset and base styles */
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
+/* Responsive styles for SociaFam */
 
-body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background-color: #f0f2f5;
-    color: #1c1e21;
-    line-height: 1.6;
-}
-
-/* Navigation */
-.navbar {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 10px 20px;
-    background-color: #fff;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    position: sticky;
-    top: 0;
-    z-index: 1000;
-}
-
-.nav-brand a {
-    font-size: 24px;
-    font-weight: bold;
-    color: #1877f2;
-    text-decoration: none;
-}
-
-.nav-search form {
-    display: flex;
-    align-items: center;
-}
-
-.nav-search input {
-    padding: 8px 12px;
-    border: 1px solid #dddfe2;
-    border-radius: 20px;
-    outline: none;
-    width: 300px;
-}
-
-.nav-search button {
-    background: none;
-    border: none;
-    margin-left: -30px;
-    cursor: pointer;
-    color: #65676b;
-}
-
-.nav-icons {
-    display: flex;
-    gap: 20px;
-}
-
-.nav-icon {
-    position: relative;
-    color: #65676b;
-    font-size: 20px;
-    text-decoration: none;
-}
-
-.nav-icon:hover {
-    color: #1877f2;
-}
-
-.nav-profile-pic {
-    width: 30px;
-    height: 30px;
-    border-radius: 50%;
-    object-fit: cover;
-}
-
-.nav-badge {
-    position: absolute;
-    top: -5px;
-    right: -5px;
-    background-color: #e41e3f;
-    color: white;
-    border-radius: 50%;
-    width: 18px;
-    height: 18px;
-    font-size: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-/* Main content */
-.main-content {
-    max-width: 1200px;
-    margin: 20px auto;
-    padding: 0 20px;
-}
-
-/* Flash messages */
-.flash-messages {
-    margin-bottom: 20px;
-}
-
-.flash {
-    padding: 10px 15px;
-    border-radius: 4px;
-    margin-bottom: 10px;
-}
-
-.flash-success {
-    background-color: #d4edda;
-    color: #155724;
-    border: 1px solid #c3e6cb;
-}
-
-.flash-error {
-    background-color: #f8d7da;
-    color: #721c24;
-    border: 1px solid #f5c6cb;
-}
-
-/* Cards */
-.card {
-    background-color: #fff;
-    border-radius: 8px;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-    margin-bottom: 20px;
-    overflow: hidden;
-}
-
-.card-header {
-    padding: 12px 16px;
-    border-bottom: 1px solid #e4e6eb;
-    display: flex;
-    align-items: center;
-}
-
-.card-body {
-    padding: 16px;
-}
-
-.card-footer {
-    padding: 12px 16px;
-    border-top: 1px solid #e4e6eb;
-    display: flex;
-    justify-content: space-between;
-}
-
-/* Profile image */
-.profile-img {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    object-fit: cover;
-    margin-right: 12px;
-}
-
-/* Buttons */
-.btn {
-    padding: 8px 16px;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-weight: 600;
-    transition: background-color 0.2s;
-}
-
-.btn-primary {
-    background-color: #1877f2;
-    color: white;
-}
-
-.btn-primary:hover {
-    background-color: #166fe5;
-}
-
-.btn-secondary {
-    background-color: #e4e6eb;
-    color: #4b4f56;
-}
-
-.btn-secondary:hover {
-    background-color: #d8dadf;
-}
-
-.btn-success {
-    background-color: #42b72a;
-    color: white;
-}
-
-.btn-success:hover {
-    background-color: #36a420;
-}
-
-.btn-danger {
-    background-color: #e41e3f;
-    color: white;
-}
-
-.btn-danger:hover {
-    background-color: #c91d37;
-}
-
-/* Forms */
-.form-group {
-    margin-bottom: 16px;
-}
-
-.form-label {
-    display: block;
-    margin-bottom: 8px;
-    font-weight: 600;
-}
-
-.form-control {
-    width: 100%;
-    padding: 8px 12px;
-    border: 1px solid #dddfe2;
-    border-radius: 4px;
-    font-size: 16px;
-}
-
-.form-control:focus {
-    outline: none;
-    border-color: #1877f2;
-    box-shadow: 0 0 0 2px rgba(24, 119, 242, 0.2);
-}
-
-/* Stories */
-.stories-container {
-    display: flex;
-    gap: 10px;
-    overflow-x: auto;
-    padding: 10px 0;
-    margin-bottom: 20px;
-}
-
-.story {
-    width: 80px;
-    flex-shrink: 0;
-    text-align: center;
-    cursor: pointer;
-}
-
-.story-img {
-    width: 60px;
-    height: 60px;
-    border-radius: 50%;
-    object-fit: cover;
-    border: 3px solid #1877f2;
-    padding: 2px;
-}
-
-.story-username {
-    font-size: 12px;
-    margin-top: 4px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-/* Posts */
-.post-img {
-    width: 100%;
-    max-height: 500px;
-    object-fit: contain;
-}
-
-.post-video {
-    width: 100%;
-    max-height: 500px;
-}
-
-.post-actions {
-    display: flex;
-    gap: 15px;
-}
-
-.post-action {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    color: #65676b;
-    cursor: pointer;
-}
-
-.post-action:hover {
-    color: #1877f2;
-}
-
-.post-action.active {
-    color: #1877f2;
-}
-
-/* Responsive */
 @media (max-width: 768px) {
+    /* Navigation */
     .navbar {
         padding: 10px;
     }
     
-    .nav-search input {
-        width: 200px;
+    .nav-brand {
+        font-size: 20px;
     }
     
-    .main-content {
-        padding: 0 10px;
+    .nav-search {
+        display: none;
     }
     
     .nav-icons {
         gap: 15px;
+    }
+    
+    .nav-icon {
+        font-size: 18px;
+    }
+    
+    /* Main content */
+    .main-content {
+        padding: 0 10px;
+    }
+    
+    /* Stories */
+    .stories-container {
+        padding: 10px 0;
+    }
+    
+    .story-img {
+        width: 50px;
+        height: 50px;
+    }
+    
+    /* Posts */
+    .post-img,
+    .post-video {
+        max-height: 300px;
+    }
+    
+    /* Profile */
+    .profile-info {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+    }
+    
+    .profile-avatar {
+        margin-top: 0;
+        margin-right: 0;
+        margin-bottom: 15px;
+    }
+    
+    .profile-stats {
+        justify-content: center;
+    }
+    
+    .profile-actions {
+        justify-content: center;
+    }
+    
+    .profile-content {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    /* Friends */
+    .friends-container {
+        padding: 0 10px;
+    }
+    
+    .friend-item {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .friend-avatar {
+        margin-right: 0;
+        margin-bottom: 10px;
+    }
+    
+    .friend-actions {
+        margin-top: 10px;
+        justify-content: center;
+    }
+    
+    /* Inbox */
+    .inbox-sidebar {
+        width: 100%;
+    }
+    
+    .inbox-main {
+        display: none;
+    }
+    
+    .chat-container {
+        height: calc(100vh - 60px);
+    }
+    
+    /* Menu */
+    .menu-container {
+        padding: 0 10px;
+    }
+    
+    /* Admin dashboard */
+    .admin-stats {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .admin-table {
+        font-size: 14px;
+    }
+    
+    .admin-actions {
+        flex-direction: column;
+        gap: 5px;
+    }
+    
+    /* Search */
+    .search-container {
+        padding: 0 10px;
+    }
+    
+    .search-form {
+        flex-direction: column;
+    }
+    
+    .search-input {
+        border-radius: 20px;
+        margin-bottom: 10px;
+    }
+    
+    .search-button {
+        border-radius: 20px;
+    }
+    
+    /* Add content */
+    .add-content-container {
+        padding: 0 10px;
+    }
+    
+    .add-content-types {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    /* Notifications */
+    .notifications-container {
+        padding: 0 10px;
+    }
+    
+    /* Story viewer */
+    .story-viewer-info {
+        top: 10px;
+        left: 10px;
+        right: 10px;
+    }
+    
+    .story-viewer-actions {
+        bottom: 10px;
+        left: 10px;
+        right: 10px;
+    }
+    
+    .story-viewer-close {
+        top: 10px;
+        right: 10px;
+    }
+}
+
+@media (max-width: 480px) {
+    /* Navigation */
+    .nav-icons {
+        gap: 10px;
+    }
+    
+    .nav-icon {
+        font-size: 16px;
+    }
+    
+    .nav-profile-pic {
+        width: 25px;
+        height: 25px;
+    }
+    
+    /* Posts */
+    .card-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .profile-img {
+        margin-right: 0;
+        margin-bottom: 10px;
+    }
+    
+    .post-actions {
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+    
+    /* Profile */
+    .profile-content {
+        grid-template-columns: 1fr;
+    }
+    
+    /* Friends */
+    .friends-tabs {
+        flex-wrap: wrap;
+    }
+    
+    .friends-tab {
+        padding: 8px 12px;
+        font-size: 14px;
+    }
+    
+    /* Chat */
+    .chat-input-container {
+        padding: 10px;
+    }
+    
+    .chat-input-action {
+        margin-right: 10px;
+        font-size: 18px;
+    }
+    
+    /* Admin dashboard */
+    .admin-stats {
+        grid-template-columns: 1fr;
+    }
+    
+    .admin-table {
+        font-size: 12px;
+    }
+    
+    .admin-table th,
+    .admin-table td {
+        padding: 8px;
+    }
+    
+    /* Story viewer */
+    .story-user-avatar {
+        width: 30px;
+        height: 30px;
+    }
+    
+    .story-action {
+        width: 35px;
+        height: 35px;
+    }
+    
+    /* Settings */
+    .settings-option {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .settings-option-action {
+        margin-left: 0;
+        margin-top: 10px;
+        align-self: flex-end;
+    }
+}
+
+/* Dark theme responsive adjustments */
+@media (max-width: 768px) {
+    body.dark-theme .nav-search {
+        display: none;
+    }
+}
+
+/* Print styles */
+@media print {
+    .navbar,
+    .card-footer,
+    .post-actions,
+    .settings-tabs,
+    .settings-form-submit {
+        display: none !important;
+    }
+    
+    .card {
+        box-shadow: none;
+        border: 1px solid #ddd;
+    }
+    
+    body, .card {
+        background-color: white !important;
+        color: black !important;
+    }
+}
+
+/* Orientation-specific styles */
+@media (max-width: 768px) and (orientation: landscape) {
+    .stories-container {
+        padding: 5px 0;
+    }
+    
+    .story {
+        width: 70px;
+    }
+    
+    .story-img {
+        width: 50px;
+        height: 50px;
+    }
+}
+
+/* Touch device optimizations */
+@media (hover: none) and (pointer: coarse) {
+    .post-action:hover {
+        color: #65676b;
+    }
+    
+    .post-action.active:hover {
+        color: #1877f2;
+    }
+    
+    .nav-icon:hover {
+        color: #65676b;
+    }
+    
+    .nav-icon:hover .nav-badge {
+        background-color: #e41e3f;
+    }
+    
+    /* Increase tap target sizes for mobile */
+    .nav-icon,
+    .post-action,
+    .btn,
+    .settings-tab {
+        min-height: 44px;
+        min-width: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .story {
+        min-width: 80px;
+        min-height: 90px;
+    }
+}
+
+/* Preference-aware reduced motion */
+@media (prefers-reduced-motion: reduce) {
+    .slider:before {
+        transition: none;
+    }
+    
+    .password-strength-bar {
+        transition: none;
+    }
+}
+
+/* Preference-aware contrast */
+@media (prefers-contrast: high) {
+    .nav-badge {
+        border: 1px solid white;
+    }
+    
+    body.dark-theme .nav-badge {
+        border: 1px solid #1c1e21;
+    }
+}
+
+/* Preference-aware transparency */
+@media (prefers-reduced-transparency: reduce) {
+    .story-viewer-overlay,
+    .modal-backdrop {
+        background-color: rgba(0, 0, 0, 0.9);
     }
 }
