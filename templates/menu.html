@@ -98,6 +98,8 @@
         border-bottom: 1px solid #e4e6eb;
         cursor: pointer;
         transition: background-color 0.3s;
+        text-decoration: none;
+        color: inherit;
     }
     
     .menu-item:last-child {
@@ -229,7 +231,7 @@
         <div class="menu-section">
             <div class="menu-section-title">Settings & Privacy</div>
             
-            <div class="menu-item">
+            <a href="{{ url_for('settings') }}" class="menu-item">
                 <div class="menu-item-icon">
                     <i class="fas fa-cog"></i>
                 </div>
@@ -240,9 +242,9 @@
                 <div class="menu-item-arrow">
                     <i class="fas fa-chevron-right"></i>
                 </div>
-            </div>
+            </a>
             
-            <div class="menu-item">
+            <a href="{{ url_for('settings') }}?tab=privacy" class="menu-item">
                 <div class="menu-item-icon">
                     <i class="fas fa-lock"></i>
                 </div>
@@ -253,9 +255,9 @@
                 <div class="menu-item-arrow">
                     <i class="fas fa-chevron-right"></i>
                 </div>
-            </div>
+            </a>
             
-            <div class="menu-item">
+            <a href="{{ url_for('settings') }}?tab=blocked" class="menu-item">
                 <div class="menu-item-icon">
                     <i class="fas fa-ban"></i>
                 </div>
@@ -266,9 +268,9 @@
                 <div class="menu-item-arrow">
                     <i class="fas fa-chevron-right"></i>
                 </div>
-            </div>
+            </a>
             
-            <div class="menu-item">
+            <a href="{{ url_for('settings') }}?tab=notifications" class="menu-item">
                 <div class="menu-item-icon">
                     <i class="fas fa-bell"></i>
                 </div>
@@ -279,9 +281,9 @@
                 <div class="menu-item-arrow">
                     <i class="fas fa-chevron-right"></i>
                 </div>
-            </div>
+            </a>
             
-            <div class="menu-item">
+            <a href="{{ url_for('settings') }}?tab=theme" class="menu-item">
                 <div class="menu-item-icon">
                     <i class="fas fa-moon"></i>
                 </div>
@@ -292,9 +294,9 @@
                 <div class="menu-item-arrow">
                     <i class="fas fa-chevron-right"></i>
                 </div>
-            </div>
+            </a>
             
-            <div class="menu-item">
+            <a href="{{ url_for('settings') }}?tab=password" class="menu-item">
                 <div class="menu-item-icon">
                     <i class="fas fa-key"></i>
                 </div>
@@ -305,7 +307,7 @@
                 <div class="menu-item-arrow">
                     <i class="fas fa-chevron-right"></i>
                 </div>
-            </div>
+            </a>
         </div>
     </div>
     
