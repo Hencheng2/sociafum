@@ -1,0 +1,178 @@
+{% extends "base.html" %}
+
+{% block title %}Reels - SociaFam{% endblock %}
+
+{% block extra_css %}
+<style>
+    .reels-container {
+        position: relative;
+        height: calc(100vh - 70px);
+        overflow: hidden;
+    }
+    
+    .reel {
+        height: 100%;
+        width: 100%;
+        position: relative;
+    }
+    
+    .reel-video {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    
+    .reel-overlay {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        padding: 20px;
+        background: linear-gradient(transparent, rgba(0, 0, 0, 0.7));
+        color: white;
+    }
+    
+    .reel-actions {
+        position: absolute;
+        right: 15px;
+        bottom: 100px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 20px;
+    }
+    
+    .reel-action {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        color: white;
+        font-size: 14px;
+    }
+    
+    .reel-action i {
+        font-size: 24px;
+        margin-bottom: 5px;
+    }
+    
+    .reel-user {
+        display: flex;
+        align-items: center;
+        margin-bottom: 10px;
+    }
+    
+    .reel-user img {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        margin-right: 10px;
+        border: 2px solid white;
+    }
+    
+    .reel-description {
+        margin-bottom: 10px;
+        max-width: 80%;
+    }
+    
+    .reel-audio {
+        display: flex;
+        align-items: center;
+        font-size: 14px;
+    }
+    
+    .reel-audio i {
+        margin-right: 5px;
+    }
+    
+    .reel-play-btn {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: rgba(0, 0, 0, 0.5);
+        border-radius: 50%;
+        width: 60px;
+        height: 60px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 24px;
+        cursor: pointer;
+        opacity: 0;
+        transition: opacity 0.3s;
+    }
+    
+    .reel:hover .reel-play-btn {
+        opacity: 1;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="reels-container">
+    {% for reel in reels %}
+    <div class="reel" data-reel-id="{{ reel.id }}" data-reel-video="{{ reel.video_filename }}" 
+         data-username="{{ reel.author.username }}" data-description="{{ reel.content }}"
+         data-likes="{{ reel.likes.count() }}" data-comments="{{ reel.comments.count() }}"
+         data-is-liked="{{ current_user in reel.likes|map(attribute='user')|list }}">
+        <video class="reel-video" loop>
+            <source src="{{ url_for('get_post_video', post_id=reel.id) }}" type="video/mp4">
+        </video>
+        
+        <div class="reel-play-btn">
+            <i class="fas fa-play"></i>
+        </div>
+        
+        <div class="reel-overlay">
+            <div class="reel-user">
+                <img src="{{ url_for('get_profile_image', user_id=reel.author.id) }}" alt="{{ reel.author.username }}">
+                <div>
+                    <strong>{{ reel.author.username }}</strong>
+                    <div class="reel-follow">Follow</div>
+                </div>
+            </div>
+            
+            <div class="reel-description">
+                {{ reel.content }}
+            </div>
+            
+            <div class="reel-audio">
+                <i class="fas fa-music"></i>
+                <span>Original Sound - {{ reel.author.username }}</span>
+            </div>
+        </div>
+        
+        <div class="reel-actions">
+            <div class="reel-action">
+                <i class="far fa-heart"></i>
+                <span>{{ reel.likes.count() }}</span>
+            </div>
+            
+            <div class="reel-action">
+                <i class="far fa-comment"></i>
+                <span>{{ reel.comments.count() }}</span>
+            </div>
+            
+            <div class="reel-action">
+                <i class="far fa-share-square"></i>
+                <span>Share</span>
+            </div>
+            
+            <div class="reel-action">
+                <i class="far fa-bookmark"></i>
+                <span>Save</span>
+            </div>
+            
+            <div class="reel-action">
+                <i class="fas fa-ellipsis-h"></i>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/reels.js') }}"></script>
+{% endblock %}
