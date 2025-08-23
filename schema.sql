@@ -24,7 +24,15 @@ CREATE TABLE users (
     website VARCHAR(200),
     relationship_status VARCHAR(50),
     spouse VARCHAR(100),
-    profile_locked BOOLEAN DEFAULT FALSE
+    profile_locked BOOLEAN DEFAULT FALSE,
+    post_privacy VARCHAR(20) DEFAULT 'public',
+    email_notifications BOOLEAN DEFAULT TRUE,
+    push_notifications BOOLEAN DEFAULT TRUE,
+    like_notifications BOOLEAN DEFAULT TRUE,
+    comment_notifications BOOLEAN DEFAULT TRUE,
+    follow_notifications BOOLEAN DEFAULT TRUE,
+    message_notifications BOOLEAN DEFAULT TRUE,
+    theme VARCHAR(10) DEFAULT 'light'
 );
 
 -- Posts table
@@ -170,6 +178,16 @@ CREATE TABLE notifications (
     FOREIGN KEY (user_id) REFERENCES users (id)
 );
 
+-- Blocked users table
+CREATE TABLE blocked_users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    blocked_user_id INTEGER NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users (id),
+    FOREIGN KEY (blocked_user_id) REFERENCES users (id)
+);
+
 -- Indexes for better performance
 CREATE INDEX idx_username ON users(username);
 CREATE INDEX idx_email ON users(email);
@@ -188,3 +206,5 @@ CREATE INDEX idx_group_members_group ON group_members(group_id);
 CREATE INDEX idx_group_members_user ON group_members(user_id);
 CREATE INDEX idx_notifications_user ON notifications(user_id);
 CREATE INDEX idx_notifications_read ON notifications(is_read);
+CREATE INDEX idx_blocked_users_user ON blocked_users(user_id);
+CREATE INDEX idx_blocked_users_blocked ON blocked_users(blocked_user_id);
