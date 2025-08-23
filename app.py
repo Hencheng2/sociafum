@@ -18,8 +18,6 @@ db.init_app(app)
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
 
-from datetime import datetime, timezone
-
 # Add this function to create a timesince filter
 def timesince(dt, default="just now"):
     """
