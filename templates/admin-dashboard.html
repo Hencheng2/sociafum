@@ -1,0 +1,308 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard - SociaFam{% endblock %}
+
+{% block extra_css %}
+<style>
+    .admin-container {
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+    
+    .admin-header {
+        background-color: #1c1e21;
+        color: white;
+        padding: 20px;
+        margin-bottom: 20px;
+        border-radius: 8px;
+    }
+    
+    .admin-title {
+        font-size: 24px;
+        font-weight: 600;
+        margin-bottom: 20px;
+    }
+    
+    .admin-stats {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 15px;
+        margin-bottom: 20px;
+    }
+    
+    .admin-stat {
+        background-color: #242526;
+        padding: 15px;
+        border-radius: 8px;
+        text-align: center;
+    }
+    
+    .admin-stat-value {
+        font-size: 24px;
+        font-weight: 600;
+        margin-bottom: 5px;
+    }
+    
+    .admin-stat-label {
+        font-size: 14px;
+        color: #b0b3b8;
+    }
+    
+    .admin-tabs {
+        display: flex;
+        border-bottom: 1px solid #3a3b3c;
+        margin-bottom: 20px;
+    }
+    
+    .admin-tab {
+        padding: 10px 20px;
+        cursor: pointer;
+        border-bottom: 2px solid transparent;
+        color: #b0b3b8;
+    }
+    
+    .admin-tab.active {
+        border-bottom-color: #1877f2;
+        color: white;
+    }
+    
+    .admin-content {
+        background-color: #242526;
+        border-radius: 8px;
+        padding: 20px;
+    }
+    
+    .admin-search {
+        margin-bottom: 20px;
+    }
+    
+    .admin-search input {
+        width: 100%;
+        padding: 10px;
+        background-color: #3a3b3c;
+        border: 1px solid #3a3b3c;
+        border-radius: 20px;
+        color: white;
+        outline: none;
+    }
+    
+    .admin-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    
+    .admin-table th,
+    .admin-table td {
+        padding: 12px;
+        text-align: left;
+        border-bottom: 1px solid #3a3b3c;
+        color: #e4e6eb;
+    }
+    
+    .admin-table th {
+        background-color: #3a3b3c;
+        font-weight: 600;
+    }
+    
+    .admin-table tr:hover {
+        background-color: #3a3b3c;
+    }
+    
+    .admin-actions {
+        display: flex;
+        gap: 10px;
+    }
+    
+    .admin-action {
+        padding: 5px 10px;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+    }
+    
+    .admin-action-view {
+        background-color: #1877f2;
+        color: white;
+        border: none;
+    }
+    
+    .admin-action-edit {
+        background-color: #f7b928;
+        color: white;
+        border: none;
+    }
+    
+    .admin-action-delete {
+        background-color: #e41e3f;
+        color: white;
+        border: none;
+    }
+    
+    .admin-action-warn {
+        background-color: #f7b928;
+        color: white;
+        border: none;
+    }
+    
+    .admin-action-ban {
+        background-color: #e41e3f;
+        color: white;
+        border: none;
+    }
+    
+    .admin-pagination {
+        display: flex;
+        justify-content: center;
+        margin-top: 20px;
+        gap: 10px;
+    }
+    
+    .admin-page {
+        padding: 8px 12px;
+        background-color: #3a3b3c;
+        color: #e4e6eb;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+    
+    .admin-page.active {
+        background-color: #1877f2;
+        color: white;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="admin-container">
+    <div class="admin-header">
+        <h1 class="admin-title">Admin Dashboard</h1>
+        
+        <div class="admin-stats">
+            <div class="admin-stat">
+                <div class="admin-stat-value">{{ users|length }}</div>
+                <div class="admin-stat-label">Total Users</div>
+            </div>
+            
+            <div class="admin-stat">
+                <div class="admin-stat-value">{{ posts|length }}</div>
+                <div class="admin-stat-label">Total Posts</div>
+            </div>
+            
+            <div class="admin-stat">
+                <div class="admin-stat-value">{{ groups|length }}</div>
+                <div class="admin-stat-label">Total Groups</div>
+            </div>
+            
+            <div class="admin-stat">
+                <div class="admin-stat-value">0</div>
+                <div class="admin-stat-label">Reports</div>
+            </div>
+        </div>
+        
+        <div class="admin-tabs">
+            <div class="admin-tab active" data-tab="users">Users</div>
+            <div class="admin-tab" data-tab="posts">Posts</div>
+            <div class="admin-tab" data-tab="groups">Groups</div>
+            <div class="admin-tab" data-tab="reports">Reports</div>
+            <div class="admin-tab" data-tab="moderation">Moderation</div>
+        </div>
+    </div>
+    
+    <div class="admin-content">
+        <div class="admin-search">
+            <input type="text" placeholder="Search..." id="adminSearch">
+        </div>
+        
+        <table class="admin-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Username</th>
+                    <th>Email</th>
+                    <th>Joined</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in users %}
+                <tr>
+                    <td>{{ user.id }}</td>
+                    <td>{{ user.username }}</td>
+                    <td>{{ user.email or 'N/A' }}</td>
+                    <td>{{ user.created_at.strftime('%Y-%m-%d') }}</td>
+                    <td>
+                        {% if user.is_admin %}
+                        <span style="color: #1877f2;">Admin</span>
+                        {% else %}
+                        <span style="color: #42b72a;">Active</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="admin-actions">
+                            <button class="admin-action admin-action-view">View</button>
+                            <button class="admin-action admin-action-warn">Warn</button>
+                            <button class="admin-action admin-action-ban">Ban</button>
+                            <button class="admin-action admin-action-delete">Delete</button>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        
+        <div class="admin-pagination">
+            <div class="admin-page active">1</div>
+            <div class="admin-page">2</div>
+            <div class="admin-page">3</div>
+            <div class="admin-page">Next</div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Handle admin tabs
+    document.querySelectorAll('.admin-tab').forEach(tab => {
+        tab.addEventListener('click', function() {
+            const tabName = this.dataset.tab;
+            
+            // Remove active class from all tabs
+            document.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active'));
+            
+            // Add active class to clicked tab
+            this.classList.add('active');
+            
+            // Load content for this tab
+            loadAdminTab(tabName);
+        });
+    });
+    
+    function loadAdminTab(tabName) {
+        // In a real implementation, this would fetch content for the selected tab
+        console.log('Loading admin tab:', tabName);
+    }
+    
+    // Handle admin search
+    const searchInput = document.getElementById('adminSearch');
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase();
+            const tableRows = document.querySelectorAll('.admin-table tbody tr');
+            
+            tableRows.forEach(row => {
+                const username = row.cells[1].textContent.toLowerCase();
+                const email = row.cells[2].textContent.toLowerCase();
+                
+                if (username.includes(searchTerm) || email.includes(searchTerm)) {
+                    row.style.display = 'table-row';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        });
+    }
+</script>
+{% endblock %}
