@@ -1,0 +1,176 @@
+{% extends "base.html" %}
+
+{% block title %}Notifications - SociaFam{% endblock %}
+
+{% block extra_css %}
+<style>
+    .notifications-container {
+        max-width: 600px;
+        margin: 0 auto;
+    }
+    
+    .notifications-header {
+        background-color: white;
+        border-radius: 8px;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+    
+    .notifications-title {
+        font-size: 24px;
+        font-weight: 600;
+        margin-bottom: 20px;
+    }
+    
+    .notifications-tabs {
+        display: flex;
+        border-bottom: 1px solid #e4e6eb;
+    }
+    
+    .notifications-tab {
+        padding: 10px 20px;
+        cursor: pointer;
+        border-bottom: 2px solid transparent;
+    }
+    
+    .notifications-tab.active {
+        border-bottom-color: #1877f2;
+        color: #1877f2;
+        font-weight: 600;
+    }
+    
+    .notifications-list {
+        background-color: white;
+        border-radius: 8px;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+    }
+    
+    .notification-item {
+        display: flex;
+        align-items: center;
+        padding: 15px 20px;
+        border-bottom: 1px solid #e4e6eb;
+    }
+    
+    .notification-item:last-child {
+        border-bottom: none;
+    }
+    
+    .notification-item.unread {
+        background-color: #f0f2f5;
+    }
+    
+    .notification-avatar {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        margin-right: 15px;
+    }
+    
+    .notification-content {
+        flex-grow: 1;
+    }
+    
+    .notification-text {
+        margin-bottom: 5px;
+        line-height: 1.4;
+    }
+    
+    .notification-time {
+        font-size: 12px;
+        color: #65676b;
+    }
+    
+    .notification-action {
+        margin-left: 15px;
+    }
+    
+    .notification-empty {
+        text-align: center;
+        padding: 40px;
+        color: #65676b;
+    }
+    
+    .notification-empty i {
+        font-size: 48px;
+        margin-bottom: 15px;
+    }
+    
+    .notification-empty p {
+        font-size: 18px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="notifications-container">
+    <div class="notifications-header">
+        <h1 class="notifications-title">Notifications</h1>
+        
+        <div class="notifications-tabs">
+            <div class="notifications-tab active" data-tab="all">All</div>
+            <div class="notifications-tab" data-tab="mentions">Mentions</div>
+            <div class="notifications-tab" data-tab="follows">Follows</div>
+            <div class="notifications-tab" data-tab="likes">Likes</div>
+        </div>
+    </div>
+    
+    <div class="notifications-list">
+        {% if notifications %}
+            {% for notification in notifications %}
+            <div class="notification-item {% if not notification.is_read %}unread{% endif %}">
+                <img src="{{ url_for('static', filename='images/default-profile.png') }}" alt="Notification" class="notification-avatar">
+                
+                <div class="notification-content">
+                    <div class="notification-text">{{ notification.content }}</div>
+                    <div class="notification-time">{{ notification.created_at|timesince }}</div>
+                </div>
+                
+                <div class="notification-action">
+                    {% if notification.type == 'follow' %}
+                    <button class="btn btn-primary">Follow Back</button>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="notification-empty">
+                <i class="fas fa-bell-slash"></i>
+                <p>No notifications yet</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Handle notifications tabs
+    document.querySelectorAll('.notifications-tab').forEach(tab => {
+        tab.addEventListener('click', function() {
+            const tabName = this.dataset.tab;
+            
+            // Remove active class from all tabs
+            document.querySelectorAll('.notifications-tab').forEach(t => t.classList.remove('active'));
+            
+            // Add active class to clicked tab
+            this.classList.add('active');
+            
+            // Filter notifications based on tab
+            filterNotifications(tabName);
+        });
+    });
+    
+    function filterNotifications(tabName) {
+        const notificationItems = document.querySelectorAll('.notification-item');
+        
+        notificationItems.forEach(item => {
+            // In a real implementation, this would filter based on notification type
+            // For now, we'll just show all notifications
+            item.style.display = 'flex';
+        });
+    }
+</script>
+{% endblock %}
