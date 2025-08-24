@@ -5,10 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SociaFam - {% block title %}{% endblock %}</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- style.css and responsive.css links are removed as all core styles are now inline -->
-    {% block extra_css %}
+    
+    <!-- IMPORTANT: All core, shared CSS is directly in this <style> block. -->
     <style>
-        /* ===== BASE STYLES ===== */
+        /* ===== GLOBAL RESET AND BASE STYLES ===== */
         * {
             margin: 0;
             padding: 0;
@@ -30,53 +30,51 @@
             background: linear-gradient(135deg, #1f1c2c 0%, #2c3e50 100%); /* Dark theme by default */
             min-height: 100vh;
             -webkit-text-size-adjust: 100%;
-            padding-top: 120px; /* Default space for the fixed two-row top navbar, adjusted dynamically by JS */
+            /* padding-top will be dynamically adjusted by JavaScript based on navbar height */
+            padding-top: 70px; /* Fallback/initial space for fixed top navbar */
             display: flex;
             flex-direction: column;
+            border: 2px solid green; /* DEBUG: If you see this border, CSS IS working! */
         }
 
-        /* ===== FIXED TOP NAVIGATION BAR (TWO-ROW LAYOUT) ===== */
+        /* ===== FIXED TOP NAVIGATION BAR (SINGLE-ROW LAYOUT) ===== */
         .navbar {
-            display: grid; /* Use grid to define two rows */
-            grid-template-rows: auto auto; /* Two rows: one for brand/search, one for icons */
-            align-items: center; /* Vertically align content in grid cells */
-            padding: 0 20px; /* Padding for the entire navbar, top/bottom padding handled by row content */
-            background: rgba(36, 37, 38, 0.98); /* Dark background for navbar */
-            backdrop-filter: blur(10px);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            position: fixed;
+            display: flex; /* Use flexbox for a single row layout */
+            justify-content: space-between; /* Pushes brand left, icons right */
+            align-items: center; /* Vertically align all items */
+            padding: 12px 20px; /* Padding for the entire navbar */
+            background: rgba(36, 37, 38, 0.98); /* Dark background with slight transparency */
+            backdrop-filter: blur(10px); /* Blurry effect */
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1); /* Subtle bottom border */
+            position: fixed; /* Keep navbar at the top */
             top: 0;
             left: 0;
             right: 0;
-            z-index: 1000;
+            z-index: 1000; /* Ensure navbar stays on top of other content */
             width: 100%;
-            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.2); /* Soft shadow for depth */
+            gap: 15px; /* Gap between major sections (brand, search, icons) */
         }
 
-        /* Top Row: Brand and Search */
-        .navbar-top-row {
-            display: flex;
-            justify-content: space-between; /* Space out brand and search */
-            align-items: center;
-            padding: 10px 0; /* Padding for the top row content */
-            gap: 15px; /* Gap between brand and search */
+        .nav-brand {
+            flex-shrink: 0; /* Prevent brand from shrinking */
         }
 
         .nav-brand a {
             font-size: 28px;
             font-weight: bold;
-            color: #e4e6eb; /* Light color for brand in dark theme */
+            color: #e4e6eb; /* Light color for brand text in dark theme */
             text-decoration: none;
             text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            white-space: nowrap;
-            flex-shrink: 0; /* Prevent brand from shrinking */
+            white-space: nowrap; /* Prevent brand text from wrapping */
         }
 
         .nav-search {
             flex-grow: 1; /* Allow search bar to take remaining space */
             max-width: 500px; /* Constrain max-width for aesthetic */
-            display: flex;
+            display: flex; /* Use flex for input and button inside search */
             align-items: center;
+            margin: 0 auto; /* **Centers the search bar within its flexible space** */
         }
 
         .nav-search form {
@@ -113,40 +111,42 @@
             color: #b0b3b8;
             padding: 5px;
             font-size: 16px;
+            flex-shrink: 0;
         }
         
-        /* Bottom Row: Icons */
-        .navbar-bottom-row {
+        /* --- Right-Aligned Navigation Icons (Equally Spaced) --- */
+        .nav-icons {
             display: flex;
-            justify-content: space-evenly; /* **Equally spaces icons across the row** */
+            /* Using gap here instead of space-evenly for more control with many icons,
+               while still maintaining distribution. Can switch to space-evenly if preferred. */
+            gap: 10px; /* Space between icons */
             align-items: center;
-            padding: 10px 0; /* Padding for the bottom row content */
-            border-top: 1px solid rgba(255, 255, 255, 0.05); /* Subtle separator */
+            flex-shrink: 0; /* Prevent icons block from shrinking */
         }
 
+        /* --- General Styling for ALL Nav Icons (including profile pic) --- */
         .nav-icon {
-            color: #b0b3b8; /* Default icon color */
+            color: #b0b3b8; /* Default icon color (light gray for dark theme) */
             text-decoration: none;
-            /* Uniform size for all nav icons and profile picture */
-            width: 40px; /* Standard icon size */
-            height: 40px; /* Standard icon size */
+            width: 40px; /* **Standard icon size** */
+            height: 40px; /* **Standard icon size** */
             font-size: 20px; /* Font Awesome icon size */
             position: relative;
-            display: flex;
+            display: flex; /* Use flex to center icon content/profile pic */
             align-items: center;
             justify-content: center;
-            border-radius: 50%;
-            transition: all 0.3s ease;
+            border-radius: 50%; /* Circular shape */
+            transition: all 0.3s ease; /* Smooth transitions for hover effects */
             background: rgba(58, 59, 60, 0.9); /* Icon background for dark theme */
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
             flex-shrink: 0; /* Prevent icons from shrinking too much */
         }
 
         .nav-icon:hover {
-            background: #4a90e2; /* Hover background */
+            background: #4a90e2; /* Vibrant blue on hover */
             color: white;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(74, 144, 226, 0.3);
+            transform: translateY(-2px); /* Slight lift effect */
+            box-shadow: 0 4px 12px rgba(74, 144, 226, 0.3); /* Enhanced shadow on hover */
         }
 
         /* Active state for icons (e.g., current page) */
@@ -157,11 +157,12 @@
             border-color: #4a90e2; /* Active border for profile pic */
         }
 
+        /* Badge for notifications/counts */
         .nav-badge {
             position: absolute;
             top: -5px;
             right: -5px;
-            background: linear-gradient(135deg, #ff4d4d, #ff8c8c);
+            background: linear-gradient(135deg, #ff4d4d, #ff8c8c); /* Vibrant red gradient */
             color: white;
             border-radius: 50%;
             width: 18px;
@@ -174,36 +175,33 @@
             border: 2px solid #363738; /* Border matches dark theme background */
         }
 
+        /* Profile Picture specific styling (inside a nav-icon) */
         .nav-profile-pic {
-            /* Make profile pic occupy the same space as other icons */
-            width: 100%; /* Fill parent nav-icon */
-            height: 100%; /* Fill parent nav-icon */
+            width: 100%; /* **Fill parent nav-icon for consistent sizing** */
+            height: 100%; /* **Fill parent nav-icon for consistent sizing** */
             border-radius: 50%;
-            object-fit: cover;
+            object-fit: cover; /* Ensures image covers the area without distortion */
             border: 2px solid transparent; /* No border initially */
             transition: border-color 0.3s ease;
         }
 
-        /* ===== MAIN CONTENT ===== */
+        /* ===== MAIN CONTENT AREA ===== */
         .main-content {
-            flex: 1; /* Allows it to grow and fill space */
+            flex: 1; /* Allows it to grow and fill available vertical space */
             width: 100%;
-            max-width: 1200px; /* Constrains content width for better readability */
-            margin: 0 auto 20px; /* Added bottom margin for general content */
-            padding: 20px;
-            background: rgba(36, 37, 38, 0.95); /* Dark background */
+            max-width: 1200px; /* Constrains content width for better readability on large screens */
+            margin: 0 auto 20px; /* Centers content horizontally, adds bottom margin */
+            padding: 20px; /* Internal padding */
+            background: rgba(36, 37, 38, 0.95); /* Dark background for content cards */
             backdrop-filter: blur(10px);
-            border-radius: 20px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-            min-height: calc(100vh - 140px); /* Account for ~120px navbar + 20px bottom margin */
+            border-radius: 20px; /* Rounded corners for the content block */
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3); /* Deeper shadow for content block */
+            min-height: calc(100vh - 90px); /* Ensures content area fills most of viewport, considering navbar height + bottom margin */
             color: #e4e6eb; /* Light text for dark theme content */
         }
 
-        /* Flash Messages (colors remain, adjust for dark theme text) */
-        .flash-messages {
-            margin-bottom: 20px;
-        }
-
+        /* --- Flash Messages --- */
+        .flash-messages { margin-bottom: 20px; }
         .flash {
             padding: 15px 20px;
             border-radius: 12px;
@@ -212,235 +210,59 @@
             border: 2px solid transparent;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
         }
+        .flash-success { background: linear-gradient(135deg, #d4edda, #c3e6cb); color: #155724; border-color: #b8dfc2; }
+        .flash-error { background: linear-gradient(135deg, #f8d7da, #f5c6cb); color: #721c24; border-color: #f1b0b7; }
+        .flash-warning { background: linear-gradient(135deg, #fff3cd, #ffeaa7); color: #856404; border-color: #ffe082; }
 
-        .flash-success {
-            background: linear-gradient(135deg, #d4edda, #c3e6cb);
-            color: #155724;
-            border-color: #b8dfc2;
-        }
-
-        .flash-error {
-            background: linear-gradient(135deg, #f8d7da, #f5c6cb);
-            color: #721c24;
-            border-color: #f1b0b7;
-        }
-
-        .flash-warning {
-            background: linear-gradient(135deg, #fff3cd, #ffeaa7);
-            color: #856404;
-            border-color: #ffe082;
-        }
-
-        /* Dark Theme Specifics */
+        /* --- Card Styles (for posts/stories, etc.) --- */
         .dark-theme .card-header,
         .dark-theme .card-body,
-        .dark-theme .card-footer {
-            background-color: #363738; /* Darker card elements */
-            color: #e4e6eb;
-        }
-
-        .dark-theme .card {
-            background: #363738;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-        }
-
-        .dark-theme .text-muted {
-            color: #b0b3b8 !important;
-        }
-        
-        /* General content-specific styles (from original style.css/responsive.css) */
-        .btn {
-            padding: 10px 15px;
-            border-radius: 8px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-        .btn-primary {
-            background-color: #4a90e2;
-            color: white;
-            border: none;
-        }
-        .btn-primary:hover {
-            background-color: #357bd8;
-        }
-
-        .form-control {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #555;
-            border-radius: 8px;
-            background-color: #3a3b3c;
-            color: #e4e6eb;
-        }
-        .form-control:focus {
-            outline: none;
-            border-color: #4a90e2;
-            box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.2);
-        }
-
-        .card {
-            border-radius: 12px;
-            margin-bottom: 20px;
-            overflow: hidden;
-        }
-
-        .card-header {
-            display: flex;
-            align-items: center;
-            padding: 15px;
-            gap: 10px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .card-body {
-            padding: 15px;
-        }
-
-        .card-footer {
-            display: flex;
-            justify-content: space-around;
-            padding: 10px 15px;
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .profile-img {
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            object-fit: cover;
-        }
-
-        .post-img, .post-video {
-            width: 100%;
-            max-height: 500px;
-            object-fit: contain;
-            border-radius: 8px;
-            margin-top: 10px;
-            background-color: black; /* Ensure video background is dark */
-        }
-
-        .post-actions {
-            display: flex;
-            justify-content: space-around;
-            width: 100%;
-        }
-
+        .dark-theme .card-footer { background-color: #363738; color: #e4e6eb; }
+        .dark-theme .card { background: #363738; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); border-radius: 12px; margin-bottom: 20px; overflow: hidden;}
+        .dark-theme .text-muted { color: #b0b3b8 !important; }
+        .profile-img { width: 50px; height: 50px; border-radius: 50%; object-fit: cover; }
+        .card-header { display: flex; align-items: center; padding: 15px; gap: 10px; border-bottom: 1px solid rgba(255, 255, 255, 0.1); }
+        .card-body { padding: 15px; }
+        .card-footer { display: flex; justify-content: space-around; padding: 10px 15px; border-top: 1px solid rgba(255, 255, 255, 0.1); }
+        .post-img, .post-video { width: 100%; max-height: 500px; object-fit: contain; border-radius: 8px; margin-top: 10px; background-color: black; }
+        .post-actions { display: flex; justify-content: space-around; width: 100%; }
         .post-action {
-            background: none;
-            border: none;
-            color: #b0b3b8;
-            cursor: pointer;
-            font-size: 18px;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            padding: 8px 12px;
-            border-radius: 8px;
-            transition: all 0.2s ease;
+            background: none; border: none; color: #b0b3b8; cursor: pointer; font-size: 18px;
+            display: flex; align-items: center; gap: 5px; padding: 8px 12px;
+            border-radius: 8px; transition: all 0.2s ease;
         }
+        .post-action:hover { background-color: rgba(74, 144, 226, 0.1); color: #4a90e2; }
+        .post-action.active { color: #4a90e2; }
 
-        .post-action:hover {
-            background-color: rgba(74, 144, 226, 0.1);
-            color: #4a90e2;
+        /* --- Story Viewer/Modal Styles --- */
+        .story-viewer-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.8); display: flex; align-items: center; justify-content: center; z-index: 1001; }
+        .story-viewer { position: relative; width: 100%; max-width: 400px; height: 80vh; background-color: black; border-radius: 15px; overflow: hidden; display: flex; flex-direction: column; }
+        .story-media { flex-grow: 1; display: flex; align-items: center; justify-content: center; }
+        .story-info { position: absolute; top: 0; left: 0; right: 0; padding: 10px; background: linear-gradient(to bottom, rgba(0,0,0,0.7), rgba(0,0,0,0)); color: white; display: flex; align-items: center; gap: 10px; }
+        .story-user-avatar { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; }
+
+        /* --- Generic Form/Button Styles --- */
+        .btn { padding: 10px 15px; border-radius: 8px; font-weight: 500; cursor: pointer; transition: all 0.2s ease; }
+        .btn-primary { background-color: #4a90e2; color: white; border: none; }
+        .btn-primary:hover { background-color: #357bd8; }
+        .form-control {
+            width: 100%; padding: 10px; border: 1px solid #555; border-radius: 8px;
+            background-color: #3a3b3c; color: #e4e6eb;
         }
+        .form-control:focus { outline: none; border-color: #4a90e2; box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.2); }
 
-        .post-action.active {
-            color: #4a90e2;
-        }
-
-        .story-viewer-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.8);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 1001;
-        }
-
-        .story-viewer {
-            position: relative;
-            width: 100%;
-            max-width: 400px;
-            height: 80vh;
-            background-color: black;
-            border-radius: 15px;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .story-media {
-            flex-grow: 1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .story-info {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            padding: 10px;
-            background: linear-gradient(to bottom, rgba(0,0,0,0.7), rgba(0,0,0,0));
-            color: white;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .story-user-avatar {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            object-fit: cover;
-        }
-
-        /* ===== RESPONSIVE STYLES ===== */
+        /* ===== RESPONSIVE STYLES (Adjustments for Smaller Screens) ===== */
         @media (max-width: 768px) {
-            body {
-                padding-top: 100px; /* Adjust for smaller mobile navbar height */
-            }
-            .navbar {
-                padding: 0 10px; /* Less horizontal padding */
-            }
-            .navbar-top-row {
-                padding: 8px 0;
-                gap: 10px;
-            }
-            .nav-brand a {
-                font-size: 24px;
-            }
-            .nav-search {
-                display: none; /* Hide search bar on small mobile screens */
-            }
-            .navbar-bottom-row {
-                padding: 8px 0;
-            }
-            .nav-icon {
-                width: 36px; /* Smaller icon size on mobile */
-                height: 36px;
-                font-size: 18px; /* Smaller Font Awesome icon size */
-            }
-            .nav-badge {
-                top: -3px;
-                right: -3px;
-                width: 16px;
-                height: 16px;
-                font-size: 10px;
-            }
-            .main-content {
-                margin: 0 8px 15px;
-                padding: 15px;
-                border-radius: 16px;
-                min-height: calc(100vh - 115px); /* Adjusted for mobile navbar height + margin */
-            }
+            body { padding-top: 60px; } /* Adjust padding for mobile navbar height */
+            .navbar { padding: 8px 10px; gap: 10px; }
+            .nav-brand a { font-size: 24px; }
+            .nav-search { flex-basis: auto; /* Allow search to naturally size */ max-width: 250px; } /* Smaller max-width on mobile */
+            .nav-icons { gap: 5px; } /* Reduced gap for icons on mobile */
+            .nav-icon { width: 36px; height: 36px; font-size: 18px; } /* Smaller icons on mobile */
+            .nav-badge { top: -3px; right: -3px; width: 16px; height: 16px; font-size: 10px; }
+            .main-content { margin: 0 8px 15px; padding: 15px; border-radius: 16px; min-height: calc(100vh - 75px); }
 
+            /* Other component-specific responsive rules */
             .stories-container { padding: 10px 0; }
             .story-img { width: 50px; height: 50px; }
             .post-img, .post-video { max-height: 300px; }
@@ -494,72 +316,40 @@
             .settings-option-action { margin: 10px 0 0 0; align-self: stretch; }
         }
 
-        /* Dark theme responsive adjustments */
-        @media (max-width: 768px) {
-            /* This rule is now redundant as nav-search is hidden on mobile by default grid */
+        /* --- Accessibility Overrides --- */
+        @media (prefers-reduced-motion: reduce) {
+            * { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
         }
-
-        /* Print styles */
+        @media (prefers-contrast: high) {
+            .navbar { border-bottom: 2px solid #fff; }
+            .card, .btn, .form-control { border: 2px solid #fff; }
+        }
+        @media (prefers-reduced-transparency: reduce) {
+            .story-viewer-overlay { background-color: rgba(0, 0, 0, 0.95); }
+        }
         @media print {
             .navbar, .card-footer, .post-actions, .settings-tabs, .settings-form-submit { display: none !important; }
             .card { box-shadow: none; border: 1px solid #ddd; }
             body, .card { background-color: white !important; color: black !important; }
         }
-
-        /* Orientation-specific styles */
-        @media (max-width: 768px) and (orientation: landscape) {
-            .stories-container { padding: 5px 0; }
-            .story { width: 70px; }
-            .story-img { width: 50px; height: 50px; }
-        }
-
-        /* Touch device optimizations */
-        @media (hover: none) and (pointer: coarse) {
-            .post-action:hover { color: #b0b3b8; }
-            .post-action.active:hover { color: #4a90e2; }
-            .nav-icon:hover { background: #4a90e2; color: white; } /* Ensure hover works on touch */
-            .nav-icon:hover .nav-badge { background-color: #ff4d4d; }
-            .nav-icon, .post-action, .btn, .settings-tab { min-height: 44px; min-width: 44px; display: flex; align-items: center; justify-content: center; }
-            .story { min-width: 80px; min-height: 90px; }
-        }
-
-        /* Preference-aware reduced motion */
-        @media (prefers-reduced-motion: reduce) {
-            .slider:before, .password-strength-bar { transition: none; }
-        }
-
-        /* Preference-aware contrast */
-        @media (prefers-contrast: high) {
-            .navbar { border-bottom: 2px solid #fff; }
-            .card { border: 2px solid #fff; }
-            .btn { border: 2px solid #fff; }
-            .form-control { border: 2px solid #fff; }
-        }
-
-        /* Reduced motion support */
-        @media (prefers-reduced-motion: reduce) {
-            * { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
-        }
     </style>
-    {% endblock %}
+    {% endblock extra_css %}
 </head>
-<body class="{% if current_user.is_authenticated and current_user.theme == 'dark' %}dark-theme{% else %}dark-theme{% endif %}"> <!-- Default to dark-theme -->
-    <!-- Top Navigation Bar (Fixed, Two-Row Layout) -->
+<body class="{% if current_user.is_authenticated and current_user.theme == 'dark' %}dark-theme{% else %}dark-theme{% endif %}">
+    <!-- Fixed Top Navigation Bar -->
     <nav class="navbar">
-        <div class="navbar-top-row">
-            <div class="nav-brand">
-                <a href="{{ url_for('index') }}">SociaFam</a>
-            </div>
-            
-            <div class="nav-search">
-                <form action="{{ url_for('search') }}" method="GET">
-                    <input type="text" name="q" placeholder="Search...">
-                    <button type="submit"><i class="fas fa-search"></i></button>
-                </form>
-            </div>
+        <div class="nav-brand">
+            <a href="{{ url_for('index') }}">SociaFam</a>
         </div>
         
-        <div class="navbar-bottom-row">
+        <div class="nav-search">
+            <form action="{{ url_for('search') }}" method="GET">
+                <input type="text" name="q" placeholder="Search...">
+                <button type="submit"><i class="fas fa-search"></i></button>
+            </form>
+        </div>
+        
+        <div class="nav-icons">
             <a href="{{ url_for('index') }}" class="nav-icon active"><i class="fas fa-home"></i></a>
             <a href="{{ url_for('reels') }}" class="nav-icon"><i class="fas fa-film"></i></a>
             <a href="{{ url_for('friends') }}" class="nav-icon">
@@ -588,7 +378,7 @@
         </div>
     </nav>
 
-    <!-- Main Content -->
+    <!-- Main Content Area -->
     <main class="main-content">
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
@@ -607,12 +397,27 @@
     {% block extra_js %}{% endblock %}
     
     <script>
-        // Adjust body padding-top dynamically based on navbar height
+        // Adjust body padding-top dynamically based on navbar height to prevent content overlap
         document.addEventListener('DOMContentLoaded', function() {
-            const navbarHeight = document.querySelector('.navbar').offsetHeight;
-            document.body.style.paddingTop = `${navbarHeight}px`;
+            const navbar = document.querySelector('.navbar');
+            const adjustPadding = () => {
+                document.body.style.paddingTop = `${navbar.offsetHeight}px`;
+            };
 
-            // Apply theme on page load - keeping this for existing functionality
+            // Initial adjustment
+            adjustPadding();
+
+            // Re-adjust on window resize
+            window.addEventListener('resize', adjustPadding);
+
+            // Re-adjust after images load (important if images in navbar affect its height)
+            navbar.querySelectorAll('img').forEach(img => {
+                if (!img.complete) {
+                    img.addEventListener('load', adjustPadding);
+                }
+            });
+
+            // Apply theme on page load (defaults to dark-theme in <body> class for immediate effect)
             {% if current_user.is_authenticated %}
             const theme = '{{ current_user.theme }}';
             if (theme === 'dark') {
@@ -621,30 +426,26 @@
                 document.body.classList.remove('dark-theme'); // Ensure light theme is removed if not dark
             }
             {% else %}
-            // If not authenticated, ensure dark theme is applied as per current request for base styling
+            // If not authenticated, ensure dark theme is applied as per request for base styling
             document.body.classList.add('dark-theme');
             {% endif %}
 
-            // Simple active state for nav icons (can be improved with JS for actual page routing)
+            // Simple active state logic for navigation icons
             const currentPath = window.location.pathname;
-            document.querySelectorAll('.navbar-bottom-row .nav-icon').forEach(icon => {
-                icon.classList.remove('active');
-                if (icon.getAttribute('href') === currentPath) {
+            document.querySelectorAll('.nav-icons .nav-icon').forEach(icon => { // Corrected selector to .nav-icons
+                icon.classList.remove('active'); // Remove active from all first
+                const iconHref = icon.getAttribute('href');
+
+                if (iconHref === currentPath) {
                     icon.classList.add('active');
-                }
-                // Special handling for profile page, check if path starts with /profile/
-                if (currentPath.startsWith('/profile/') && icon.getAttribute('href').includes('/profile/')) {
+                } else if (currentPath.startsWith('/profile/') && iconHref && iconHref.includes('/profile/')) {
+                    // Special handling for profile page
                     icon.classList.add('active');
-                }
-                // Handle index/home explicitly
-                if (currentPath === '{{ url_for("index") }}' && icon.getAttribute('href') === '{{ url_for("index") }}') {
+                } else if (currentPath === '/' && iconHref === '{{ url_for("index") }}') {
+                    // Handle index/home explicitly if current path is root
                     icon.classList.add('active');
                 }
             });
-        });
-        window.addEventListener('resize', function() {
-            const navbarHeight = document.querySelector('.navbar').offsetHeight;
-            document.body.style.paddingTop = `${navbarHeight}px`;
         });
     </script>
 </body>
