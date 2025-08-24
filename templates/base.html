@@ -6,24 +6,245 @@
     <title>SociaFam - {% block title %}{% endblock %}</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    {% block extra_css %}{% endblock %}
+    {% block extra_css %}
+    <!-- Inline styles for critical navbar layout adjustments -->
+    <style>
+        body {
+            /* Adjust padding for the fixed top navbar only */
+            padding-top: 70px; /* Space for the top navbar */
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        .navbar {
+            display: grid; /* Use grid for main layout */
+            grid-template-columns: auto 1fr auto; /* Brand | Search (centered) | Icons (evenly spaced) */
+            align-items: center;
+            padding: 12px 20px;
+            background: rgba(36, 37, 38, 0.98); /* Dark background for navbar */
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            width: 100%;
+            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.2);
+            gap: 15px;
+        }
+
+        .nav-brand {
+            justify-self: start; /* Aligns to the start of its grid column */
+        }
+
+        .nav-brand a {
+            font-size: 28px;
+            font-weight: bold;
+            color: #e4e6eb; /* Light color for brand in dark theme */
+            text-decoration: none;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            white-space: nowrap;
+        }
+
+        .nav-search {
+            justify-self: center; /* Centers the search bar within its grid column */
+            max-width: 500px; /* Constrain max-width for aesthetic */
+            width: 100%; /* Allows it to fill its grid column space */
+            display: flex;
+        }
+
+        .nav-search input {
+            flex: 1;
+            padding: 8px 15px;
+            border: 2px solid #3a3b3c;
+            border-radius: 25px;
+            font-size: 14px;
+            background: rgba(58, 59, 60, 0.9);
+            color: #e4e6eb;
+            transition: all 0.3s ease;
+        }
+
+        .nav-search input::placeholder {
+            color: #b0b3b8;
+        }
+
+        .nav-search input:focus {
+            outline: none;
+            border-color: #4a90e2; /* Adjusted blue for dark theme */
+            box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.1);
+        }
+
+        .nav-search button {
+            background: none;
+            border: none;
+            margin-left: -40px;
+            cursor: pointer;
+            color: #b0b3b8;
+            padding: 5px;
+            font-size: 16px;
+        }
+
+        .nav-icons {
+            justify-self: end; /* Aligns the entire icon block to the end of its grid column */
+            display: flex;
+            justify-content: space-evenly; /* **Equally spaces icons within this container** */
+            align-items: center;
+            gap: 10px; /* Default gap for icons */
+        }
+
+        .nav-icon {
+            color: #b0b3b8; /* Default icon color */
+            text-decoration: none;
+            font-size: 20px;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            transition: all 0.3s ease;
+            background: rgba(58, 59, 60, 0.9); /* Icon background for dark theme */
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            flex-shrink: 0;
+        }
+
+        .nav-icon:hover {
+            background: #4a90e2; /* Hover background */
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(74, 144, 226, 0.3);
+        }
+
+        /* Active state for icons (e.g., current page) */
+        .nav-icon.active {
+            color: #4a90e2; /* Active icon color */
+        }
+        .nav-icon.active .nav-profile-pic {
+            border-color: #4a90e2; /* Active border for profile pic */
+        }
+
+
+        .nav-badge {
+            position: absolute;
+            top: -5px; /* Position for top nav */
+            right: -5px; /* Position for top nav */
+            background: linear-gradient(135deg, #ff4d4d, #ff8c8c);
+            color: white;
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            font-size: 11px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            border: 2px solid #363738; /* Border matches dark theme background */
+        }
+
+        .nav-profile-pic {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid transparent; /* No border initially */
+            transition: border-color 0.3s ease;
+        }
+
+        /* Main Content area adjusted for fixed top nav */
+        .main-content {
+            flex: 1; /* Allows it to grow and fill space */
+            width: 100%;
+            max-width: 1200px; /* Constrains content width for better readability */
+            margin: 0 auto 20px; /* Added bottom margin back for general content */
+            padding: 20px;
+            background: rgba(36, 37, 38, 0.95); /* Dark background */
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            min-height: calc(100vh - 90px); /* Account for top nav (70px) + some bottom margin */
+            color: #e4e6eb; /* Light text for dark theme content */
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            body {
+                padding-top: 60px; /* Slightly smaller top header on mobile */
+            }
+            .navbar {
+                grid-template-columns: auto 1fr; /* On mobile, remove search bar column, keep brand and icons */
+                gap: 10px;
+                padding: 8px 10px;
+            }
+            .nav-brand a {
+                font-size: 24px;
+            }
+            .nav-search {
+                display: none; /* Hide search bar on small mobile screens */
+            }
+            .nav-icons {
+                justify-self: end; /* Align to end */
+                justify-content: space-around; /* Distribute available icons more compactly on mobile */
+                gap: 5px; /* Reduce gap on mobile */
+            }
+            .nav-icon {
+                width: 36px;
+                height: 36px;
+                font-size: 18px;
+            }
+            .nav-profile-pic {
+                width: 28px;
+                height: 28px;
+            }
+            .nav-badge {
+                top: 0px;
+                right: 0px;
+                width: 16px;
+                height: 16px;
+                font-size: 10px;
+            }
+            .main-content {
+                margin: 0 8px 15px;
+                padding: 15px;
+                border-radius: 16px;
+                min-height: calc(100vh - 75px); /* Adjusted for mobile top nav height */
+            }
+        }
+        @media (max-width: 480px) {
+            .nav-icons {
+                gap: 3px; /* Even smaller gap on very small screens */
+            }
+            .nav-icon {
+                font-size: 16px;
+                width: 32px;
+                height: 32px;
+            }
+            .nav-brand a {
+                font-size: 20px;
+            }
+        }
+
+    </style>
+    {% endblock %}
 </head>
-<body class="{% if current_user.is_authenticated and current_user.theme == 'dark' %}dark-theme{% endif %}">
-    <!-- Navigation Bar -->
+<body class="{% if current_user.is_authenticated and current_user.theme == 'dark' %}dark-theme{% else %}dark-theme{% endif %}"> <!-- Default to dark-theme -->
+    <!-- Top Navigation Bar -->
     <nav class="navbar">
         <div class="nav-brand">
             <a href="{{ url_for('index') }}">SociaFam</a>
         </div>
-        
+
         <div class="nav-search">
             <form action="{{ url_for('search') }}" method="GET">
                 <input type="text" name="q" placeholder="Search...">
                 <button type="submit"><i class="fas fa-search"></i></button>
             </form>
         </div>
-        
+
         <div class="nav-icons">
-            <a href="{{ url_for('index') }}" class="nav-icon"><i class="fas fa-home"></i></a>
+            <a href="{{ url_for('index') }}" class="nav-icon active"><i class="fas fa-home"></i></a>
             <a href="{{ url_for('reels') }}" class="nav-icon"><i class="fas fa-film"></i></a>
             <a href="{{ url_for('friends') }}" class="nav-icon">
                 <i class="fas fa-user-friends"></i>
@@ -31,10 +252,10 @@
                 <span class="nav-badge">{{ current_user.followers.filter_by(is_read=False).count() }}</span>
                 {% endif %}
             </a>
-            <a href="{{ url_for('inbox') }}" class="nav-icon">
-                <i class="fas fa-inbox"></i>
-                {% if current_user.is_authenticated and current_user.received_messages.filter_by(is_read=False).count() > 0 %}
-                <span class="nav-badge">{{ current_user.received_messages.filter_by(is_read=False).count() }}</span>
+            <a href="{{ url_for('notifications') }}" class="nav-icon">
+                <i class="fas fa-bell"></i>
+                {% if current_user.is_authenticated and current_user.notifications.filter_by(is_read=False).count() > 0 %}
+                <span class="nav-badge">{{ current_user.notifications.filter_by(is_read=False).count() }}</span>
                 {% endif %}
             </a>
             <a href="{% if current_user.is_authenticated %}{{ url_for('profile', username=current_user.username) }}{% else %}{{ url_for('login') }}{% endif %}" class="nav-icon">
@@ -42,13 +263,6 @@
                 <img src="{{ url_for('get_profile_image', user_id=current_user.id) }}" alt="Profile" class="nav-profile-pic">
                 {% else %}
                 <img src="{{ url_for('static', filename='images/default-profile.png') }}" alt="Profile" class="nav-profile-pic">
-                {% endif %}
-            </a>
-            <a href="{{ url_for('add_post') }}" class="nav-icon"><i class="fas fa-plus"></i></a>
-            <a href="{{ url_for('notifications') }}" class="nav-icon">
-                <i class="fas fa-bell"></i>
-                {% if current_user.is_authenticated and current_user.notifications.filter_by(is_read=False).count() > 0 %}
-                <span class="nav-badge">{{ current_user.notifications.filter_by(is_read=False).count() }}</span>
                 {% endif %}
             </a>
             <a href="{{ url_for('menu') }}" class="nav-icon"><i class="fas fa-bars"></i></a>
@@ -69,22 +283,44 @@
                 </div>
             {% endif %}
         {% endwith %}
-        
+
         {% block content %}{% endblock %}
     </main>
 
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
     {% block extra_js %}{% endblock %}
-    
+
     <script>
-        // Apply theme on page load
+        // Apply theme on page load - keeping this for existing functionality
         document.addEventListener('DOMContentLoaded', function() {
             {% if current_user.is_authenticated %}
             const theme = '{{ current_user.theme }}';
             if (theme === 'dark') {
                 document.body.classList.add('dark-theme');
+            } else {
+                document.body.classList.remove('dark-theme'); // Ensure light theme is removed if not dark
             }
+            {% else %}
+            // If not authenticated, ensure dark theme is applied as per current request for base styling
+            document.body.classList.add('dark-theme');
             {% endif %}
+
+            // Simple active state for top nav (can be improved with JS for actual page routing)
+            const currentPath = window.location.pathname;
+            document.querySelectorAll('.navbar .nav-icon').forEach(icon => {
+                icon.classList.remove('active');
+                if (icon.getAttribute('href') === currentPath) {
+                    icon.classList.add('active');
+                }
+                // Special handling for profile page, check if path starts with /profile/
+                if (currentPath.startsWith('/profile/') && icon.getAttribute('href').includes('/profile/')) {
+                    icon.classList.add('active');
+                }
+                // Handle index/home explicitly
+                if (currentPath === '{{ url_for("index") }}' && icon.getAttribute('href') === '{{ url_for("index") }}') {
+                    icon.classList.add('active');
+                }
+            });
         });
     </script>
 </body>
