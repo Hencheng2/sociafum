@@ -1,265 +1,634 @@
-{% extends "base.html" %}
+{% extends 'base.html' %}
 
-{% block title %}Friends - SociaFam{% endblock %}
-
-{% block extra_css %}
-<style>
-    .friends-container {
-        max-width: 800px;
-        margin: 0 auto;
-    }
-    
-    .friends-tabs {
-        display: flex;
-        border-bottom: 1px solid #e4e6eb;
-        margin-bottom: 20px;
-    }
-    
-    .friends-tab {
-        padding: 10px 20px;
-        cursor: pointer;
-        border-bottom: 2px solid transparent;
-    }
-    
-    .friends-tab.active {
-        border-bottom-color: #1877f2;
-        color: #1877f2;
-        font-weight: 600;
-    }
-    
-    .friends-tab-badge {
-        background-color: #e41e3f;
-        color: white;
-        border-radius: 10px;
-        padding: 2px 6px;
-        font-size: 12px;
-        margin-left: 5px;
-    }
-    
-    .friends-list {
-        display: grid;
-        gap: 15px;
-    }
-    
-    .friend-item {
-        display: flex;
-        align-items: center;
-        padding: 15px;
-        background-color: white;
-        border-radius: 8px;
-        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-    }
-    
-    .friend-avatar {
-        width: 60px;
-        height: 60px;
-        border-radius: 50%;
-        margin-right: 15px;
-    }
-    
-    .friend-info {
-        flex-grow: 1;
-    }
-    
-    .friend-name {
-        font-weight: 600;
-        margin-bottom: 5px;
-    }
-    
-    .friend-mutual {
-        font-size: 14px;
-        color: #65676b;
-        margin-bottom: 5px;
-    }
-    
-    .friend-actions {
-        display: flex;
-        gap: 10px;
-    }
-    
-    .friend-action {
-        padding: 8px 12px;
-        border-radius: 6px;
-        font-size: 14px;
-        font-weight: 600;
-        cursor: pointer;
-    }
-    
-    .friend-action-primary {
-        background-color: #1877f2;
-        color: white;
-        border: none;
-    }
-    
-    .friend-action-secondary {
-        background-color: #e4e6eb;
-        color: #4b4f56;
-        border: none;
-    }
-    
-    .friend-action-danger {
-        background-color: #e41e3f;
-        color: white;
-        border: none;
-    }
-    
-    .friends-search {
-        margin-bottom: 20px;
-    }
-    
-    .friends-search input {
-        width: 100%;
-        padding: 10px;
-        border: 1px solid #dddfe2;
-        border-radius: 20px;
-        outline: none;
-    }
-</style>
-{% endblock %}
+{% block title %}Friends{% endblock %}
 
 {% block content %}
-<div class="friends-container">
-    <h1>Friends</h1>
-    
-    <div class="friends-tabs">
-        <div class="friends-tab {% if tab == 'followers' %}active{% endif %}" data-tab="followers">
-            Followers <span class="friends-tab-badge">{{ followers|length }}</span>
-        </div>
-        <div class="friends-tab {% if tab == 'following' %}active{% endif %}" data-tab="following">
-            Following <span class="friends-tab-badge">{{ following|length }}</span>
-        </div>
-        <div class="friends-tab {% if tab == 'friends' %}active{% endif %}" data-tab="friends">
-            Friends <span class="friends-tab-badge">{{ friends|length }}</span>
-        </div>
-        <div class="friends-tab {% if tab == 'requests' %}active{% endif %}" data-tab="requests">
-            Requests <span class="friends-tab-badge">{{ friend_requests|length }}</span>
-        </div>
-        <div class="friends-tab {% if tab == 'suggested' %}active{% endif %}" data-tab="suggested">
-            Suggested
-        </div>
-    </div>
-    
-    <div class="friends-search">
-        <input type="text" placeholder="Search friends..." id="friendsSearch">
-    </div>
-    
-    <div class="friends-list">
-        {% if tab == 'followers' %}
-            {% for follow in followers %}
-            <div class="friend-item">
-                <img src="{{ url_for('get_profile_image', user_id=follow.follower.id) }}" alt="{{ follow.follower.username }}" class="friend-avatar">
-                <div class="friend-info">
-                    <div class="friend-name">{{ follow.follower.real_name or follow.follower.username }}</div>
-                    <div class="friend-mutual">@{{ follow.follower.username }}</div>
-                    <div class="friend-mutual">{{ follow.follower.followers.count() }} followers</div>
-                </div>
-                <div class="friend-actions">
-                    <button class="friend-action friend-action-primary">Message</button>
-                    <button class="friend-action friend-action-secondary">Block</button>
-                </div>
-            </div>
-            {% endfor %}
-        
-        {% elif tab == 'following' %}
-            {% for follow in following %}
-            <div class="friend-item">
-                <img src="{{ url_for('get_profile_image', user_id=follow.followed.id) }}" alt="{{ follow.followed.username }}" class="friend-avatar">
-                <div class="friend-info">
-                    <div class="friend-name">{{ follow.followed.real_name or follow.followed.username }}</div>
-                    <div class="friend-mutual">@{{ follow.followed.username }}</div>
-                    <div class="friend-mutual">{{ follow.followed.followers.count() }} followers</div>
-                </div>
-                <div class="friend-actions">
-                    <button class="friend-action friend-action-primary">Message</button>
-                    <button class="friend-action friend-action-secondary">Unfollow</button>
-                    <button class="friend-action friend-action-danger">Block</button>
-                </div>
-            </div>
-            {% endfor %}
-        
-        {% elif tab == 'friends' %}
-            {% for friend in friends %}
-            <div class="friend-item">
-                <img src="{{ url_for('get_profile_image', user_id=friend.id) }}" alt="{{ friend.username }}" class="friend-avatar">
-                <div class="friend-info">
-                    <div class="friend-name">{{ friend.real_name or friend.username }}</div>
-                    <div class="friend-mutual">@{{ friend.username }}</div>
-                    <div class="friend-mutual">{{ friend.followers.count() }} followers</div>
-                </div>
-                <div class="friend-actions">
-                    <button class="friend-action friend-action-primary">Message</button>
-                    <button class="friend-action friend-action-secondary">Unfollow</button>
-                    <button class="friend-action friend-action-danger">Block</button>
-                </div>
-            </div>
-            {% endfor %}
-        
-        {% elif tab == 'requests' %}
-            {% for request in friend_requests %}
-            <div class="friend-item">
-                <img src="{{ url_for('get_profile_image', user_id=request.id) }}" alt="{{ request.username }}" class="friend-avatar">
-                <div class="friend-info">
-                    <div class="friend-name">{{ request.real_name or request.username }}</div>
-                    <div class="friend-mutual">@{{ request.username }}</div>
-                    <div class="friend-mutual">{{ request.followers.count() }} followers</div>
-                </div>
-                <div class="friend-actions">
-                    <button class="friend-action friend-action-primary">Accept</button>
-                    <button class="friend-action friend-action-secondary">Decline</button>
-                    <button class="friend-action friend-action-danger">Block</button>
-                </div>
-            </div>
-            {% endfor %}
-        
-        {% elif tab == 'suggested' %}
-            {% for suggested in suggested_friends %}
-            <div class="friend-item">
-                <img src="{{ url_for('get_profile_image', user_id=suggested.id) }}" alt="{{ suggested.username }}" class="friend-avatar">
-                <div class="friend-info">
-                    <div class="friend-name">{{ suggested.real_name or suggested.username }}</div>
-                    <div class="friend-mutual">@{{ suggested.username }}</div>
-                    <div class="friend-mutual">{{ suggested.followers.count() }} followers</div>
-                </div>
-                <div class="friend-actions">
-                    <button class="friend-action friend-action-primary">Follow</button>
-                    <button class="friend-action friend-action-secondary">Remove</button>
-                    <button class="friend-action friend-action-danger">Block</button>
-                </div>
-            </div>
-            {% endfor %}
-        {% endif %}
-    </div>
-</div>
-{% endblock %}
+<style>
+    /* Custom styles for the Friends page */
+    body {
+        padding-top: 0;
+        padding-bottom: var(--navbar-height); /* Space for fixed bottom navbar */
+        overflow-x: hidden; /* Prevent horizontal scroll */
+    }
 
-{% block extra_js %}
-<script>
-    // Handle friends tabs
-    document.querySelectorAll('.friends-tab').forEach(tab => {
-        tab.addEventListener('click', function() {
-            const tabName = this.dataset.tab;
-            window.location.href = `{{ url_for('friends') }}?tab=${tabName}`;
-        });
-    });
+    .friends-header-sticky {
+        position: sticky;
+        top: 0;
+        z-index: 1000; /* Ensure it stays on top of scrollable content */
+        background-color: var(--background-light);
+        padding: 15px;
+        border-bottom: 1px solid var(--border-color-light);
+        box-shadow: 0 2px 5px var(--shadow-soft);
+        margin-bottom: 0; /* No margin below if directly followed by tab-nav */
+    }
+
+    .friends-search-bar .form-control {
+        width: 100%;
+        border-radius: 25px; /* More rounded search bar */
+        padding-left: 40px; /* Space for search icon */
+        background-color: var(--card-background);
+        border: 1px solid var(--input-border-color);
+    }
+
+    .friends-search-bar .search-icon {
+        position: absolute;
+        left: 25px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--secondary-text);
+        font-size: 1.1em;
+    }
+
+    .friends-tabs-nav {
+        background-color: var(--card-background);
+        border-bottom: 1px solid var(--border-color-light);
+        box-shadow: 0 1px 3px var(--shadow-soft);
+        display: flex; /* Ensure flex for tab alignment */
+        justify-content: space-around; /* Distribute tabs evenly */
+        padding: 0 10px; /* Horizontal padding for tabs */
+    }
+
+    .friends-tabs-nav .nav-link {
+        color: var(--secondary-text);
+        font-weight: 600;
+        padding: 12px 10px;
+        border-bottom: 3px solid transparent; /* Underline effect */
+        transition: color 0.2s ease, border-color 0.2s ease;
+        flex-grow: 1; /* Tabs take equal width */
+        text-align: center;
+        white-space: nowrap; /* Prevent tab text from wrapping */
+        overflow: hidden;
+        text-overflow: ellipsis;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 5px; /* Space between text and count */
+    }
+
+    .friends-tabs-nav .nav-link.active {
+        color: var(--primary-color);
+        border-bottom-color: var(--primary-color);
+    }
+
+    .friends-tabs-nav .nav-link:hover:not(.active) {
+        color: var(--primary-text);
+    }
+
+    .friends-tabs-nav .badge {
+        background-color: var(--danger-color);
+        color: white;
+        font-size: 0.7em;
+        padding: .3em .6em;
+        border-radius: 50%;
+        margin-left: 5px;
+        line-height: 1; /* Adjust line height for better vertical alignment */
+    }
+
+    .friends-content-container {
+        padding: 15px;
+        background-color: var(--background-light);
+    }
+
+    /* List item styling for users */
+    .user-list-item {
+        display: flex;
+        align-items: center;
+        padding: 12px 15px;
+        margin-bottom: 10px;
+        background-color: var(--card-background);
+        border-radius: 10px;
+        box-shadow: 0 2px 8px var(--shadow-soft);
+        transition: transform 0.2s ease;
+        text-decoration: none; /* Remove underline for entire item */
+        color: inherit; /* Inherit text color */
+    }
+
+    .user-list-item:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 4px 12px var(--shadow-medium);
+    }
+
+    .user-list-item .profile-pic {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        object-fit: cover;
+        margin-right: 15px;
+        border: 2px solid var(--primary-color);
+        flex-shrink: 0;
+    }
+
+    .user-list-item .user-details {
+        flex-grow: 1;
+        overflow: hidden; /* For text ellipsis */
+    }
+
+    .user-list-item .user-details .real-name {
+        font-weight: 600;
+        color: var(--primary-text);
+        margin-bottom: 2px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .user-list-item .user-details .mutual-info {
+        font-size: 0.8em;
+        color: var(--secondary-text);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .user-list-item .action-buttons {
+        display: flex;
+        gap: 8px; /* Space between buttons */
+        flex-shrink: 0;
+    }
+
+    .user-list-item .btn-action {
+        background-color: var(--button-bg-primary);
+        color: var(--button-text-primary);
+        border: none;
+        border-radius: 8px;
+        padding: 8px 12px;
+        font-size: 0.9em;
+        font-weight: 500;
+        transition: background-color 0.2s ease;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
     
-    // Handle friends search
-    const searchInput = document.getElementById('friendsSearch');
-    if (searchInput) {
-        searchInput.addEventListener('input', function() {
-            const searchTerm = this.value.toLowerCase();
-            const friendItems = document.querySelectorAll('.friend-item');
-            
-            friendItems.forEach(item => {
-                const friendName = item.querySelector('.friend-name').textContent.toLowerCase();
-                const friendUsername = item.querySelector('.friend-mutual').textContent.toLowerCase();
-                
-                if (friendName.includes(searchTerm) || friendUsername.includes(searchTerm)) {
-                    item.style.display = 'flex';
+    .user-list-item .btn-action i {
+        font-size: 1em;
+    }
+
+    .user-list-item .btn-action.message {
+        background-color: var(--info-color);
+    }
+
+    .user-list-item .btn-action.message:hover {
+        background-color: darken(var(--info-color), 10%);
+    }
+
+    .user-list-item .btn-action.block {
+        background-color: var(--danger-color);
+    }
+
+    .user-list-item .btn-action.block:hover {
+        background-color: darken(var(--danger-color), 10%);
+    }
+
+    .user-list-item .btn-action.accept {
+        background-color: var(--success-color);
+    }
+
+    .user-list-item .btn-action.accept:hover {
+        background-color: darken(var(--success-color), 10%);
+    }
+
+    .user-list-item .btn-action.decline {
+        background-color: var(--secondary-color);
+    }
+
+    .user-list-item .btn-action.decline:hover {
+        background-color: darken(var(--secondary-color), 10%);
+    }
+
+    .user-list-item .btn-action.follow {
+        background-color: var(--primary-color);
+    }
+
+    .user-list-item .btn-action.follow:hover {
+        background-color: darken(var(--primary-color), 10%);
+    }
+
+    /* Dropdown for Following/Friends list items */
+    .user-list-item .dropdown-toggle {
+        background: none;
+        border: none;
+        color: var(--secondary-text);
+        font-size: 1.2em;
+        padding: 5px;
+        border-radius: 5px;
+        transition: background-color 0.2s ease;
+    }
+    .user-list-item .dropdown-toggle:hover {
+        background-color: var(--background-light);
+    }
+    .user-list-item .dropdown-menu {
+        background-color: var(--card-background);
+        border: 1px solid var(--border-color-light);
+        border-radius: 8px;
+        box-shadow: 0 4px 10px var(--shadow-soft);
+    }
+    .user-list-item .dropdown-item {
+        color: var(--primary-text);
+        padding: 8px 15px;
+        transition: background-color 0.2s ease;
+    }
+    .user-list-item .dropdown-item:hover {
+        background-color: var(--background-light);
+    }
+
+    /* Message for empty lists */
+    .empty-list-message {
+        text-align: center;
+        color: var(--secondary-text);
+        padding: 20px;
+        margin-top: 20px;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+        .friends-header-sticky {
+            padding: 10px;
+        }
+        .friends-search-bar .search-icon {
+            left: 20px;
+        }
+        .friends-tabs-nav .nav-link {
+            padding: 10px 5px;
+            font-size: 0.9em;
+        }
+        .user-list-item {
+            padding: 10px;
+            margin-bottom: 8px;
+        }
+        .user-list-item .profile-pic {
+            width: 45px;
+            height: 45px;
+            margin-right: 10px;
+        }
+        .user-list-item .user-details .real-name {
+            font-size: 0.95em;
+        }
+        .user-list-item .user-details .mutual-info {
+            font-size: 0.75em;
+        }
+        .user-list-item .btn-action {
+            padding: 6px 10px;
+            font-size: 0.85em;
+            gap: 3px;
+        }
+        .user-list-item .btn-action i {
+            font-size: 0.9em;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .friends-search-bar .search-icon {
+            left: 15px;
+        }
+        .friends-tabs-nav .nav-link {
+            font-size: 0.8em;
+            gap: 3px;
+        }
+        .user-list-item .profile-pic {
+            width: 40px;
+            height: 40px;
+        }
+        .user-list-item .btn-action {
+            padding: 5px 8px;
+            font-size: 0.8em;
+        }
+    }
+</style>
+
+<div class="container-fluid p-0"> {# Use container-fluid to span full width #}
+
+    <div class="friends-header-sticky">
+        {# Search Bar #}
+        <div class="friends-search-bar position-relative mb-3">
+            <i class="fas fa-search search-icon"></i>
+            <input type="text" class="form-control" id="friendsSearchInput" placeholder="Search users...">
+        </div>
+
+        {# Tab Navigation #}
+        <ul class="nav nav-pills friends-tabs-nav" id="friendsTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="followers-tab" data-bs-toggle="tab" data-bs-target="#followersContent" type="button" role="tab" aria-controls="followersContent" aria-selected="true">
+                    Followers <span class="badge">{{ followers_count | default(0) }}</span>
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="following-tab" data-bs-toggle="tab" data-bs-target="#followingContent" type="button" role="tab" aria-controls="followingContent" aria-selected="false">
+                    Following <span class="badge">{{ following_count | default(0) }}</span>
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="friends-tab" data-bs-toggle="tab" data-bs-target="#friendsContent" type="button" role="tab" aria-controls="friendsContent" aria-selected="false">
+                    Friends <span class="badge">{{ friends_count | default(0) }}</span>
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="requests-tab" data-bs-toggle="tab" data-bs-target="#requestsContent" type="button" role="tab" aria-controls="requestsContent" aria-selected="false">
+                    Requests <span class="badge">{{ requests_count | default(0) }}</span>
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="suggested-tab" data-bs-toggle="tab" data-bs-target="#suggestedContent" type="button" role="tab" aria-controls="suggestedContent" aria-selected="false">
+                    Suggested
+                </button>
+            </li>
+        </ul>
+    </div>
+
+    {# Tab Content #}
+    <div class="tab-content friends-content-container" id="friendsTabContent">
+        {# Followers Content #}
+        <div class="tab-pane fade show active" id="followersContent" role="tabpanel" aria-labelledby="followers-tab">
+            {% if followers %}
+                {% for user in followers %}
+                <a href="{{ url_for('profile', username=user.username) }}" class="user-list-item" data-user-id="{{ user.id }}">
+                    <img src="{{ user.profile_pic }}" alt="{{ user.username }} Profile" class="profile-pic">
+                    <div class="user-details">
+                        <p class="real-name">{{ user.real_name }}</p>
+                        <p class="mutual-info">{{ user.mutual_friends_count | default(0) }} mutual friends</p>
+                    </div>
+                    <div class="action-buttons">
+                        <button class="btn-action message-btn" data-user-id="{{ user.id }}" title="Message">
+                            <i class="fas fa-comment-dots"></i>
+                        </button>
+                        <button class="btn-action block-btn" data-user-id="{{ user.id }}" title="Block">
+                            <i class="fas fa-ban"></i>
+                        </button>
+                    </div>
+                </a>
+                {% endfor %}
+            {% else %}
+                <p class="empty-list-message">No one is following you yet.</p>
+            {% endif %}
+        </div>
+
+        {# Following Content #}
+        <div class="tab-pane fade" id="followingContent" role="tabpanel" aria-labelledby="following-tab">
+            {% if following %}
+                {% for user in following %}
+                <a href="{{ url_for('profile', username=user.username) }}" class="user-list-item" data-user-id="{{ user.id }}">
+                    <img src="{{ user.profile_pic }}" alt="{{ user.username }} Profile" class="profile-pic">
+                    <div class="user-details">
+                        <p class="real-name">{{ user.real_name }}</p>
+                        <p class="mutual-info">{{ user.mutual_friends_count | default(0) }} mutual friends</p>
+                    </div>
+                    <div class="action-buttons">
+                        <button class="btn-action message-btn" data-user-id="{{ user.id }}" title="Message">
+                            <i class="fas fa-comment-dots"></i>
+                        </button>
+                        <div class="dropdown">
+                            <button class="dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="fas fa-ellipsis-h"></i>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li><a class="dropdown-item unfollow-btn" href="#" data-user-id="{{ user.id }}"><i class="fas fa-user-minus me-2"></i> Unfollow</a></li>
+                                <li><a class="dropdown-item block-btn" href="#" data-user-id="{{ user.id }}"><i class="fas fa-ban me-2"></i> Block</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </a>
+                {% endfor %}
+            {% else %}
+                <p class="empty-list-message">You are not following anyone yet.</p>
+            {% endif %}
+        </div>
+
+        {# Friends Content #}
+        <div class="tab-pane fade" id="friendsContent" role="tabpanel" aria-labelledby="friends-tab">
+            {% if friends %}
+                {% for user in friends %}
+                <a href="{{ url_for('profile', username=user.username) }}" class="user-list-item" data-user-id="{{ user.id }}">
+                    <img src="{{ user.profile_pic }}" alt="{{ user.username }} Profile" class="profile-pic">
+                    <div class="user-details">
+                        <p class="real-name">{{ user.real_name }}</p>
+                        <p class="mutual-info">{{ user.mutual_friends_count | default(0) }} mutual friends</p>
+                    </div>
+                    <div class="action-buttons">
+                        <button class="btn-action message-btn" data-user-id="{{ user.id }}" title="Message">
+                            <i class="fas fa-comment-dots"></i>
+                        </button>
+                        <div class="dropdown">
+                            <button class="dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="fas fa-ellipsis-h"></i>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li><a class="dropdown-item unfollow-btn" href="#" data-user-id="{{ user.id }}"><i class="fas fa-user-minus me-2"></i> Unfollow</a></li>
+                                <li><a class="dropdown-item block-btn" href="#" data-user-id="{{ user.id }}"><i class="fas fa-ban me-2"></i> Block</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </a>
+                {% endfor %}
+            {% else %}
+                <p class="empty-list-message">No mutual friends yet.</p>
+            {% endif %}
+        </div>
+
+        {# Friend Requests Content #}
+        <div class="tab-pane fade" id="requestsContent" role="tabpanel" aria-labelledby="requests-tab">
+            {% if requests %}
+                {% for user in requests %}
+                <a href="{{ url_for('profile', username=user.username) }}" class="user-list-item" data-user-id="{{ user.id }}">
+                    <img src="{{ user.profile_pic }}" alt="{{ user.username }} Profile" class="profile-pic">
+                    <div class="user-details">
+                        <p class="real-name">{{ user.real_name }}</p>
+                        <p class="mutual-info">{{ user.mutual_friends_count | default(0) }} mutual friends</p>
+                    </div>
+                    <div class="action-buttons">
+                        <button class="btn-action accept-btn" data-user-id="{{ user.id }}"><i class="fas fa-check me-1"></i> Accept</button>
+                        <button class="btn-action decline-btn" data-user-id="{{ user.id }}"><i class="fas fa-times me-1"></i> Decline</button>
+                        <button class="btn-action block-btn" data-user-id="{{ user.id }}"><i class="fas fa-ban"></i></button>
+                    </div>
+                </a>
+                {% endfor %}
+            {% else %}
+                <p class="empty-list-message">No pending friend requests.</p>
+            {% endif %}
+        </div>
+
+        {# Suggested Users Content #}
+        <div class="tab-pane fade" id="suggestedContent" role="tabpanel" aria-labelledby="suggested-tab">
+            {% if suggested %}
+                {% for user in suggested %}
+                <a href="{{ url_for('profile', username=user.username) }}" class="user-list-item" data-user-id="{{ user.id }}">
+                    <img src="{{ user.profile_pic }}" alt="{{ user.username }} Profile" class="profile-pic">
+                    <div class="user-details">
+                        <p class="real-name">{{ user.real_name }}</p>
+                        <p class="mutual-info">{{ user.mutual_friends_count | default(0) }} mutual friends</p>
+                    </div>
+                    <div class="action-buttons">
+                        <button class="btn-action follow-btn" data-user-id="{{ user.id }}"><i class="fas fa-user-plus me-1"></i> Follow</button>
+                        <button class="btn-action remove-btn" data-user-id="{{ user.id }}"><i class="fas fa-times me-1"></i> Remove</button>
+                        <button class="btn-action block-btn" data-user-id="{{ user.id }}"><i class="fas fa-ban"></i></button>
+                    </div>
+                </a>
+                {% endfor %}
+            {% else %}
+                <p class="empty-list-message">No suggestions for you right now.</p>
+            {% endif %}
+        </div>
+    </div>
+
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const friendsSearchInput = document.getElementById('friendsSearchInput');
+        const friendsTabContent = document.getElementById('friendsTabContent');
+        const allUserListItems = friendsTabContent.querySelectorAll('.user-list-item');
+
+        function filterUsers() {
+            const searchTerm = friendsSearchInput.value.toLowerCase();
+
+            allUserListItems.forEach(item => {
+                const realName = item.querySelector('.real-name').textContent.toLowerCase();
+                // Assuming username can be extracted or is part of data-user-id if needed
+                // For simplicity, current implementation uses real name for filtering visible text.
+                // For username, you'd need a data attribute or similar.
+                // Example: const username = item.dataset.username.toLowerCase();
+
+                if (realName.includes(searchTerm)) { // || username.includes(searchTerm)
+                    item.style.display = 'flex'; // Show item
                 } else {
-                    item.style.display = 'none';
+                    item.style.display = 'none'; // Hide item
+                }
+            });
+        }
+
+        friendsSearchInput.addEventListener('input', filterUsers);
+
+        // --- Event Listeners for Action Buttons (AJAX calls) ---
+        // Each button will require a specific Flask endpoint to handle its action
+
+        // Message Button
+        friendsTabContent.querySelectorAll('.message-btn').forEach(button => {
+            button.addEventListener('click', function(event) {
+                event.preventDefault(); // Prevent default link behavior if parent is <a>
+                event.stopPropagation(); // Stop propagation to parent <a>
+                const userId = this.dataset.userId;
+                window.location.href = `/messages/${userId}`; // Redirect to chat page
+                // Or if using AJAX: fetch('/start-chat', { method: 'POST', body: JSON.stringify({ userId: userId })});
+            });
+        });
+
+        // Block Button
+        friendsTabContent.querySelectorAll('.block-btn').forEach(button => {
+            button.addEventListener('click', function(event) {
+                event.preventDefault();
+                event.stopPropagation();
+                const userId = this.dataset.userId;
+                if (confirm('Are you sure you want to block this user? All interactions will be stopped.')) {
+                    fetch(`/block-user/${userId}`, { method: 'POST' })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                alert(data.message); // Use custom modal instead of alert in final app
+                                window.location.reload(); // Reload page to reflect changes
+                            } else {
+                                alert('Failed to block user: ' + data.message);
+                            }
+                        })
+                        .catch(error => console.error('Error blocking user:', error));
                 }
             });
         });
-    }
+
+        // Unfollow Button
+        friendsTabContent.querySelectorAll('.unfollow-btn').forEach(button => {
+            button.addEventListener('click', function(event) {
+                event.preventDefault();
+                event.stopPropagation();
+                const userId = this.dataset.userId;
+                if (confirm('Are you sure you want to unfollow this user?')) {
+                    fetch(`/unfollow-user/${userId}`, { method: 'POST' })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                alert(data.message);
+                                window.location.reload();
+                            } else {
+                                alert('Failed to unfollow user: ' + data.message);
+                            }
+                        })
+                        .catch(error => console.error('Error unfollowing user:', error));
+                }
+            });
+        });
+
+        // Accept Friend Request Button
+        friendsTabContent.querySelectorAll('.accept-btn').forEach(button => {
+            button.addEventListener('click', function(event) {
+                event.preventDefault();
+                event.stopPropagation();
+                const userId = this.dataset.userId;
+                fetch(`/accept-friend-request/${userId}`, { method: 'POST' })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            alert(data.message);
+                            window.location.reload();
+                        } else {
+                            alert('Failed to accept request: ' + data.message);
+                        }
+                    })
+                    .catch(error => console.error('Error accepting request:', error));
+            });
+        });
+
+        // Decline Friend Request Button
+        friendsTabContent.querySelectorAll('.decline-btn').forEach(button => {
+            button.addEventListener('click', function(event) {
+                event.preventDefault();
+                event.stopPropagation();
+                const userId = this.dataset.userId;
+                fetch(`/decline-friend-request/${userId}`, { method: 'POST' })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            alert(data.message);
+                            window.location.reload();
+                        } else {
+                            alert('Failed to decline request: ' + data.message);
+                        }
+                    })
+                    .catch(error => console.error('Error declining request:', error));
+            });
+        });
+
+        // Follow Button (Suggested Tab)
+        friendsTabContent.querySelectorAll('.follow-btn').forEach(button => {
+            button.addEventListener('click', function(event) {
+                event.preventDefault();
+                event.stopPropagation();
+                const userId = this.dataset.userId;
+                fetch(`/send-friend-request/${userId}`, { method: 'POST' }) // Or /follow-user directly
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            alert(data.message);
+                            window.location.reload();
+                        } else {
+                            alert('Failed to send follow/friend request: ' + data.message);
+                        }
+                    })
+                    .catch(error => console.error('Error sending request:', error));
+            });
+        });
+
+        // Remove Button (Suggested Tab - client-side hide)
+        friendsTabContent.querySelectorAll('.remove-btn').forEach(button => {
+            button.addEventListener('click', function(event) {
+                event.preventDefault();
+                event.stopPropagation();
+                const userId = this.dataset.userId;
+                if (confirm('Remove this suggestion?')) {
+                    this.closest('.user-list-item').remove(); // Client-side removal
+                    // If you want to persist this removal, an AJAX call would be needed:
+                    // fetch(`/remove-suggestion/${userId}`, { method: 'POST' });
+                    // alert('Suggestion removed.');
+                }
+            });
+        });
+    });
 </script>
 {% endblock %}
