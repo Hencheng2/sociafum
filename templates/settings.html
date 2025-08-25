@@ -1,644 +1,510 @@
-{% extends "base.html" %}
+{% extends 'base.html' %}
 
-{% block title %}Settings - SociaFam{% endblock %}
+{% block title %}Settings{% endblock %}
 
-{% block extra_css %}
+{% block content %}
 <style>
+    /* Custom styles for the Settings page */
+    body {
+        padding-top: 0;
+        padding-bottom: var(--navbar-height); /* Space for fixed bottom navbar */
+        overflow-x: hidden;
+    }
+
     .settings-container {
         max-width: 800px;
-        margin: 0 auto;
+        margin: 20px auto;
+        padding: 20px 15px;
+        background-color: var(--background-light);
     }
-    
-    .settings-header {
-        background-color: white;
-        border-radius: 8px;
-        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-        padding: 20px;
-        margin-bottom: 20px;
+
+    .settings-card {
+        background-color: var(--card-background);
+        border-radius: 12px;
+        box-shadow: 0 4px 15px var(--shadow-medium);
+        padding: 25px;
     }
-    
-    .settings-title {
-        font-size: 24px;
-        font-weight: 600;
-        margin-bottom: 20px;
+
+    .settings-card h2 {
+        text-align: center;
+        color: var(--primary-text);
+        margin-bottom: 30px;
+        font-weight: 700;
+        font-size: 2em;
     }
-    
-    .settings-tabs {
-        display: flex;
-        border-bottom: 1px solid #e4e6eb;
-        margin-bottom: 20px;
-        overflow-x: auto;
-    }
-    
-    .settings-tab {
-        padding: 10px 20px;
-        cursor: pointer;
-        border-bottom: 2px solid transparent;
-        white-space: nowrap;
-    }
-    
-    .settings-tab.active {
-        border-bottom-color: #1877f2;
-        color: #1877f2;
-        font-weight: 600;
-    }
-    
-    .settings-content {
-        background-color: white;
-        border-radius: 8px;
-        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-        padding: 20px;
-    }
-    
+
     .settings-section {
         margin-bottom: 30px;
     }
-    
-    .settings-section-title {
-        font-size: 18px;
+
+    .settings-section h3 {
+        color: var(--primary-color);
         font-weight: 600;
-        margin-bottom: 15px;
-        padding-bottom: 10px;
-        border-bottom: 1px solid #e4e6eb;
-    }
-    
-    .settings-option {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 15px 0;
-        border-bottom: 1px solid #e4e6eb;
-    }
-    
-    .settings-option:last-child {
-        border-bottom: none;
-    }
-    
-    .settings-option-info {
-        flex-grow: 1;
-    }
-    
-    .settings-option-name {
-        font-weight: 600;
-        margin-bottom: 5px;
-    }
-    
-    .settings-option-description {
-        font-size: 14px;
-        color: #65676b;
-    }
-    
-    .settings-option-action {
-        margin-left: 15px;
-    }
-    
-    .form-group {
         margin-bottom: 20px;
+        font-size: 1.4em;
+        border-bottom: 2px solid var(--primary-color-light);
+        padding-bottom: 10px;
     }
-    
-    .form-label {
-        display: block;
-        margin-bottom: 8px;
-        font-weight: 600;
-    }
-    
-    .form-control {
-        width: 100%;
-        padding: 10px;
-        border: 1px solid #dddfe2;
-        border-radius: 6px;
-        font-size: 16px;
-    }
-    
-    .form-select {
-        width: 100%;
-        padding: 10px;
-        border: 1px solid #dddfe2;
-        border-radius: 6px;
-        font-size: 16px;
-        background-color: white;
-    }
-    
-    .form-help {
-        font-size: 14px;
-        color: #65676b;
-        margin-top: 5px;
-    }
-    
-    .password-strength {
-        margin-top: 10px;
-        height: 5px;
-        background-color: #e4e6eb;
-        border-radius: 3px;
-        overflow: hidden;
-    }
-    
-    .password-strength-bar {
-        height: 100%;
-        width: 0%;
-        transition: width 0.3s;
-    }
-    
-    .password-weak .password-strength-bar {
-        background-color: #e41e3f;
-        width: 33%;
-    }
-    
-    .password-medium .password-strength-bar {
-        background-color: #f7b928;
-        width: 66%;
-    }
-    
-    .password-strong .password-strength-bar {
-        background-color: #42b72a;
-        width: 100%;
-    }
-    
-    .settings-form-submit {
-        text-align: right;
-        margin-top: 20px;
-    }
-    
-    .settings-form-submit button {
-        padding: 10px 20px;
-        background-color: #1877f2;
-        color: white;
-        border: none;
-        border-radius: 6px;
-        font-weight: 600;
-        cursor: pointer;
-    }
-    
-    .blocked-item {
+
+    .settings-item {
         display: flex;
         align-items: center;
-        padding: 15px 0;
-        border-bottom: 1px solid #e4e6eb;
+        margin-bottom: 15px;
+        padding: 10px 0;
+        border-bottom: 1px dashed var(--border-color-light);
     }
-    
-    .blocked-item:last-child {
+    .settings-item:last-child {
         border-bottom: none;
     }
-    
-    .blocked-avatar {
-        width: 50px;
-        height: 50px;
-        border-radius: 50%;
-        margin-right: 15px;
-    }
-    
-    .blocked-info {
+
+    .settings-item label, .settings-item .form-label {
         flex-grow: 1;
+        font-weight: 500;
+        color: var(--primary-text);
+        margin-bottom: 0;
     }
-    
-    .blocked-name {
-        font-weight: 600;
-        margin-bottom: 5px;
-    }
-    
-    .blocked-username {
-        color: #65676b;
-    }
-    
-    .blocked-action {
+
+    .settings-item .form-control, .settings-item .form-select, .settings-item .form-check-input {
+        flex-shrink: 0;
         margin-left: 15px;
     }
-    
-    .settings-empty {
-        text-align: center;
-        padding: 40px;
-        color: #65676b;
+
+    .settings-item .form-check-input {
+        width: 1.2em; /* Larger checkbox/toggle */
+        height: 1.2em;
     }
-    
-    .settings-empty i {
-        font-size: 48px;
-        margin-bottom: 15px;
+    .settings-item .form-check-input:checked {
+        background-color: var(--primary-color);
+        border-color: var(--primary-color);
     }
-    
-    .settings-empty p {
-        font-size: 18px;
-    }
-    
-    /* Switch styles */
-    .switch {
+
+    .settings-item .toggle-switch {
         position: relative;
         display: inline-block;
-        width: 50px;
-        height: 24px;
+        width: 45px;
+        height: 25px;
+        margin-left: 15px;
     }
-    
-    .switch input {
+    .toggle-switch input {
         opacity: 0;
         width: 0;
         height: 0;
     }
-    
-    .slider {
+    .toggle-slider {
         position: absolute;
         cursor: pointer;
         top: 0;
         left: 0;
         right: 0;
         bottom: 0;
-        background-color: #ccc;
+        background-color: var(--secondary-color-light); /* Off state */
+        -webkit-transition: .4s;
         transition: .4s;
-        border-radius: 24px;
+        border-radius: 25px;
     }
-    
-    .slider:before {
+    .toggle-slider:before {
         position: absolute;
         content: "";
-        height: 16px;
-        width: 16px;
+        height: 18px;
+        width: 18px;
         left: 4px;
         bottom: 4px;
         background-color: white;
+        -webkit-transition: .4s;
         transition: .4s;
         border-radius: 50%;
     }
-    
-    input:checked + .slider {
-        background-color: #1877f2;
+    input:checked + .toggle-slider {
+        background-color: var(--primary-color); /* On state */
     }
-    
-    input:checked + .slider:before {
-        transform: translateX(26px);
+    input:focus + .toggle-slider {
+        box-shadow: 0 0 1px var(--primary-color);
     }
-    
-    /* Hide all tabs by default */
-    .settings-tab-content {
-        display: none;
+    input:checked + .toggle-slider:before {
+        -webkit-transform: translateX(20px);
+        -ms-transform: translateX(20px);
+        transform: translateX(20px);
     }
-    
-    .settings-tab-content.active {
+
+    .sub-settings-group {
+        border-left: 3px solid var(--border-color-light);
+        padding-left: 15px;
+        margin-top: 15px;
+        margin-bottom: 20px;
+    }
+    .sub-settings-group .settings-item {
+        border-bottom: none; /* No extra border for sub-items */
+        padding-top: 5px;
+        padding-bottom: 5px;
+    }
+    .sub-settings-group .settings-item label {
+        font-weight: 400; /* Lighter font for sub-items */
+        font-size: 0.9em;
+    }
+    .sub-settings-group .form-control, .sub-settings-group .form-select {
+        width: auto; /* Allow auto width for dropdowns */
+        min-width: 120px;
+    }
+
+
+    .btn-save-settings {
         display: block;
+        width: fit-content;
+        margin: 40px auto 0 auto;
+        padding: 12px 30px;
+        background-color: var(--primary-color);
+        color: white;
+        border-radius: 25px;
+        font-size: 1.1em;
+        font-weight: 600;
+        transition: background-color 0.2s ease, transform 0.2s ease;
+        border: none;
+    }
+    .btn-save-settings:hover {
+        background-color: darken(var(--primary-color), 10%);
+        transform: translateY(-2px);
+    }
+
+    .back-to-menu-btn {
+        display: block;
+        width: fit-content;
+        margin: 20px auto 0 auto;
+        padding: 12px 30px;
+        background-color: var(--button-bg-secondary);
+        color: var(--button-text-secondary);
+        border-radius: 25px;
+        font-size: 1.1em;
+        font-weight: 600;
+        transition: background-color 0.2s ease, transform 0.2s ease;
+        text-decoration: none;
+    }
+    .back-to-menu-btn:hover {
+        background-color: darken(var(--button-bg-secondary), 10%);
+        transform: translateY(-2px);
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+        .settings-container {
+            margin: 15px auto;
+            padding: 15px 10px;
+        }
+        .settings-card {
+            padding: 20px;
+        }
+        .settings-card h2 {
+            font-size: 1.8em;
+            margin-bottom: 25px;
+        }
+        .settings-section h3 {
+            font-size: 1.2em;
+            margin-bottom: 15px;
+        }
+        .settings-item {
+            flex-direction: column; /* Stack label and control on small screens */
+            align-items: flex-start;
+            padding: 8px 0;
+            margin-bottom: 10px;
+        }
+        .settings-item label, .settings-item .form-label {
+            width: 100%;
+            margin-bottom: 5px; /* Space between label and control */
+        }
+        .settings-item .form-control, .settings-item .form-select, .settings-item .form-check-input, .settings-item .toggle-switch {
+            width: 100%;
+            margin-left: 0;
+            margin-right: 0;
+            text-align: left;
+        }
+        .settings-item .toggle-switch {
+            width: 45px; /* Keep toggle switch size */
+            margin-top: 5px;
+        }
+        .sub-settings-group {
+            padding-left: 10px;
+        }
+        .sub-settings-group .settings-item label {
+            font-size: 0.85em;
+        }
+        .btn-save-settings, .back-to-menu-btn {
+            padding: 10px 25px;
+            font-size: 1em;
+            margin-top: 30px;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .settings-card {
+            padding: 15px;
+        }
+        .settings-card h2 {
+            font-size: 1.5em;
+        }
+        .settings-section h3 {
+            font-size: 1.1em;
+        }
+        .settings-item label, .settings-item .form-label {
+            font-size: 0.9em;
+        }
+        .settings-item .form-control, .settings-item .form-select {
+            font-size: 0.9em;
+            padding: 8px 12px;
+        }
+        .sub-settings-group .settings-item label {
+            font-size: 0.8em;
+        }
+        .btn-save-settings, .back-to-menu-btn {
+            padding: 8px 20px;
+            font-size: 0.95em;
+        }
     }
 </style>
-{% endblock %}
 
-{% block content %}
 <div class="settings-container">
-    <div class="settings-header">
-        <h1 class="settings-title">Settings</h1>
-        
-        <div class="settings-tabs">
-            <div class="settings-tab active" data-tab="privacy">Privacy</div>
-            <div class="settings-tab" data-tab="notifications">Notifications</div>
-            <div class="settings-tab" data-tab="blocked">Blocked Users</div>
-            <div class="settings-tab" data-tab="password">Password</div>
-            <div class="settings-tab" data-tab="theme">Theme</div>
-        </div>
-    </div>
-    
-    <div class="settings-content">
-        <!-- Privacy Tab -->
-        <div class="settings-tab-content active" id="privacy-tab">
-            <form method="POST" action="{{ url_for('save_settings') }}">
-                <input type="hidden" name="tab" value="privacy">
-                
-                <div class="settings-section">
-                    <h2 class="settings-section-title">Profile Privacy</h2>
-                    
-                    <div class="settings-option">
-                        <div class="settings-option-info">
-                            <div class="settings-option-name">Private Account</div>
-                            <div class="settings-option-description">Only approved followers can see your posts</div>
-                        </div>
-                        <div class="settings-option-action">
-                            <label class="switch">
-                                <input type="checkbox" name="profile_locked" {% if current_user.profile_locked %}checked{% endif %}>
-                                <span class="slider"></span>
-                            </label>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="settings-section">
-                    <h2 class="settings-section-title">Post Privacy</h2>
-                    
-                    <div class="settings-option">
-                        <div class="settings-option-info">
-                            <div class="settings-option-name">Who can see your future posts?</div>
-                            <div class="settings-option-description">Control the default audience for your posts</div>
-                        </div>
-                        <div class="settings-option-action">
-                            <select name="post_privacy" class="form-select">
-                                <option value="public" {% if current_user.post_privacy == 'public' %}selected{% endif %}>Public</option>
-                                <option value="friends" {% if current_user.post_privacy == 'friends' %}selected{% endif %}>Friends</option>
-                                <option value="only_me" {% if current_user.post_privacy == 'only_me' %}selected{% endif %}>Only Me</option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="settings-form-submit">
-                    <button type="submit">Save Privacy Settings</button>
-                </div>
-            </form>
-        </div>
-        
-        <!-- Notifications Tab -->
-        <div class="settings-tab-content" id="notifications-tab">
-            <form method="POST" action="{{ url_for('save_settings') }}">
-                <input type="hidden" name="tab" value="notifications">
-                
-                <div class="settings-section">
-                    <h2 class="settings-section-title">Email Notifications</h2>
-                    
-                    <div class="settings-option">
-                        <div class="settings-option-info">
-                            <div class="settings-option-name">Email Notifications</div>
-                            <div class="settings-option-description">Receive notifications via email</div>
-                        </div>
-                        <div class="settings-option-action">
-                            <label class="switch">
-                                <input type="checkbox" name="email_notifications" {% if current_user.email_notifications %}checked{% endif %}>
-                                <span class="slider"></span>
-                            </label>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="settings-section">
-                    <h2 class="settings-section-title">Push Notifications</h2>
-                    
-                    <div class="settings-option">
-                        <div class="settings-option-info">
-                            <div class="settings-option-name">Push Notifications</div>
-                            <div class="settings-option-description">Receive notifications on your device</div>
-                        </div>
-                        <div class="settings-option-action">
-                            <label class="switch">
-                                <input type="checkbox" name="push_notifications" {% if current_user.push_notifications %}checked{% endif %}>
-                                <span class="slider"></span>
-                            </label>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="settings-section">
-                    <h2 class="settings-section-title">Notification Types</h2>
-                    
-                    <div class="settings-option">
-                        <div class="settings-option-info">
-                            <div class="settings-option-name">Likes</div>
-                            <div class="settings-option-description">When someone likes your post</div>
-                        </div>
-                        <div class="settings-option-action">
-                            <label class="switch">
-                                <input type="checkbox" name="like_notifications" {% if current_user.like_notifications %}checked{% endif %}>
-                                <span class="slider"></span>
-                            </label>
-                        </div>
-                    </div>
-                    
-                    <div class="settings-option">
-                        <div class="settings-option-info">
-                            <div class="settings-option-name">Comments</div>
-                            <div class="settings-option-description">When someone comments on your post</div>
-                        </div>
-                        <div class="settings-option-action">
-                            <label class="switch">
-                                <input type="checkbox" name="comment_notifications" {% if current_user.comment_notifications %}checked{% endif %}>
-                                <span class="slider"></span>
-                            </label>
-                        </div>
-                    </div>
-                    
-                    <div class="settings-option">
-                        <div class="settings-option-info">
-                            <div class="settings-option-name">Follows</div>
-                            <div class="settings-option-description">When someone follows you</div>
-                        </div>
-                        <div class="settings-option-action">
-                            <label class="switch">
-                                <input type="checkbox" name="follow_notifications" {% if current_user.follow_notifications %}checked{% endif %}>
-                                <span class="slider"></span>
-                            </label>
-                        </div>
-                    </div>
-                    
-                    <div class="settings-option">
-                        <div class="settings-option-info">
-                            <div class="settings-option-name">Messages</div>
-                            <div class="settings-option-description">When someone sends you a message</div>
-                        </div>
-                        <div class="settings-option-action">
-                            <label class="switch">
-                                <input type="checkbox" name="message_notifications" {% if current_user.message_notifications %}checked{% endif %}>
-                                <span class="slider"></span>
-                            </label>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="settings-form-submit">
-                    <button type="submit">Save Notification Settings</button>
-                </div>
-            </form>
-        </div>
-        
-        <!-- Blocked Users Tab -->
-        <div class="settings-tab-content" id="blocked-tab">
+    <div class="settings-card">
+        <h2>Settings</h2>
+
+        <form id="userSettingsForm">
+            {# General Settings #}
             <div class="settings-section">
-                <h2 class="settings-section-title">Blocked Users</h2>
-                
-                {% if blocked_users %}
-                    {% for user in blocked_users %}
-                    <div class="blocked-item">
-                        <img src="{{ url_for('get_profile_image', user_id=user.id) }}" alt="{{ user.username }}" class="blocked-avatar">
-                        
-                        <div class="blocked-info">
-                            <div class="blocked-name">{{ user.real_name or user.username }}</div>
-                            <div class="blocked-username">@{{ user.username }}</div>
-                        </div>
-                        
-                        <div class="blocked-action">
-                            <button class="btn btn-secondary unblock-btn" data-user-id="{{ user.id }}">Unblock</button>
-                        </div>
+                <h3><i class="fas fa-cogs me-2"></i> General</h3>
+                <div class="settings-item">
+                    <label for="language">Language</label>
+                    <select class="form-select" id="language" name="language">
+                        <option value="en" {% if user_settings.language == 'en' %}selected{% endif %}>English</option>
+                        <option value="es" {% if user_settings.language == 'es' %}selected{% endif %}>Spanish</option>
+                        <option value="fr" {% if user_settings.language == 'fr' %}selected{% endif %}>French</option>
+                        {# Add more languages as needed #}
+                    </select>
+                </div>
+                <div class="settings-item">
+                    <label for="theme">Theme</label>
+                    <div class="form-check form-switch toggle-switch">
+                        <input class="form-check-input" type="checkbox" id="theme" name="theme" {% if user_settings.theme == 'dark' %}checked{% endif %}>
+                        <label class="form-check-label toggle-slider" for="theme"></label>
                     </div>
-                    {% endfor %}
-                {% else %}
-                    <div class="settings-empty">
-                        <i class="fas fa-ban"></i>
-                        <p>No blocked users</p>
-                    </div>
-                {% endif %}
+                    <span class="ms-2">{{ user_settings.theme | capitalize }} Mode</span>
+                </div>
             </div>
-        </div>
-        
-        <!-- Password Tab -->
-        <div class="settings-tab-content" id="password-tab">
-            <form method="POST" action="{{ url_for('save_settings') }}">
-                <input type="hidden" name="tab" value="password">
-                
-                <div class="form-group">
-                    <label class="form-label" for="current_password">Current Password</label>
-                    <input type="password" class="form-control" id="current_password" name="current_password" required>
-                </div>
-                
-                <div class="form-group">
-                    <label class="form-label" for="new_password">New Password</label>
-                    <input type="password" class="form-control" id="new_password" name="new_password" required>
-                    <div class="form-help">Must be at least 6 characters with numbers and special characters</div>
-                    <div class="password-strength">
-                        <div class="password-strength-bar"></div>
+
+            {# Audience Visibility #}
+            <div class="settings-section">
+                <h3><i class="fas fa-eye me-2"></i> Audience & Visibility</h3>
+                <div class="settings-item">
+                    <label for="profileLocking">Profile Locking</label>
+                    <div class="form-check form-switch toggle-switch">
+                        <input class="form-check-input" type="checkbox" id="profileLocking" name="profileLocking" {% if user_settings.profile_locking %}checked{% endif %}>
+                        <label class="form-check-label toggle-slider" for="profileLocking"></label>
                     </div>
                 </div>
-                
-                <div class="form-group">
-                    <label class="form-label" for="confirm_password">Confirm New Password</label>
-                    <input type="password" class="form-control" id="confirm_password" name="confirm_password" required>
+                <p class="text-muted small ms-auto mt-n2 mb-3">When enabled, users you don't follow can only see your profile photo and name.</p>
+
+                <div class="settings-item">
+                    <label for="postsVisibility">Posts Visibility</label>
+                    <select class="form-select" id="postsVisibility" name="postsVisibility">
+                        <option value="public" {% if user_settings.posts_visibility == 'public' %}selected{% endif %}>Everyone</option>
+                        <option value="friends" {% if user_settings.posts_visibility == 'friends' %}selected{% endif %}>Friends Only</option>
+                        <option value="private" {% if user_settings.posts_visibility == 'private' %}selected{% endif %}>Only Me</option>
+                    </select>
                 </div>
-                
-                <div class="settings-form-submit">
-                    <button type="submit">Change Password</button>
-                </div>
-            </form>
-        </div>
-        
-        <!-- Theme Tab -->
-        <div class="settings-tab-content" id="theme-tab">
-            <form method="POST" action="{{ url_for('save_settings') }}">
-                <input type="hidden" name="tab" value="theme">
-                
-                <div class="settings-section">
-                    <h2 class="settings-section-title">Theme Preferences</h2>
-                    
-                    <div class="settings-option">
-                        <div class="settings-option-info">
-                            <div class="settings-option-name">Dark Mode</div>
-                            <div class="settings-option-description">Switch between light and dark themes</div>
+                <div class="sub-settings-group">
+                    <div class="settings-item">
+                        <label for="allowPostSharing">Allow Sharing of your Posts</label>
+                        <div class="form-check form-switch toggle-switch">
+                            <input class="form-check-input" type="checkbox" id="allowPostSharing" name="allowPostSharing" {% if user_settings.allow_post_sharing %}checked{% endif %}>
+                            <label class="form-check-label toggle-slider" for="allowPostSharing"></label>
                         </div>
-                        <div class="settings-option-action">
-                            <label class="switch">
-                                <input type="checkbox" name="theme_toggle" {% if current_user.theme == 'dark' %}checked{% endif %}>
-                                <span class="slider"></span>
-                            </label>
+                    </div>
+                    <div class="settings-item">
+                        <label for="allowPostComments">Allow Comments on your Posts</label>
+                        <div class="form-check form-switch toggle-switch">
+                            <input class="form-check-input" type="checkbox" id="allowPostComments" name="allowPostComments" {% if user_settings.allow_post_comments %}checked{% endif %}>
+                            <label class="form-check-label toggle-slider" for="allowPostComments"></label>
                         </div>
                     </div>
                 </div>
-                
-                <div class="settings-form-submit">
-                    <button type="submit">Save Theme Preferences</button>
+
+                <div class="settings-item">
+                    <label for="reelsVisibility">Reels Visibility</label>
+                    <select class="form-select" id="reelsVisibility" name="reelsVisibility">
+                        <option value="public" {% if user_settings.reels_visibility == 'public' %}selected{% endif %}>Everyone</option>
+                        <option value="friends" {% if user_settings.reels_visibility == 'friends' %}selected{% endif %}>Friends Only</option>
+                        <option value="private" {% if user_settings.reels_visibility == 'private' %}selected{% endif %}>Only Me</option>
+                    </select>
                 </div>
-            </form>
-        </div>
+                <div class="sub-settings-group">
+                    <div class="settings-item">
+                        <label for="allowReelSharing">Allow Sharing of your Reels</label>
+                        <div class="form-check form-switch toggle-switch">
+                            <input class="form-check-input" type="checkbox" id="allowReelSharing" name="allowReelSharing" {% if user_settings.allow_reel_sharing %}checked{% endif %}>
+                            <label class="form-check-label toggle-slider" for="allowReelSharing"></label>
+                        </div>
+                    </div>
+                    <div class="settings-item">
+                        <label for="allowReelComments">Allow Comments on your Reels</label>
+                        <div class="form-check form-switch toggle-switch">
+                            <input class="form-check-input" type="checkbox" id="allowReelComments" name="allowReelComments" {% if user_settings.allow_reel_comments %}checked{% endif %}>
+                            <label class="form-check-label toggle-slider" for="allowReelComments"></label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="settings-item">
+                    <label>Blocked Users</label>
+                    <a href="{{ url_for('blocked_users') }}" class="btn btn-sm btn-info ms-auto">Manage <i class="fas fa-chevron-right ms-1"></i></a>
+                </div>
+            </div>
+
+            {# Notifications Preferences #}
+            <div class="settings-section">
+                <h3><i class="fas fa-bell me-2"></i> Notifications</h3>
+                <div class="settings-item">
+                    <label for="notifyFriendRequests">Friend Requests</label>
+                    <div class="form-check form-switch toggle-switch">
+                        <input class="form-check-input" type="checkbox" id="notifyFriendRequests" name="notifyFriendRequests" {% if user_settings.notify_friend_requests %}checked{% endif %}>
+                        <label class="form-check-label toggle-slider" for="notifyFriendRequests"></label>
+                    </div>
+                </div>
+                <div class="settings-item">
+                    <label for="notifyFriendAcceptance">Friend Acceptance</label>
+                    <div class="form-check form-switch toggle-switch">
+                        <input class="form-check-input" type="checkbox" id="notifyFriendAcceptance" name="notifyFriendAcceptance" {% if user_settings.notify_friend_acceptance %}checked{% endif %}>
+                        <label class="form-check-label toggle-slider" for="notifyFriendAcceptance"></label>
+                    </div>
+                </div>
+                <div class="settings-item">
+                    <label for="notifyPostLikes">Likes on your Posts/Reels</label>
+                    <div class="form-check form-switch toggle-switch">
+                        <input class="form-check-input" type="checkbox" id="notifyPostLikes" name="notifyPostLikes" {% if user_settings.notify_post_likes %}checked{% endif %}>
+                        <label class="form-check-label toggle-slider" for="notifyPostLikes"></label>
+                    </div>
+                </div>
+                <div class="settings-item">
+                    <label for="notifyNewMessages">New Messages</label>
+                    <div class="form-check form-switch toggle-switch">
+                        <input class="form-check-input" type="checkbox" id="notifyNewMessages" name="notifyNewMessages" {% if user_settings.notify_new_messages %}checked{% endif %}>
+                        <label class="form-check-label toggle-slider" for="notifyNewMessages"></label>
+                    </div>
+                </div>
+                <div class="settings-item">
+                    <label for="notifyGroupInvites">Group Invitations</label>
+                    <div class="form-check form-switch toggle-switch">
+                        <input class="form-check-input" type="checkbox" id="notifyGroupInvites" name="notifyGroupInvites" {% if user_settings.notify_group_invites %}checked{% endif %}>
+                        <label class="form-check-label toggle-slider" for="notifyGroupInvites"></label>
+                    </div>
+                </div>
+                <div class="settings-item">
+                    <label for="notifyComments">New Comments</label>
+                    <div class="form-check form-switch toggle-switch">
+                        <input class="form-check-input" type="checkbox" id="notifyComments" name="notifyComments" {% if user_settings.notify_comments %}checked{% endif %}>
+                        <label class="form-check-label toggle-slider" for="notifyComments"></label>
+                    </div>
+                </div>
+                <div class="settings-item">
+                    <label for="notifyTags">Tags in Comments/Bios</label>
+                    <div class="form-check form-switch toggle-switch">
+                        <input class="form-check-input" type="checkbox" id="notifyTags" name="notifyTags" {% if user_settings.notify_tags %}checked{% endif %}>
+                        <label class="form-check-label toggle-slider" for="notifyTags"></label>
+                    </div>
+                </div>
+            </div>
+
+            {# Save Settings Button #}
+            <button type="submit" class="btn btn-save-settings">
+                <i class="fas fa-save me-2"></i> Save Settings
+            </button>
+        </form>
+
+        {# Back to Menu Link #}
+        <a href="{{ url_for('menu') }}" class="btn back-to-menu-btn">
+            <i class="fas fa-arrow-left me-2"></i> Back to Menu
+        </a>
     </div>
 </div>
-{% endblock %}
 
-{% block extra_js %}
 <script>
-    // Tab functionality
-    document.querySelectorAll('.settings-tab').forEach(tab => {
-        tab.addEventListener('click', function() {
-            const tabName = this.dataset.tab;
-            
-            // Remove active class from all tabs
-            document.querySelectorAll('.settings-tab').forEach(t => t.classList.remove('active'));
-            
-            // Add active class to clicked tab
-            this.classList.add('active');
-            
-            // Hide all tab content
-            document.querySelectorAll('.settings-tab-content').forEach(content => {
-                content.classList.remove('active');
-            });
-            
-            // Show selected tab content
-            document.getElementById(`${tabName}-tab`).classList.add('active');
-            
-            // Update URL hash
-            window.location.hash = tabName;
-        });
-    });
-    
-    // Check URL hash on page load
-    window.addEventListener('load', function() {
-        const hash = window.location.hash.substring(1);
-        if (hash) {
-            const tab = document.querySelector(`.settings-tab[data-tab="${hash}"]`);
-            if (tab) {
-                tab.click();
+    document.addEventListener('DOMContentLoaded', function() {
+        const userSettingsForm = document.getElementById('userSettingsForm');
+        const themeToggle = document.getElementById('theme');
+        const themeText = themeToggle.nextElementSibling.nextElementSibling; // Span after slider
+
+        // Update theme text when toggle changes
+        themeToggle.addEventListener('change', function() {
+            if (this.checked) {
+                themeText.textContent = 'Dark Mode';
+                document.body.classList.add('dark-theme'); // Apply dark theme class to body
+                document.body.classList.remove('light-theme'); // Remove light theme
+            } else {
+                themeText.textContent = 'Light Mode';
+                document.body.classList.remove('dark-theme'); // Remove dark theme
+                document.body.classList.add('light-theme'); // Apply light theme
             }
+        });
+
+        // Initialize theme on page load based on Flask data
+        if (themeToggle.checked) {
+            document.body.classList.add('dark-theme');
+            themeText.textContent = 'Dark Mode';
+        } else {
+            document.body.classList.add('light-theme');
+            themeText.textContent = 'Light Mode';
         }
-    });
-    
-    // Unblock user functionality
-    document.querySelectorAll('.unblock-btn').forEach(button => {
-        button.addEventListener('click', function() {
-            const userId = this.dataset.userId;
-            
-            fetch(`/unblock-user/${userId}`, {
+
+
+        // Handle form submission via AJAX
+        userSettingsForm.addEventListener('submit', function(event) {
+            event.preventDefault(); // Prevent default form submission
+
+            const formData = new FormData(this);
+            const settingsData = {};
+            for (let [key, value] of formData.entries()) {
+                if (key === 'theme') {
+                    settingsData[key] = themeToggle.checked ? 'dark' : 'light'; // Get actual theme value
+                } else if (value === 'on') { // For checkboxes
+                    settingsData[key] = true;
+                } else {
+                    settingsData[key] = value;
+                }
+            }
+            // For unchecked checkboxes, they won't appear in FormData. Manually add as false.
+            // This is important for toggles that can be explicitly turned off.
+            // List all boolean settings that use toggles
+            const booleanSettings = [
+                'profileLocking', 'allowPostSharing', 'allowPostComments',
+                'allowReelSharing', 'allowReelComments', 'notifyFriendRequests',
+                'notifyFriendAcceptance', 'notifyPostLikes', 'notifyNewMessages',
+                'notifyGroupInvites', 'notifyComments', 'notifyTags'
+            ];
+            booleanSettings.forEach(key => {
+                if (!settingsData.hasOwnProperty(key)) {
+                    settingsData[key] = false;
+                }
+            });
+
+            console.log("Submitting settings:", settingsData);
+
+            fetch('/api/settings/update', { // API endpoint for updating settings
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
+                    'Content-Type': 'application/json'
                 },
+                body: JSON.stringify(settingsData)
             })
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    // Remove the blocked user from the list
-                    this.closest('.blocked-item').remove();
-                    
-                    // Show success message
-                    alert('User unblocked successfully');
-                    
-                    // If no more blocked users, show empty state
-                    if (document.querySelectorAll('.blocked-item').length === 0) {
-                        const emptyHTML = `
-                            <div class="settings-empty">
-                                <i class="fas fa-ban"></i>
-                                <p>No blocked users</p>
-                            </div>
-                        `;
-                        document.getElementById('blocked-tab').innerHTML = `
-                            <div class="settings-section">
-                                <h2 class="settings-section-title">Blocked Users</h2>
-                                ${emptyHTML}
-                            </div>
-                        `;
-                    }
+                    alert('Settings saved successfully!'); // Replace with custom modal
+                    // Optionally, redirect or show a success message
+                    // location.reload(); // Reload to reflect changes if necessary
                 } else {
-                    alert(data.message);
+                    alert('Failed to save settings: ' + data.message); // Replace with custom modal
                 }
             })
             .catch(error => {
-                console.error('Error:', error);
-                alert('An error occurred while unblocking the user');
+                console.error('Error saving settings:', error);
+                alert('An error occurred while saving settings.'); // Replace with custom modal
             });
         });
     });
-    
-    // Password strength indicator
-    const passwordInput = document.getElementById('new_password');
-    const passwordStrength = document.querySelector('.password-strength');
-    
-    if (passwordInput && passwordStrength) {
-        passwordInput.addEventListener('input', function() {
-            const password = this.value;
-            let strength = 0;
-            
-            // Length check
-            if (password.length >= 6) strength++;
-            
-            // Number check
-            if (/\d/.test(password)) strength++;
-            
-            // Special character check
-            if (/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) strength++;
-            
-            // Update strength indicator
-            passwordStrength.className = 'password-strength';
-            if (strength === 1) {
-                passwordStrength.classList.add('password-weak');
-            } else if (strength === 2) {
-                passwordStrength.classList.add('password-medium');
-            } else if (strength >= 3) {
-                passwordStrength.classList.add('password-strong');
-            }
-        });
-    }
 </script>
 {% endblock %}
