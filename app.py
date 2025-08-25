@@ -334,7 +334,10 @@ def home():
         # You could also load a user-specific background here
         if current_user.chat_background_image_path:
             background_image = current_user.chat_background_image_path
-    return render_template('index.html', background_image=background_image, member=member)
+    
+    # Pass the current year to the template
+    current_year = datetime.now(timezone.utc).year
+    return render_template('index.html', background_image=background_image, member=member, current_year=current_year)
 
 
 # --- Authentication Routes ---
@@ -538,13 +541,17 @@ def set_new_password(unique_id):
 
 @app.route('/forgot_password')
 def forgot_password_redirect():
+    # Pass the current year to the template
+    current_year = datetime.now(timezone.utc).year
     # This page now simply redirects to login as per the updated flow, rendering the provided template.
-    return render_template('forgot_password.html')
+    return render_template('forgot_password.html', current_year=current_year)
 
 
 @app.route('/change_password', methods=['GET', 'POST'])
 @login_required
 def change_password():
+    # Pass the current year to the template
+    current_year = datetime.now(timezone.utc).year
     if request.method == 'POST':
         current_password = request.form['current_password']
         new_password = request.form['new_password']
@@ -552,20 +559,20 @@ def change_password():
 
         if not check_password_hash(current_user.password_hash, current_password):
             flash('Current password is incorrect.', 'danger')
-            return render_template('change_password.html')
+            return render_template('change_password.html', current_year=current_year)
 
         if new_password != confirm_new_password:
             flash('New password and confirmation do not match.', 'danger')
-            return render_template('change_password.html')
+            return render_template('change_password.html', current_year=current_year)
 
         if len(new_password) < 6:
             flash('New password must be at least 6 characters long.', 'danger')
-            return render_template('change_password.html')
+            return render_template('change_password.html', current_year=current_year)
         if not (any(char.isdigit() for char in new_password) and
                 any(char.isalpha() for char in new_password) and
                 any(not char.isalnum() for char in new_password)):
             flash('New password must include at least one number, one letter, and one special character.', 'danger')
-            return render_template('change_password.html')
+            return render_template('change_password.html', current_year=current_year)
 
         db = get_db()
         hashed_password = generate_password_hash(new_password)
@@ -574,7 +581,7 @@ def change_password():
         flash('Your password has been changed successfully!', 'success')
         return redirect(url_for('my_profile')) # Redirect to profile or settings
 
-    return render_template('change_password.html')
+    return render_template('change_password.html', current_year=current_year)
 
 
 # --- Member & Profile Management ---
@@ -594,7 +601,9 @@ def my_profile():
     # No 'statuses' table or 'story-viewer.html', so no specific rendering for temporary video status beyond general stories.
     temp_video = None
 
-    return render_template('my_profile.html', member=member, unique_key=user_details['unique_key'] if user_details else None)
+    # Pass the current year to the template
+    current_year = datetime.now(timezone.utc).year
+    return render_template('my_profile.html', member=member, unique_key=user_details['unique_key'] if user_details else None, current_year=current_year)
 
 
 @app.route('/edit_my_details', methods=['GET', 'POST'])
@@ -610,6 +619,8 @@ def edit_my_details():
         if form_data.get('dateOfBirth'):
             form_data['dateOfBirth'] = datetime.strptime(form_data['dateOfBirth'], '%Y-%m-%d %H:%M:%S.%f').strftime('%Y-%m-%d')
 
+    # Pass the current year to the template
+    current_year = datetime.now(timezone.utc).year
     if request.method == 'POST':
         fullName = request.form['fullName'].strip()
         dateOfBirth = request.form['dateOfBirth']
@@ -630,7 +641,7 @@ def edit_my_details():
             if not profilePhoto_path:
                 flash('Invalid profile photo file type.', 'danger')
                 form_data = request.form.to_dict()
-                return render_template('edit_my_details.html', form_data=form_data, member=member)
+                return render_template('edit_my_details.html', form_data=form_data, member=member, current_year=current_year)
 
         try:
             if member:
@@ -662,9 +673,9 @@ def edit_my_details():
             flash(f'An error occurred while saving your details: {e}', 'danger')
             db.rollback()
             form_data = request.form.to_dict()
-            return render_template('edit_my_details.html', form_data=form_data, member=member)
+            return render_template('edit_my_details.html', form_data=form_data, member=member, current_year=current_year)
 
-    return render_template('edit_my_details.html', form_data=form_data, member=member)
+    return render_template('edit_my_details.html', form_data=form_data, member=member, current_year=current_year)
 
 
 @app.route('/profile/<username>')
@@ -712,6 +723,8 @@ def profile(username):
     # No 'temp_video' or 'story-viewer.html' or 'statuses' table on the list
     temp_video = None
 
+    # Pass the current year to the template
+    current_year = datetime.now(timezone.utc).year
     return render_template(
         'profile.html',
         profile_user=profile_user,
@@ -721,7 +734,8 @@ def profile(username):
         is_received_request=is_received_request,
         is_blocked=is_blocked,
         temp_video=temp_video, # Will be None
-        current_user_is_admin=current_user.is_admin
+        current_user_is_admin=current_user.is_admin,
+        current_year=current_year
     )
 
 # Removed: @app.route('/list_members') and associated function
@@ -897,7 +911,9 @@ def friends():
         friend_dict['profilePhoto'] = get_member_profile_pic(friend_dict['id']) # Ensure correct URL
         accepted_friends.append(friend_dict)
 
-    return render_template('friends.html', incoming_requests=incoming_requests, accepted_friends=accepted_friends)
+    # Pass the current year to the template
+    current_year = datetime.now(timezone.utc).year
+    return render_template('friends.html', incoming_requests=incoming_requests, accepted_friends=accepted_friends, current_year=current_year)
 
 
 # --- Messaging & Chat Rooms ---
@@ -970,7 +986,9 @@ def inbox():
         conversations.append(conv_dict)
 
 
-    return render_template('inbox.html', conversations=conversations)
+    # Pass the current year to the template
+    current_year = datetime.now(timezone.utc).year
+    return render_template('inbox.html', conversations=conversations, current_year=current_year)
 
 
 @app.route('/message_member', methods=['GET', 'POST'])
@@ -1004,7 +1022,9 @@ def message_member():
         # Starting a chat will redirect to view_chat
         return redirect(url_for('view_chat', chat_room_id=receiver_user_id)) # Redirect to start/view conversation
 
-    return render_template('message_member.html', available_users=users_with_pics)
+    # Pass the current year to the template
+    current_year = datetime.now(timezone.utc).year
+    return render_template('message_member.html', available_users=users_with_pics, current_year=current_year)
 
 
 @app.route('/view_chat/<int:chat_room_id>', methods=['GET', 'POST'])
@@ -1101,14 +1121,16 @@ def view_chat(chat_room_id):
     # Get chat background image for current user
     chat_background_image_path = current_user.chat_background_image_path or url_for('static', filename='img/default_chat_background.jpg')
 
-
+    # Pass the current year to the template
+    current_year = datetime.now(timezone.utc).year
     return render_template(
         'view_chat.html', # Changed to view_chat.html
         chat_room_id=chat_room_id,
         other_user=other_user,
         chat_messages=messages,
         current_user_id=current_user.id,
-        chat_background_image_path=chat_background_image_path
+        chat_background_image_path=chat_background_image_path,
+        current_year=current_year
     )
 
 
@@ -1159,13 +1181,16 @@ def view_group_chat(group_chat_room_id):
     # Get chat background image for current user
     chat_background_image_path = current_user.chat_background_image_path or url_for('static', filename='img/default_chat_background.jpg')
 
+    # Pass the current year to the template
+    current_year = datetime.now(timezone.utc).year
     return render_template(
         'view_group_chat.html',
         chat_room_id=group_chat_room_id,
         group=group_details,
         chat_messages=messages,
         current_user_id=current_user.id,
-        chat_background_image_path=chat_background_image_path
+        chat_background_image_path=chat_background_image_path,
+        current_year=current_year
     )
 
 
@@ -1262,6 +1287,8 @@ def create_group():
         friend_dict['profilePhoto'] = get_member_profile_pic(friend_dict['id'])
         friends_with_pics.append(friend_dict)
 
+    # Pass the current year to the template
+    current_year = datetime.now(timezone.utc).year
     if request.method == 'POST':
         group_name = request.form['groupName'].strip()
         description = request.form.get('description', '').strip()
@@ -1275,15 +1302,15 @@ def create_group():
             profile_photo_path = save_uploaded_file(group_profile_pic_file, app.config['PROFILE_PHOTOS_FOLDER'])
             if not profile_photo_path:
                 flash('Invalid group profile photo file type.', 'danger')
-                return render_template('create_group.html', friends=friends_with_pics, form_data=request.form.to_dict())
+                return render_template('create_group.html', friends=friends_with_pics, form_data=request.form.to_dict(), current_year=current_year)
 
         if not group_name:
             flash('Group name is required.', 'danger')
-            return render_template('create_group.html', friends=friends_with_pics, form_data=request.form.to_dict())
+            return render_template('create_group.html', friends=friends_with_pics, form_data=request.form.to_dict(), current_year=current_year)
 
         if not selected_friends_ids:
             flash('Please select at least one friend to add to the group.', 'danger')
-            return render_template('create_group.html', friends=friends_with_pics, form_data=request.form.to_dict())
+            return render_template('create_group.html', friends=friends_with_pics, form_data=request.form.to_dict(), current_year=current_year)
 
         try:
             # Create chat room for the group
@@ -1329,9 +1356,9 @@ def create_group():
         except Exception as e:
             flash(f'An error occurred while creating the group: {e}', 'danger')
             db.rollback()
-            return render_template('create_group.html', friends=friends_with_pics, form_data=request.form.to_dict())
+            return render_template('create_group.html', friends=friends_with_pics, form_data=request.form.to_dict(), current_year=current_year)
 
-    return render_template('create_group.html', friends=friends_with_pics, form_data=None)
+    return render_template('create_group.html', friends=friends_with_pics, form_data=None, current_year=current_year)
 
 
 @app.route('/view_group_profile/<int:group_id>')
@@ -1380,13 +1407,16 @@ def view_group_profile(group_id):
     ).fetchone()
     current_user_is_group_admin = current_user_is_group_admin['is_admin'] if current_user_is_group_admin else 0
 
+    # Pass the current year to the template
+    current_year = datetime.now(timezone.utc).year
     return render_template(
         'view_group_profile.html',
         group=group,
         group_members=group_members,
         is_member=is_member,
         current_user_is_group_admin=current_user_is_group_admin,
-        admin_view=is_admin_view # Pass this flag to template
+        admin_view=is_admin_view, # Pass this flag to template
+        current_year=current_year
     )
 
 
@@ -1457,11 +1487,15 @@ def api_leave_group(group_id):
 @app.route('/add_to')
 @login_required
 def add_to():
-    return render_template('add_to.html')
+    # Pass the current year to the template
+    current_year = datetime.now(timezone.utc).year
+    return render_template('add_to.html', current_year=current_year)
 
 @app.route('/create_post', methods=['GET', 'POST'])
 @login_required
 def create_post():
+    # Pass the current year to the template
+    current_year = datetime.now(timezone.utc).year
     if request.method == 'POST':
         description = request.form.get('description', '').strip()
         visibility = request.form.get('visibility', 'public') # Default to public
@@ -1478,10 +1512,10 @@ def create_post():
                     media_type = 'video'
             else:
                 flash('Invalid media file type for post.', 'danger')
-                return render_template('create_post.html', form_data=request.form.to_dict())
+                return render_template('create_post.html', form_data=request.form.to_dict(), current_year=current_year)
         elif not description:
             flash('Post cannot be empty. Please add media or a description.', 'danger')
-            return render_template('create_post.html', form_data=request.form.to_dict())
+            return render_template('create_post.html', form_data=request.form.to_dict(), current_year=current_year)
 
         db = get_db()
         try:
@@ -1498,14 +1532,16 @@ def create_post():
         except Exception as e:
             flash(f'An error occurred while creating your post: {e}', 'danger')
             db.rollback()
-            return render_template('create_post.html', form_data=request.form.to_dict())
+            return render_template('create_post.html', form_data=request.form.to_dict(), current_year=current_year)
 
-    return render_template('create_post.html')
+    return render_template('create_post.html', current_year=current_year)
 
 
 @app.route('/create_reel', methods=['GET', 'POST']) # Changed URL path to avoid conflict
 @login_required
 def create_reel():
+    # Pass the current year to the template
+    current_year = datetime.now(timezone.utc).year
     if request.method == 'POST':
         description = request.form.get('description', '').strip()
         # Visibility is fixed to public for reels as per requirements
@@ -1526,17 +1562,17 @@ def create_reel():
                     media_type = 'video'
             else:
                 flash('Invalid media file type for reel.', 'danger')
-                return render_template('create_reel.html', form_data=request.form.to_dict())
+                return render_template('create_reel.html', form_data=request.form.to_dict(), current_year=current_year)
         else:
             flash('Reel requires a photo or video.', 'danger')
-            return render_template('create_reel.html', form_data=request.form.to_dict())
+            return render_template('create_reel.html', form_data=request.form.to_dict(), current_year=current_year)
 
         # If it's an image reel, handle optional audio
         if media_type == 'image' and audio_file and audio_file.filename != '':
             audio_path = save_uploaded_file(audio_file, app.config['VOICE_NOTES_FOLDER']) # Reusing folder
             if not audio_path:
                 flash('Invalid audio file type for reel.', 'danger')
-                return render_template('create_reel.html', form_data=request.form.to_dict())
+                return render_template('create_reel.html', form_data=request.form.to_dict(), current_year=current_year)
 
         db = get_db()
         try:
@@ -1553,9 +1589,9 @@ def create_reel():
         except Exception as e:
             flash(f'An error occurred while creating your reel: {e}', 'danger')
             db.rollback()
-            return render_template('create_reel.html', form_data=request.form.to_dict())
+            return render_template('create_reel.html', form_data=request.form.to_dict(), current_year=current_year)
 
-    return render_template('create_reel.html')
+    return render_template('create_reel.html', current_year=current_year)
 
 
 @app.route('/reels') # This is now exclusively for viewing reels
@@ -1584,12 +1620,16 @@ def reels():
         reel_dict['profilePhoto'] = get_member_profile_pic(reel_dict['user_id'])
         reels_to_display.append(reel_dict)
 
-    return render_template('reels.html', reels=reels_to_display)
+    # Pass the current year to the template
+    current_year = datetime.now(timezone.utc).year
+    return render_template('reels.html', reels=reels_to_display, current_year=current_year)
 
 
 @app.route('/create_story', methods=['GET', 'POST'])
 @login_required
 def create_story():
+    # Pass the current year to the template
+    current_year = datetime.now(timezone.utc).year
     if request.method == 'POST':
         description = request.form.get('description', '').strip()
         # Visibility is fixed to friends for stories
@@ -1630,7 +1670,7 @@ def create_story():
                     media_type = 'video'
             else:
                 flash('Invalid uploaded media file type for story.', 'danger')
-                return render_template('create_story.html', form_data=request.form.to_dict())
+                return render_template('create_story.html', form_data=request.form.to_dict(), current_year=current_year)
 
         # 3. Handle voice note (if no other media)
         elif voice_note_data:
@@ -1647,14 +1687,14 @@ def create_story():
             media_type = 'audio'
         else:
             flash('Story requires a photo, video, or voice note.', 'danger')
-            return render_template('create_story.html', form_data=request.form.to_dict())
+            return render_template('create_story.html', form_data=request.form.to_dict(), current_year=current_year)
 
         # Handle background audio if main media is an image
         if media_type == 'image' and audio_file and audio_file.filename != '':
             background_audio_path = save_uploaded_file(audio_file, app.config['VOICE_NOTES_FOLDER'])
             if not background_audio_path:
                 flash('Invalid background audio file type for story.', 'danger')
-                return render_template('create_story.html', form_data=request.form.to_dict())
+                return render_template('create_story.html', form_data=request.form.to_dict(), current_year=current_year)
 
 
         db = get_db()
@@ -1675,9 +1715,9 @@ def create_story():
             flash(f'An error occurred while creating your story: {e}', 'danger')
             app.logger.error(f"Error creating story: {e}")
             db.rollback()
-            return render_template('create_story.html', form_data=request.form.to_dict())
+            return render_template('create_story.html', form_data=request.form.to_dict(), current_year=current_year)
 
-    return render_template('create_story.html')
+    return render_template('create_story.html', current_year=current_year)
 
 # --- Search Route ---
 @app.route('/search', methods=['GET'])
@@ -1719,7 +1759,9 @@ def search():
             group_dict['profilePhoto'] = group_dict['profilePhoto'] or url_for('static', filename='img/default_group.png')
             search_results.append({'type': 'group', 'data': group_dict})
 
-    return render_template('search.html', query=query, search_results=search_results)
+    # Pass the current year to the template
+    current_year = datetime.now(timezone.utc).year
+    return render_template('search.html', query=query, search_results=search_results, current_year=current_year)
 
 
 # --- Dashboard & Static Pages ---
@@ -1761,7 +1803,10 @@ def notifications():
         "SELECT * FROM notifications WHERE receiver_id = ? ORDER BY timestamp DESC",
         (current_user.id,)
     ).fetchall()
-    return render_template('notifications.html', notifications=user_notifications)
+
+    # Pass the current year to the template
+    current_year = datetime.now(timezone.utc).year
+    return render_template('notifications.html', notifications=user_notifications, current_year=current_year)
 
 @app.route('/api/notifications/mark_all_read', methods=['POST'])
 @login_required
@@ -1794,7 +1839,9 @@ def api_mark_single_notification_read(notification_id):
 @app.route('/menu')
 @login_required
 def menu():
-    return render_template('menu.html')
+    # Pass the current year to the template
+    current_year = datetime.now(timezone.utc).year
+    return render_template('menu.html', current_year=current_year)
 
 @app.route('/account_status')
 @login_required
@@ -1830,7 +1877,9 @@ def account_status():
         'permanent_ban': permanent_ban,
         # Removed 'created_at' and 'last_policy_review' as they were not essential for account status logic
     }
-    return render_template('account_status.html', account_health=account_health, account_status=account_status_details)
+    # Pass the current year to the template
+    current_year = datetime.now(timezone.utc).year
+    return render_template('account_status.html', account_health=account_health, account_status=account_status_details, current_year=current_year)
 
 
 @app.route('/support_inbox')
@@ -1885,7 +1934,9 @@ def support_inbox():
     )
     db.commit()
 
-    return render_template('support_inbox.html', messages=messages, current_user_id=current_user.id, support_chat_id=chat_room_id)
+    # Pass the current year to the template
+    current_year = datetime.now(timezone.utc).year
+    return render_template('support_inbox.html', messages=messages, current_user_id=current_user.id, support_chat_id=chat_room_id, current_year=current_year)
 
 
 @app.route('/api/support/send_message/<int:chat_id>', methods=['POST'])
@@ -1946,7 +1997,9 @@ def api_send_support_message_user(chat_id):
 
 @app.route('/terms_and_policies')
 def terms_and_policies():
-    return render_template('terms_and_policies.html')
+    # Pass the current year to the template
+    current_year = datetime.now(timezone.utc).year
+    return render_template('terms_and_policies.html', current_year=current_year)
 
 
 @app.route('/settings')
@@ -1995,10 +2048,13 @@ def settings():
     # Pass user's current chat background for display if any
     current_chat_background = current_user.chat_background_image_path
     
+    # Pass the current year to the template
+    current_year = datetime.now(timezone.utc).year
     return render_template(
         'settings.html',
         user_settings=user_settings,
-        current_chat_background=current_chat_background
+        current_chat_background=current_chat_background,
+        current_year=current_year
     )
 
 
@@ -2086,7 +2142,9 @@ def blocked_users():
         user_dict['id'] = user_dict['blocked_id'] # Map blocked_id to id for convenience in template
         display_blocked_users.append(user_dict)
 
-    return render_template('blocked_users.html', blocked_users=display_blocked_users)
+    # Pass the current year to the template
+    current_year = datetime.now(timezone.utc).year
+    return render_template('blocked_users.html', blocked_users=display_blocked_users, current_year=current_year)
 
 
 @app.route('/api/block_user/<int:user_id_to_block>', methods=['POST'])
@@ -2259,14 +2317,16 @@ def admin_dashboard():
         chat_dict['last_message_snippet'] = (chat_dict['last_message_content'][:50] + '...') if chat_dict['last_message_content'] and len(chat_dict['last_message_content']) > 50 else (chat_dict['last_message_content'] or "No messages yet.")
         support_chats_overview.append(chat_dict)
 
-
+    # Pass the current year to the template
+    current_year = datetime.now(timezone.utc).year
     return render_template(
         'admin_dashboard.html',
         counts=counts,
         all_users=all_users,
         all_groups=all_groups,
         pending_reports=pending_reports,
-        support_chats_overview=support_chats_overview
+        support_chats_overview=support_chats_overview,
+        current_year=current_year
     )
 
 
@@ -2327,7 +2387,9 @@ def admin_support_chat(chat_id):
     )
     db.commit()
 
-    return render_template('admin_support_chat.html', chat_messages=messages, user_for_chat=user_for_chat, admin_user_id=admin_user_id, chat_id=chat_id)
+    # Pass the current year to the template
+    current_year = datetime.now(timezone.utc).year
+    return render_template('admin_support_chat.html', chat_messages=messages, user_for_chat=user_for_chat, admin_user_id=admin_user_id, chat_id=chat_id, current_year=current_year)
 
 
 @app.route('/api/admin/send_support_message/<int:chat_id>', methods=['POST'])
