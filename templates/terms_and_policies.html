@@ -1,0 +1,216 @@
+{% extends 'base.html' %}
+
+{% block title %}Terms & Policies{% endblock %}
+
+{% block content %}
+<style>
+    /* Custom styles for the Terms & Policies page */
+    body {
+        padding-top: 0;
+        padding-bottom: var(--navbar-height); /* Space for fixed bottom navbar */
+        overflow-x: hidden;
+    }
+
+    .policies-container {
+        max-width: 800px;
+        margin: 20px auto;
+        padding: 20px 15px;
+        background-color: var(--background-light);
+    }
+
+    .policies-card {
+        background-color: var(--card-background);
+        border-radius: 12px;
+        box-shadow: 0 4px 15px var(--shadow-medium);
+        padding: 25px;
+    }
+
+    .policies-card h2 {
+        text-align: center;
+        color: var(--primary-text);
+        margin-bottom: 30px;
+        font-weight: 700;
+        font-size: 2em;
+    }
+
+    .policy-section {
+        margin-bottom: 30px;
+    }
+
+    .policy-section h3 {
+        color: var(--primary-color);
+        font-weight: 600;
+        margin-bottom: 15px;
+        font-size: 1.4em;
+        border-bottom: 2px solid var(--primary-color-light);
+        padding-bottom: 10px;
+    }
+
+    .policy-content p {
+        color: var(--primary-text);
+        line-height: 1.7;
+        margin-bottom: 1em;
+        font-size: 0.95em;
+    }
+
+    .policy-content ul {
+        list-style: disc;
+        padding-left: 20px;
+        margin-bottom: 1em;
+        color: var(--primary-text);
+    }
+
+    .policy-content ol {
+        list-style: decimal;
+        padding-left: 25px;
+        margin-bottom: 1em;
+        color: var(--primary-text);
+    }
+
+    .policy-content li {
+        margin-bottom: 0.5em;
+        font-size: 0.95em;
+    }
+
+    .policy-content strong {
+        color: var(--primary-text);
+    }
+
+    .last-updated {
+        font-size: 0.85em;
+        color: var(--secondary-text);
+        text-align: right;
+        margin-top: 20px;
+    }
+
+    .back-to-menu-btn {
+        display: block;
+        width: fit-content;
+        margin: 40px auto 0 auto;
+        padding: 12px 30px;
+        background-color: var(--button-bg-secondary);
+        color: var(--button-text-secondary);
+        border-radius: 25px;
+        font-size: 1.1em;
+        font-weight: 600;
+        transition: background-color 0.2s ease, transform 0.2s ease;
+        text-decoration: none;
+    }
+    .back-to-menu-btn:hover {
+        background-color: darken(var(--button-bg-secondary), 10%);
+        transform: translateY(-2px);
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+        .policies-container {
+            margin: 15px auto;
+            padding: 15px 10px;
+        }
+        .policies-card {
+            padding: 20px;
+        }
+        .policies-card h2 {
+            font-size: 1.8em;
+            margin-bottom: 25px;
+        }
+        .policy-section h3 {
+            font-size: 1.2em;
+            margin-bottom: 15px;
+        }
+        .policy-content p, .policy-content li {
+            font-size: 0.9em;
+        }
+        .back-to-menu-btn {
+            padding: 10px 25px;
+            font-size: 1em;
+            margin-top: 30px;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .policies-card {
+            padding: 15px;
+        }
+        .policies-card h2 {
+            font-size: 1.5em;
+        }
+        .policy-section h3 {
+            font-size: 1.1em;
+        }
+        .policy-content p, .policy-content li {
+            font-size: 0.85em;
+        }
+        .back-to-menu-btn {
+            padding: 8px 20px;
+            font-size: 0.95em;
+        }
+    }
+</style>
+
+<div class="policies-container">
+    <div class="policies-card">
+        <h2>Terms & Policies</h2>
+
+        {# Terms of Service #}
+        <div class="policy-section">
+            <h3>1. Terms of Service</h3>
+            <div class="policy-content">
+                <p>Welcome to SociaFam! By accessing or using our services, you agree to be bound by these Terms of Service. Please read them carefully.</p>
+                <h4>1.1. Acceptance of Terms</h4>
+                <p>By creating an account or using any feature of SociaFam, you signify your agreement to these Terms, our Privacy Policy, and Community Guidelines.</p>
+                <h4>1.2. Eligibility</h4>
+                <p>You must be at least 13 years old to use SociaFam. By using the services, you represent and warrant that you meet this age requirement.</p>
+                <h4>1.3. User Responsibilities</h4>
+                <ul>
+                    <li>You are responsible for maintaining the confidentiality of your account login information.</li>
+                    <li>You agree not to use the service for any illegal or unauthorized purpose.</li>
+                    <li>You must not post violent, nude, partially nude, discriminatory, unlawful, infringing, hateful, pornographic or sexually suggestive photos or other content via the Service.</li>
+                </ul>
+                <p><strong>Violation of these terms may result in termination of your account.</strong></p>
+            </div>
+        </div>
+
+        {# Privacy Policy #}
+        <div class="policy-section">
+            <h3>2. Privacy Policy</h3>
+            <div class="policy-content">
+                <p>Your privacy is important to us. This policy describes how we collect, use, and share your personal information.</p>
+                <h4>2.1. Information We Collect</h4>
+                <p>We collect information you provide directly to us, such as your profile information (username, real name, email), content you post, and communications with other users.</p>
+                <h4>2.2. How We Use Your Information</h4>
+                <p>We use the information we collect to:</p>
+                <ol>
+                    <li>Provide, maintain, and improve our services.</li>
+                    <li>Personalize your experience.</li>
+                    <li>Communicate with you about products, services, offers, promotions, and provide news and information we think will be of interest to you.</li>
+                </ol>
+                <h4>2.3. Sharing of Information</h4>
+                <p>We do not share your personal information with third parties except as described in this policy, such as with service providers, in response to legal requests, or to protect our rights.</p>
+            </div>
+        </div>
+
+        {# Community Guidelines #}
+        <div class="policy-section">
+            <h3>3. Community Guidelines</h3>
+            <div class="policy-content">
+                <p>SociaFam is a community built on respect and understanding. Please adhere to these guidelines to ensure a positive environment for everyone.</p>
+                <h4>3.1. Be Respectful</h4>
+                <p>Do not engage in harassment, bullying, hate speech, or discrimination of any kind. Treat others as you would like to be treated.</p>
+                <h4>3.2. No Illegal Content</h4>
+                <p>Do not share content that promotes illegal activities, violence, or self-harm.</p>
+                <h4>3.3. Protect Your Privacy</h4>
+                <p>Do not share private information of others without their explicit consent. Be mindful of what you share about yourself.</p>
+                <h4>3.4. Authenticity</h4>
+                <p>Do not impersonate others or create fake accounts. Be yourself!</p>
+            </div>
+        </div>
+
+        <p class="last-updated">Last Updated: {{ moment().format('MMMM DD, YYYY') }}</p>
+
+        <a href="{{ url_for('menu') }}" class="btn back-to-menu-btn">
+            <i class="fas fa-arrow-left me-2"></i> Back to Menu
+        </a>
+    </div>
+</div>
+{% endblock %}
