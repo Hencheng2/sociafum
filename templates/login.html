@@ -1,120 +1,358 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - SociaFam</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    <style>
-        .auth-container {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            background-color: #f0f2f5;
+{% extends 'base.html' %}
+
+{% block title %}Login{% endblock %}
+
+{% block content %}
+<style>
+    /* Custom styles for the login page */
+    body {
+        padding-top: 0;
+        padding-bottom: 0; /* No footer padding as it's a focused form page */
+        overflow-x: hidden;
+    }
+
+    .login-container {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh; /* Full viewport height */
+        background-color: var(--background-light);
+        padding: 20px 15px;
+    }
+
+    .login-card {
+        background-color: var(--card-background);
+        border-radius: 15px;
+        box-shadow: 0 8px 25px var(--shadow-strong);
+        padding: 40px;
+        max-width: 450px;
+        width: 100%;
+        text-align: center;
+    }
+
+    .login-card-header {
+        background-color: var(--primary-color);
+        color: white;
+        padding: 20px;
+        border-top-left-radius: 15px;
+        border-top-right-radius: 15px;
+        margin: -40px -40px 30px -40px; /* Adjust to sit perfectly at the top of the card */
+        box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    }
+
+    .login-card-header h2 {
+        margin: 0;
+        font-weight: 700;
+        font-size: 2.2em;
+    }
+
+    .form-group {
+        margin-bottom: 25px;
+        text-align: left;
+    }
+
+    .form-label {
+        font-weight: 600;
+        color: var(--primary-text);
+        margin-bottom: 8px;
+        display: block;
+    }
+
+    .form-control {
+        border-radius: 10px;
+        padding: 12px 15px;
+        border: 1px solid var(--input-border-color);
+        background-color: var(--background-light);
+        color: var(--primary-text);
+    }
+    .form-control:focus {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 0.2rem rgba(88, 129, 87, 0.25);
+    }
+
+    .btn-login {
+        background-color: var(--primary-color);
+        border-color: var(--primary-color);
+        color: white;
+        padding: 14px 25px;
+        border-radius: 25px;
+        font-size: 1.1em;
+        font-weight: 600;
+        width: 100%;
+        transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+    }
+    .btn-login:hover {
+        background-color: var(--primary-color-dark);
+        border-color: var(--primary-color-dark);
+        transform: translateY(-2px);
+    }
+
+    .links-section {
+        margin-top: 25px;
+        font-size: 0.95em;
+        color: var(--secondary-text);
+    }
+    .links-section a {
+        color: var(--primary-color);
+        font-weight: 600;
+        text-decoration: none;
+    }
+    .links-section p {
+        margin-bottom: 10px;
+    }
+    .links-section p:last-child {
+        margin-bottom: 0;
+    }
+
+    .alert-container {
+        margin-bottom: 20px;
+    }
+
+    /* Modal for Forgot Password */
+    #forgotPasswordModal .modal-content {
+        border-radius: 12px;
+        background-color: var(--card-background);
+        color: var(--primary-text);
+    }
+    #forgotPasswordModal .modal-header {
+        background-color: var(--primary-color);
+        color: white;
+        border-top-left-radius: 12px;
+        border-top-right-radius: 12px;
+        border-bottom: none;
+    }
+    #forgotPasswordModal .modal-header h5 {
+        color: white;
+    }
+    #forgotPasswordModal .modal-header .btn-close {
+        filter: invert(1);
+    }
+    #forgotPasswordModal .modal-body {
+        padding: 20px;
+    }
+    #forgotPasswordModal .modal-footer {
+        border-top: 1px solid var(--border-color-light);
+        background-color: var(--background-light);
+        border-bottom-left-radius: 12px;
+        border-bottom-right-radius: 12px;
+    }
+    #forgotPasswordModal .modal-footer .btn-secondary {
+        background-color: var(--button-bg-secondary);
+        color: var(--button-text-secondary);
+    }
+    #forgotPasswordModal .modal-footer .btn-primary {
+        background-color: var(--primary-color);
+        color: white;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+        .login-card {
+            padding: 30px;
         }
-        
-        .auth-card {
-            background-color: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            padding: 20px;
-            width: 400px;
-            max-width: 90%;
+        .login-card-header {
+            margin: -30px -30px 25px -30px;
         }
-        
-        .auth-header {
-            text-align: center;
+        .login-card-header h2 {
+            font-size: 2em;
+        }
+        .form-group {
             margin-bottom: 20px;
         }
-        
-        .auth-logo {
-            font-size: 32px;
-            font-weight: bold;
-            color: #1877f2;
-            margin-bottom: 10px;
+        .form-control {
+            padding: 10px 12px;
         }
-        
-        .auth-form .form-group {
-            margin-bottom: 15px;
+        .btn-login {
+            padding: 12px 20px;
+            font-size: 1em;
         }
-        
-        .auth-form .form-control {
-            width: 100%;
-            padding: 12px;
-            border: 1px solid #dddfe2;
-            border-radius: 6px;
-            font-size: 16px;
+        .links-section {
+            font-size: 0.9em;
         }
-        
-        .auth-form .btn {
-            width: 100%;
-            padding: 12px;
-            font-size: 16px;
-            font-weight: 600;
+    }
+
+    @media (max-width: 480px) {
+        .login-card {
+            padding: 25px;
+            box-shadow: none;
         }
-        
-        .auth-divider {
-            border-top: 1px solid #dadde1;
-            margin: 20px 0;
+        .login-card-header {
+            margin: -25px -25px 20px -25px;
+            padding: 15px;
         }
-        
-        .auth-footer {
-            text-align: center;
+        .login-card-header h2 {
+            font-size: 1.8em;
         }
-        
-        .auth-footer a {
-            color: #1877f2;
-            text-decoration: none;
+        .form-group {
+            margin-bottom: 18px;
         }
-    </style>
-</head>
-<body>
-    <div class="auth-container">
-        <div class="auth-card">
-            <div class="auth-header">
-                <div class="auth-logo">SociaFam</div>
-                <p>Connect with friends and the world around you on SociaFam.</p>
+        .form-label {
+            font-size: 0.9em;
+        }
+        .form-control {
+            padding: 9px 10px;
+            font-size: 0.9em;
+        }
+        .btn-login {
+            padding: 10px 18px;
+            font-size: 0.95em;
+        }
+        .links-section {
+            font-size: 0.85em;
+        }
+    }
+</style>
+
+<div class="login-container">
+    <div class="login-card">
+        <div class="login-card-header">
+            <h2>Login</h2>
+        </div>
+
+        {# Flash messages container #}
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="alert-container">
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                            {{ message | safe }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        <form method="POST">
+            <div class="form-group">
+                <label for="username" class="form-label">Username or Email</label>
+                <input type="text" class="form-control" id="username" name="username" required value="{{ username if username else '' }}" placeholder="Your username or registered email">
             </div>
-            
-            {% with messages = get_flashed_messages(with_categories=true) %}
-                {% if messages %}
-                    <div class="flash-messages">
-                        {% for category, message in messages %}
-                            <div class="flash flash-{{ category }}">{{ message }}</div>
-                        {% endfor %}
-                    </div>
-                {% endif %}
-            {% endwith %}
-            
-            <form class="auth-form" method="POST" action="{{ url_for('login') }}">
-                <div class="form-group">
-                    <input type="text" class="form-control" name="username" placeholder="Username or Email" required>
-                </div>
-                
-                <div class="form-group">
-                    <input type="password" class="form-control" name="password" placeholder="Password" required>
-                </div>
-                
-                <div class="form-group">
-                    <button type="submit" class="btn btn-primary">Log In</button>
-                </div>
-                
-                <div class="form-group">
-                    <label class="checkbox">
-                        <input type="checkbox" name="remember"> Remember me
-                    </label>
-                </div>
-                
-                <div class="auth-divider"></div>
-                
-                <div class="auth-footer">
-                    <p>Don't have an account? <a href="{{ url_for('register') }}">Sign up</a></p>
-                    <p><a href="#">Forgot password?</a></p>
-                </div>
-            </form>
+            <div class="form-group">
+                <label for="password" class="form-label">Password</label>
+                <input type="password" class="form-control" id="password" name="password" required placeholder="Your password">
+            </div>
+            <div class="form-group form-check text-start">
+                <input type="checkbox" class="form-check-input" id="adminLoginCheckbox" name="admin_login_checkbox">
+                <label class="form-check-label" for="adminLoginCheckbox">Login as Admin</label>
+            </div>
+            <button type="submit" class="btn btn-primary btn-login">Login</button>
+        </form>
+        <div class="links-section">
+            <p>Don't have an account? <a href="{{ url_for('register') }}">Register here</a></p>
+            <p><a href="#" data-bs-toggle="modal" data-bs-target="#forgotPasswordModal">Forgot Password?</a></p>
         </div>
     </div>
-</body>
-</html>
+</div>
+
+{# Forgot Password Modal (linked from login page) #}
+<div class="modal fade" id="forgotPasswordModal" tabindex="-1" aria-labelledby="forgotPasswordModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="forgotPasswordModalLabel">Forgot Password</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Enter your username and your unique key to reset your password.</p>
+                <div class="mb-3">
+                    <label for="forgotUsername" class="form-label">Username</label>
+                    <input type="text" class="form-control" id="forgotUsername" name="forgotUsername" required>
+                </div>
+                <div class="mb-3">
+                    <label for="uniqueKey" class="form-label">Unique Key</label>
+                    <input type="text" class="form-control" id="uniqueKey" name="uniqueKey" required maxlength="4" pattern="[A-Za-z0-9]{4}" title="Please enter the 4-character unique key (2 letters, 2 numbers)">
+                    <small class="form-text text-muted">This 4-character key (e.g., A1B2) was provided during registration and is visible on your profile.</small>
+                </div>
+                <div id="forgotPasswordMessage" class="alert mt-3" style="display: none;"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="submitForgotPasswordBtn">Submit</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Auto-hide flash messages
+        const flashMessages = document.querySelectorAll('.alert-container .alert');
+        flashMessages.forEach(function(flash) {
+            setTimeout(function() {
+                flash.style.opacity = '0';
+                flash.style.transition = 'opacity 0.5s ease-out';
+                setTimeout(function() {
+                    flash.remove();
+                }, 500);
+            }, 5000);
+        });
+
+        // Forgot Password Modal Logic
+        const forgotPasswordModal = new bootstrap.Modal(document.getElementById('forgotPasswordModal'));
+        const forgotPasswordForm = document.querySelector('#forgotPasswordModal form'); // Note: no <form> tag, using div instead.
+        const submitForgotPasswordBtn = document.getElementById('submitForgotPasswordBtn');
+        const forgotPasswordMessage = document.getElementById('forgotPasswordMessage');
+        const forgotUsernameInput = document.getElementById('forgotUsername');
+        const uniqueKeyInput = document.getElementById('uniqueKey');
+
+        submitForgotPasswordBtn.addEventListener('click', function() {
+            const username = forgotUsernameInput.value.trim();
+            const uniqueKey = uniqueKeyInput.value.trim();
+
+            // Simple client-side validation
+            if (!username || !uniqueKey) {
+                forgotPasswordMessage.style.display = 'block';
+                forgotPasswordMessage.className = 'alert alert-danger';
+                forgotPasswordMessage.innerHTML = 'Please fill in both username and unique key.';
+                return;
+            }
+
+            // Client-side key format validation (2 numbers, 2 letters)
+            const keyPattern = /^(?=.*[a-zA-Z].*[a-zA-Z])(?=.*\d.*\d)[a-zA-Z0-9]{4}$/;
+            if (!keyPattern.test(uniqueKey)) {
+                forgotPasswordMessage.style.display = 'block';
+                forgotPasswordMessage.className = 'alert alert-danger';
+                forgotPasswordMessage.innerHTML = 'Unique key format is incorrect. It should contain exactly 2 letters and 2 numbers (e.g., A1B2).';
+                return;
+            }
+
+
+            fetch('/forgot_password_verify', { // New endpoint for verification
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ username: username, unique_key: uniqueKey })
+            })
+            .then(response => response.json())
+            .then(result => {
+                forgotPasswordMessage.style.display = 'block';
+                if (result.success) {
+                    forgotPasswordMessage.className = 'alert alert-success';
+                    forgotPasswordMessage.innerHTML = result.message + ' Redirecting in 5 seconds...';
+                    setTimeout(() => {
+                        window.location.href = result.redirect_url; // Redirect to set_new_password page
+                    }, 5000); // 5-second delay
+                } else {
+                    forgotPasswordMessage.className = 'alert alert-danger';
+                    forgotPasswordMessage.innerHTML = result.message;
+                }
+            })
+            .catch(error => {
+                forgotPasswordMessage.style.display = 'block';
+                forgotPasswordMessage.className = 'alert alert-danger';
+                forgotPasswordMessage.innerHTML = 'An error occurred. Please try again.';
+                console.error('Error:', error);
+            });
+        });
+
+        // Clear messages when modal is hidden
+        forgotPasswordModal._element.addEventListener('hidden.bs.modal', function() {
+            forgotPasswordMessage.style.display = 'none';
+            forgotUsernameInput.value = '';
+            uniqueKeyInput.value = '';
+        });
+    });
+</script>
+{% endblock %}
