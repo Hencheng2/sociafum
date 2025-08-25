@@ -1,0 +1,1174 @@
+{% extends 'base.html' %}
+
+{% block title %}Group: {{ group.name }}{% endblock %}
+
+{% block content %}
+<style>
+    /* Custom styles for Group Profile page */
+    body {
+        padding-top: 0;
+        padding-bottom: var(--navbar-height); /* Space for fixed bottom navbar */
+        overflow-x: hidden;
+    }
+
+    .group-profile-container {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px 15px;
+        background-color: var(--background-light);
+    }
+
+    .group-header {
+        text-align: center;
+        margin-bottom: 25px;
+    }
+
+    .group-profile-photo {
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 3px solid var(--primary-color);
+        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        margin-bottom: 15px;
+        display: block; /* Center image */
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    .group-name {
+        font-weight: 700;
+        font-size: 2em;
+        color: var(--primary-text);
+        margin-bottom: 5px;
+    }
+
+    .group-members-count {
+        font-size: 1em;
+        color: var(--secondary-text);
+        margin-bottom: 20px;
+    }
+
+    .group-actions {
+        display: flex;
+        gap: 10px;
+        justify-content: center;
+        margin-bottom: 25px;
+        flex-wrap: wrap;
+    }
+
+    .group-actions .btn {
+        min-width: 140px;
+        border-radius: 25px;
+        font-weight: 600;
+        padding: 10px 20px;
+    }
+
+    .group-actions .btn-message {
+        background-color: var(--info-color);
+        color: white;
+    }
+    .group-actions .btn-message:hover {
+        opacity: 0.9;
+    }
+
+    .group-actions .btn-add-members {
+        background-color: var(--primary-color);
+        color: white;
+    }
+    .group-actions .btn-add-members:hover {
+        opacity: 0.9;
+    }
+
+    .group-link-section {
+        background-color: var(--card-background);
+        border-radius: 12px;
+        box-shadow: 0 4px 10px var(--shadow-soft);
+        padding: 20px;
+        margin-bottom: 25px;
+        text-align: center;
+    }
+
+    .group-link-section h3 {
+        color: var(--primary-text);
+        font-weight: 600;
+        margin-bottom: 15px;
+    }
+
+    .group-link-input {
+        background-color: var(--background-light);
+        color: var(--primary-text);
+        border: 1px solid var(--input-border-color);
+        border-right: none;
+        border-radius: 8px 0 0 8px;
+    }
+
+    .btn-copy-link, .btn-share-link {
+        border-radius: 0 8px 8px 0;
+        background-color: var(--secondary-color);
+        color: white;
+        transition: background-color 0.2s ease;
+    }
+    .btn-copy-link:hover, .btn-share-link:hover {
+        background-color: darken(var(--secondary-color), 10%);
+    }
+
+    .group-description-section {
+        background-color: var(--card-background);
+        border-radius: 12px;
+        box-shadow: 0 4px 10px var(--shadow-soft);
+        padding: 20px;
+        margin-bottom: 25px;
+    }
+
+    .group-description-section h3 {
+        color: var(--primary-text);
+        font-weight: 600;
+        margin-bottom: 15px;
+        border-bottom: 1px solid var(--border-color-light);
+        padding-bottom: 10px;
+    }
+
+    .group-description-text {
+        color: var(--primary-text);
+        line-height: 1.8;
+        white-space: pre-wrap;
+        margin-bottom: 10px;
+    }
+
+    .group-creator-info {
+        font-size: 0.85em;
+        color: var(--secondary-text);
+    }
+
+    /* Media, Links, Documents Tabs */
+    .group-content-tabs-nav {
+        background-color: var(--card-background);
+        border-bottom: 1px solid var(--border-color-light);
+        box-shadow: 0 1px 3px var(--shadow-soft);
+        display: flex;
+        justify-content: space-around;
+        padding: 0 5px;
+        border-top-left-radius: 12px;
+        border-top-right-radius: 12px;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        white-space: nowrap;
+    }
+
+    .group-content-tabs-nav .nav-item {
+        flex-shrink: 0;
+    }
+
+    .group-content-tabs-nav .nav-link {
+        color: var(--secondary-text);
+        font-weight: 600;
+        padding: 12px 10px;
+        border-bottom: 3px solid transparent;
+        transition: color 0.2s ease, border-color 0.2s ease;
+        flex-grow: 1;
+        text-align: center;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        font-size: 0.9em;
+    }
+
+    .group-content-tabs-nav .nav-link.active {
+        color: var(--primary-color);
+        border-bottom-color: var(--primary-color);
+    }
+
+    .group-content-tabs-nav .nav-link:hover:not(.active) {
+        color: var(--primary-text);
+    }
+
+    /* Gallery grid for Media */
+    .gallery-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr); /* 3 columns for media */
+        gap: 10px;
+        padding: 15px;
+        background-color: var(--card-background);
+        border-bottom-left-radius: 12px;
+        border-bottom-right-radius: 12px;
+        box-shadow: 0 4px 10px var(--shadow-soft);
+        margin-bottom: 25px;
+    }
+
+    .gallery-item {
+        position: relative;
+        padding-bottom: 100%;
+        overflow: hidden;
+        border-radius: 8px;
+        cursor: pointer;
+        background-color: var(--background-light);
+    }
+
+    .gallery-item img, .gallery-item video {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: transform 0.2s ease;
+    }
+
+    .gallery-item:hover img, .gallery-item:hover video {
+        transform: scale(1.05);
+    }
+
+    .gallery-item .video-play-icon {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 2em;
+        color: rgba(255,255,255,0.8);
+        text-shadow: 0 0 5px rgba(0,0,0,0.5);
+        display: none;
+    }
+    .gallery-item[data-media-type="video"] .video-play-icon {
+        display: block;
+    }
+
+    /* List styling for Links and Documents */
+    .list-items-section {
+        background-color: var(--card-background);
+        border-bottom-left-radius: 12px;
+        border-bottom-right-radius: 12px;
+        box-shadow: 0 4px 10px var(--shadow-soft);
+        margin-bottom: 25px;
+        padding: 15px;
+    }
+    .list-items-section ul {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+    .list-items-section li {
+        display: flex;
+        align-items: center;
+        padding: 10px 0;
+        border-bottom: 1px solid var(--border-color-light);
+        font-size: 0.95em;
+        color: var(--primary-text);
+    }
+    .list-items-section li:last-child {
+        border-bottom: none;
+    }
+    .list-items-section li i {
+        margin-right: 10px;
+        color: var(--primary-color);
+        font-size: 1.2em;
+        flex-shrink: 0;
+    }
+    .list-items-section li a {
+        color: var(--link-color);
+        text-decoration: none;
+        flex-grow: 1;
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+    }
+    .list-items-section li a:hover {
+        text-decoration: underline;
+    }
+    .list-items-section li .shared-by {
+        font-size: 0.8em;
+        color: var(--secondary-text);
+        margin-left: 10px;
+        flex-shrink: 0;
+    }
+
+
+    /* Group Permissions Section */
+    .group-permissions-section {
+        background-color: var(--card-background);
+        border-radius: 12px;
+        box-shadow: 0 4px 10px var(--shadow-soft);
+        padding: 20px;
+        margin-bottom: 25px;
+    }
+
+    .group-permissions-section h3 {
+        color: var(--primary-text);
+        font-weight: 600;
+        margin-bottom: 15px;
+        border-bottom: 1px solid var(--border-color-light);
+        padding-bottom: 10px;
+    }
+
+    .permission-item {
+        display: flex;
+        align-items: center;
+        margin-bottom: 15px;
+        padding: 8px 0;
+        border-bottom: 1px dashed var(--border-color-light);
+    }
+    .permission-item:last-child {
+        border-bottom: none;
+    }
+
+    .permission-item .form-check-label {
+        flex-grow: 1;
+        font-weight: 500;
+        color: var(--primary-text);
+        margin-bottom: 0;
+    }
+
+    .permission-item .form-check-input {
+        margin-right: 10px;
+        width: 1.2em; /* Larger checkbox */
+        height: 1.2em;
+    }
+
+    /* Group Members List */
+    .group-members-list-section {
+        background-color: var(--card-background);
+        border-radius: 12px;
+        box-shadow: 0 4px 10px var(--shadow-soft);
+        padding: 20px;
+        margin-bottom: 25px;
+    }
+
+    .group-members-list-section h3 {
+        color: var(--primary-text);
+        font-weight: 600;
+        margin-bottom: 15px;
+        border-bottom: 1px solid var(--border-color-light);
+        padding-bottom: 10px;
+    }
+
+    .group-member-item {
+        display: flex;
+        align-items: center;
+        padding: 10px 0;
+        border-bottom: 1px dashed var(--border-color-light);
+        text-decoration: none;
+        color: inherit;
+    }
+    .group-member-item:last-of-type { /* Use of type for no specific child */
+        border-bottom: none;
+    }
+    .group-member-item:hover {
+        background-color: var(--background-light);
+        border-radius: 5px;
+    }
+
+
+    .group-member-item .profile-pic {
+        width: 45px;
+        height: 45px;
+        border-radius: 50%;
+        object-fit: cover;
+        margin-right: 15px;
+        border: 2px solid var(--secondary-text);
+        flex-shrink: 0;
+    }
+
+    .group-member-item .member-details {
+        flex-grow: 1;
+        overflow: hidden;
+    }
+
+    .group-member-item .member-details .name {
+        font-weight: 600;
+        color: var(--primary-text);
+        margin-bottom: 2px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .group-member-item .member-details .role {
+        font-size: 0.8em;
+        color: var(--secondary-text);
+    }
+
+    .group-member-item .member-actions {
+        display: flex;
+        gap: 8px;
+        flex-shrink: 0;
+    }
+
+    .group-member-item .btn-member-action {
+        background: none;
+        border: none;
+        color: var(--secondary-text);
+        font-size: 1.1em;
+        padding: 5px;
+        border-radius: 5px;
+        transition: background-color 0.2s ease;
+    }
+    .group-member-item .btn-member-action:hover {
+        background-color: var(--background-light);
+    }
+
+    .show-more-members-btn {
+        display: block;
+        width: fit-content;
+        margin: 15px auto 0 auto;
+        padding: 8px 15px;
+        background-color: var(--button-bg-secondary);
+        color: var(--button-text-secondary);
+        border-radius: 20px;
+        font-size: 0.9em;
+        font-weight: 500;
+        cursor: pointer;
+        transition: background-color 0.2s ease;
+    }
+    .show-more-members-btn:hover {
+        background-color: darken(var(--button-bg-secondary), 10%);
+    }
+
+    .exit-group-actions {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        margin-top: 30px;
+    }
+
+    .exit-group-actions .btn-danger {
+        padding: 10px 20px;
+        font-size: 1em;
+        font-weight: 600;
+        border-radius: 25px;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+        .group-profile-container {
+            padding: 15px 10px;
+        }
+        .group-profile-photo {
+            width: 100px;
+            height: 100px;
+        }
+        .group-name {
+            font-size: 1.8em;
+        }
+        .group-members-count {
+            font-size: 0.9em;
+        }
+        .group-actions {
+            flex-direction: column;
+            gap: 8px;
+        }
+        .group-actions .btn {
+            width: 100%;
+            min-width: unset;
+        }
+        .group-link-section, .group-description-section, .group-permissions-section, .group-members-list-section {
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        .group-link-section h3, .group-description-section h3, .group-permissions-section h3, .group-members-list-section h3 {
+            font-size: 1.3em;
+        }
+        .group-description-text {
+            font-size: 0.9em;
+        }
+        .group-content-tabs-nav .nav-link {
+            font-size: 0.8em;
+            padding: 10px 5px;
+            gap: 5px;
+        }
+        .gallery-grid {
+            grid-template-columns: repeat(2, 1fr); /* 2 columns on mobile */
+            gap: 8px;
+            padding: 10px;
+        }
+        .list-items-section li {
+            font-size: 0.9em;
+        }
+        .group-member-item .profile-pic {
+            width: 40px;
+            height: 40px;
+            margin-right: 10px;
+        }
+        .group-member-item .member-details .name {
+            font-size: 0.95em;
+        }
+        .group-member-item .member-details .role {
+            font-size: 0.75em;
+        }
+        .exit-group-actions .btn-danger {
+            font-size: 0.95em;
+        }
+    }
+</style>
+
+<div class="group-profile-container">
+
+    <div class="group-header">
+        <img src="{{ group.profile_pic }}" alt="{{ group.name }} Profile" class="group-profile-photo">
+        <h1 class="group-name">{{ group.name }}</h1>
+        <p class="group-members-count">{{ group.member_count }} Members</p>
+    </div>
+
+    {# Action Buttons for Members #}
+    {% if group.current_user_is_member %}
+    <div class="group-actions">
+        <a href="{{ url_for('view_group_chat', group_id=group.id) }}" class="btn btn-message">
+            <i class="fas fa-comment-dots me-1"></i> Message
+        </a>
+        {% if group.allow_add_members or group.is_current_user_admin %}
+        <button class="btn btn-add-members" data-bs-toggle="modal" data-bs-target="#inviteMembersModal">
+            <i class="fas fa-user-plus me-1"></i> Add Members
+        </button>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    {# Group Link Section #}
+    <div class="group-link-section">
+        <h3>Share Group Link</h3>
+        <div class="input-group mb-3">
+            <input type="text" class="form-control group-link-input" id="groupJoinLink" value="{{ url_for('join_group_by_link', unique_link=group.unique_join_link, _external=true) }}" readonly>
+            <button class="btn btn-secondary btn-copy-link" type="button" id="copyGroupLinkBtn">Copy</button>
+            <button class="btn btn-primary btn-share-link" type="button" id="shareGroupLinkBtn">Share</button>
+        </div>
+        <small class="text-muted">Anyone with this link can request to join this group.</small>
+    </div>
+
+    {# Group Description Section #}
+    <div class="group-description-section">
+        <h3>About This Group</h3>
+        <p class="group-description-text">{{ group.description }}</p>
+        <p class="group-creator-info">Created by <a href="{{ url_for('profile', username=group.creator_username) }}" class="text-decoration-none">{{ group.creator_name }}</a> on {{ moment(group.created_at).format('LL') }}</p>
+    </div>
+
+    {# Media, Links, Documents Tabs #}
+    <div class="group-content-tabs-nav-wrapper profile-section p-0">
+        <ul class="nav nav-pills group-content-tabs-nav" id="groupContentTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="media-tab" data-bs-toggle="tab" data-bs-target="#mediaContent" type="button" role="tab" aria-controls="mediaContent" aria-selected="true">
+                    <i class="fas fa-images me-2"></i> Media
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="links-tab" data-bs-toggle="tab" data-bs-target="#linksContent" type="button" role="tab" aria-controls="linksContent" aria-selected="false">
+                    <i class="fas fa-link me-2"></i> Links
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="documents-tab" data-bs-toggle="tab" data-bs-target="#documentsContent" type="button" role="tab" aria-controls="documentsContent" aria-selected="false">
+                    <i class="fas fa-file-alt me-2"></i> Documents
+                </button>
+            </li>
+        </ul>
+        <div class="tab-content">
+            <div class="tab-pane fade show active" id="mediaContent" role="tabpanel" aria-labelledby="media-tab">
+                <div class="gallery-grid">
+                    {% if group_media_posts %}
+                        {% for item in group_media_posts %}
+                            <div class="gallery-item" data-item-id="{{ item.id }}" data-bs-toggle="modal" data-bs-target="{% if item.media_type == 'image' %}#postDetailModal{% else %}#reelViewerModal{% endif %}" data-media-type="{{ item.media_type }}">
+                                {% if item.media_type == 'image' %}
+                                    <img src="{{ item.media_url }}" alt="Group Media">
+                                {% elif item.media_type == 'video' %}
+                                    <video src="{{ item.media_url }}" muted playsinline preload="metadata"></video>
+                                    <i class="fas fa-play-circle video-play-icon"></i>
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted text-center col-span-full py-4">No media shared in this group yet.</p>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="tab-pane fade" id="linksContent" role="tabpanel" aria-labelledby="links-tab">
+                <div class="list-items-section">
+                    {% if group_links %}
+                        <ul>
+                            {% for link in group_links %}
+                                <li>
+                                    <i class="fas fa-link"></i> <a href="{{ link.url }}" target="_blank" rel="noopener noreferrer">{{ link.title or link.url }}</a>
+                                    <span class="shared-by">Shared by <a href="{{ url_for('profile', username=link.shared_by_username) }}" class="text-decoration-none">@{{ link.shared_by_username }}</a> {{ moment(link.timestamp).fromNow() }}</span>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <p class="text-muted text-center py-4">No links shared in this group yet.</p>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="tab-pane fade" id="documentsContent" role="tabpanel" aria-labelledby="documents-tab">
+                <div class="list-items-section">
+                    {% if group_documents %}
+                        <ul>
+                            {% for doc in group_documents %}
+                                <li>
+                                    <i class="fas fa-file-alt"></i> <a href="{{ doc.url }}" target="_blank" rel="noopener noreferrer">{{ doc.name }}</a>
+                                    <span class="shared-by">Shared by <a href="{{ url_for('profile', username=doc.shared_by_username) }}" class="text-decoration-none">@{{ doc.shared_by_username }}</a> {{ moment(doc.timestamp).fromNow() }}</span>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <p class="text-muted text-center py-4">No documents shared in this group yet.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# Group Permissions Section (Only visible to admins/creator) #}
+    {% if group.is_current_user_admin %}
+    <div class="group-permissions-section">
+        <h3>Group Permissions</h3>
+        <form id="groupPermissionsForm">
+            <div class="permission-item">
+                <input class="form-check-input" type="checkbox" id="allowSendMessages" name="allowSendMessages" {% if group.allow_send_messages %}checked{% endif %}>
+                <label class="form-check-label" for="allowSendMessages">
+                    Allow non-admins to send messages
+                </label>
+            </div>
+            <div class="permission-item">
+                <input class="form-check-input" type="checkbox" id="allowAddMembers" name="allowAddMembers" {% if group.allow_add_members %}checked{% endif %}>
+                <label class="form-check-label" for="allowAddMembers">
+                    Allow non-admins to add members
+                </label>
+            </div>
+            <div class="permission-item">
+                <input class="form-check-input" type="checkbox" id="approveNewMembers" name="approveNewMembers" {% if group.approve_new_members %}checked{% endif %}>
+                <label class="form-check-label" for="approveNewMembers">
+                    Approve new members before joining
+                </label>
+            </div>
+            {# Group Creator cannot be removed as admin #}
+            {% if group.is_current_user_creator %}
+            <p class="text-muted small mt-3">As the group creator, you always have full admin privileges and cannot be removed.</p>
+            {% endif %}
+            <button type="button" class="btn btn-primary mt-3" id="savePermissionsBtn">Save Permissions</button>
+        </form>
+    </div>
+    {% endif %}
+
+    {# Group Members List #}
+    <div class="group-members-list-section">
+        <h3>Group Members ({{ group.member_count }})</h3>
+        <div id="groupMembersList">
+            {% for member in group_members[:10] %} {# Show first 10 #}
+            <a href="{{ url_for('profile', username=member.username) }}" class="group-member-item" data-member-id="{{ member.id }}" data-member-username="{{ member.username }}" data-is-admin="{{ member.is_admin }}">
+                <img src="{{ member.profile_pic }}" alt="{{ member.real_name }} Profile" class="profile-pic">
+                <div class="member-details">
+                    <p class="name">{{ member.real_name }}</p>
+                    <p class="role">@{{ member.username }} {% if member.is_admin %}(Admin){% endif %}{% if group.creator_id == member.id %}(Creator){% endif %}</p>
+                </div>
+                {% if group.is_current_user_admin and group.creator_id != member.id %} {# Admin actions, not for creator #}
+                <div class="member-actions dropdown">
+                    <button class="btn-member-action dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="fas fa-ellipsis-h"></i>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        {% if member.is_admin %}
+                        <li><a class="dropdown-item remove-admin-btn" href="#" data-member-id="{{ member.id }}">Remove Admin</a></li>
+                        {% else %}
+                        <li><a class="dropdown-item make-admin-btn" href="#" data-member-id="{{ member.id }}">Make Admin</a></li>
+                        {% endif %}
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item text-danger remove-member-btn" href="#" data-member-id="{{ member.id }}">Remove from Group</a></li>
+                    </ul>
+                </div>
+                {% endif %}
+            </a>
+            {% endfor %}
+            {% if group_members|length > 10 %}
+            <button class="show-more-members-btn" id="showMoreMembersBtn">Show All {{ group_members|length }} Members</button>
+            <div id="remainingMembers" style="display:none;">
+                {% for member in group_members[10:] %} {# Show remaining #}
+                <a href="{{ url_for('profile', username=member.username) }}" class="group-member-item" data-member-id="{{ member.id }}" data-member-username="{{ member.username }}" data-is-admin="{{ member.is_admin }}">
+                    <img src="{{ member.profile_pic }}" alt="{{ member.real_name }} Profile" class="profile-pic">
+                    <div class="member-details">
+                        <p class="name">{{ member.real_name }}</p>
+                        <p class="role">@{{ member.username }} {% if member.is_admin %}(Admin){% endif %}{% if group.creator_id == member.id %}(Creator){% endif %}</p>
+                    </div>
+                    {% if group.is_current_user_admin and group.creator_id != member.id %}
+                    <div class="member-actions dropdown">
+                        <button class="btn-member-action dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fas fa-ellipsis-h"></i>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            {% if member.is_admin %}
+                            <li><a class="dropdown-item remove-admin-btn" href="#" data-member-id="{{ member.id }}">Remove Admin</a></li>
+                            {% else %}
+                            <li><a class="dropdown-item make-admin-btn" href="#" data-member-id="{{ member.id }}">Make Admin</a></li>
+                            {% endif %}
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item text-danger remove-member-btn" href="#" data-member-id="{{ member.id }}">Remove from Group</a></li>
+                        </ul>
+                    </div>
+                    {% endif %}
+                </a>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+        
+        {# Actions for all members #}
+        {% if group.current_user_is_member %}
+        <div class="exit-group-actions">
+            <button type="button" class="btn btn-danger" id="leaveGroupBtn" data-bs-toggle="modal" data-bs-target="#confirmLeaveGroupModal">
+                <i class="fas fa-sign-out-alt me-1"></i> Exit Group
+            </button>
+            <button type="button" class="btn btn-danger" id="reportAndLeaveBtn" data-bs-toggle="modal" data-bs-target="#reportGroupModal">
+                <i class="fas fa-flag me-1"></i> Report & Exit
+            </button>
+        </div>
+        {% endif %}
+    </div>
+
+</div>
+
+{# --- Modals --- #}
+
+{# Invite Members Modal #}
+<div class="modal fade" id="inviteMembersModal" tabindex="-1" aria-labelledby="inviteMembersModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="inviteMembersModalLabel">Invite Friends to {{ group.name }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <input type="text" class="form-control mb-3" id="inviteSearchInput" placeholder="Search friends to invite...">
+                <div id="friendsToInviteList" class="list-group">
+                    <p class="text-center text-muted">Loading friends...</p>
+                    {# Friends to invite will be loaded here via JS/AJAX #}
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+{# Confirm Leave Group Modal #}
+<div class="modal fade" id="confirmLeaveGroupModal" tabindex="-1" aria-labelledby="confirmLeaveGroupModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="confirmLeaveGroupModalLabel">Leave Group: {{ group.name }}?</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to leave <strong>{{ group.name }}</strong>? You will no longer receive messages from this group.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirmLeaveBtn">Leave Group</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{# Report Group Modal (reused from view_group_chat) #}
+<div class="modal fade chat-action-modal" id="reportGroupModal" tabindex="-1" aria-labelledby="reportGroupModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="reportGroupModalLabel">Report Group: {{ group.name }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="reportGroupForm">
+                    <div class="mb-3">
+                        <label for="reportReason" class="form-label">Reason for reporting:</label>
+                        <textarea class="form-control" id="reportReason" rows="4" placeholder="Describe the violation..."></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="submitReportBtn">Submit Report</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{# Reusing Post Detail Modal from index.html #}
+<div class="modal fade" id="postDetailModal" tabindex="-1" aria-labelledby="postDetailModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="postDetailModalLabel">Post Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="postDetailModalBody">
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading post...</span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{# Reusing Reel Viewer Modal from reels.html #}
+<div class="modal fade" id="reelViewerModal" tabindex="-1" aria-labelledby="reelViewerModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-fullscreen">
+        <div class="modal-content bg-dark text-white">
+            <div class="modal-body p-0 d-flex flex-column justify-content-center align-items-center position-relative">
+                <video id="reelViewerVideo" src="" class="img-fluid" style="max-height: 100vh; object-fit: contain; display: none;" autoplay playsinline muted loop></video>
+                <div class="position-absolute top-0 start-0 w-100 p-3 d-flex align-items-center">
+                    <img id="reelOwnerProfilePic" src="" alt="Profile" class="profile-pic me-2" style="width: 40px; height: 40px;">
+                    <span id="reelOwnerUsername" class="fw-bold"></span>
+                    <button type="button" class="btn-close btn-close-white ms-auto" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const groupId = {{ group.id }};
+        const isCurrentUserAdmin = {% if group.is_current_user_admin %}true{% else %}false{% endif %};
+        const isCurrentUserCreator = {% if group.is_current_user_creator %}true{% else %}false{% endif %};
+
+        // --- Group Link Functionality ---
+        const groupJoinLink = document.getElementById('groupJoinLink');
+        const copyGroupLinkBtn = document.getElementById('copyGroupLinkBtn');
+        const shareGroupLinkBtn = document.getElementById('shareGroupLinkBtn');
+
+        copyGroupLinkBtn.addEventListener('click', function() {
+            groupJoinLink.select();
+            groupJoinLink.setSelectionRange(0, 99999);
+            try {
+                document.execCommand('copy');
+                alert('Group join link copied to clipboard!'); // Replace with custom modal
+            } catch (err) {
+                console.error('Failed to copy text: ', err);
+                alert('Failed to copy link. Please copy manually.'); // Replace with custom modal
+            }
+        });
+
+        shareGroupLinkBtn.addEventListener('click', function() {
+            const link = groupJoinLink.value;
+            // This would open a native share dialog if available, or a custom one
+            if (navigator.share) {
+                navigator.share({
+                    title: 'Join {{ group.name }} on SociaFam!',
+                    url: link,
+                }).catch((error) => console.error('Error sharing:', error));
+            } else {
+                alert('Web Share API is not supported in your browser. Link copied to clipboard.');
+                copyGroupLinkBtn.click(); // Fallback to copying
+            }
+        });
+
+        // --- Group Permissions Form ---
+        const groupPermissionsForm = document.getElementById('groupPermissionsForm');
+        const savePermissionsBtn = document.getElementById('savePermissionsBtn');
+
+        if (savePermissionsBtn) { // Only available to admins
+            savePermissionsBtn.addEventListener('click', function() {
+                const allowSendMessages = document.getElementById('allowSendMessages').checked;
+                const allowAddMembers = document.getElementById('allowAddMembers').checked;
+                const approveNewMembers = document.getElementById('approveNewMembers').checked;
+
+                fetch(`/api/group/${groupId}/update_permissions`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        allow_send_messages: allowSendMessages,
+                        allow_add_members: allowAddMembers,
+                        approve_new_members: approveNewMembers
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('Group permissions updated successfully!'); // Replace with custom modal
+                        location.reload();
+                    } else {
+                        alert('Failed to update permissions: ' + data.message);
+                    }
+                })
+                .catch(error => console.error('Error updating group permissions:', error));
+            });
+        }
+
+        // --- Group Members List (Show More) ---
+        const showMoreMembersBtn = document.getElementById('showMoreMembersBtn');
+        const remainingMembersDiv = document.getElementById('remainingMembers');
+
+        if (showMoreMembersBtn && remainingMembersDiv) {
+            showMoreMembersBtn.addEventListener('click', function() {
+                if (remainingMembersDiv.style.display === 'none') {
+                    remainingMembersDiv.style.display = 'block';
+                    this.textContent = 'Show Less Members';
+                } else {
+                    remainingMembersDiv.style.display = 'none';
+                    this.textContent = 'Show All {{ group_members|length }} Members';
+                }
+            });
+        }
+
+        // --- Member Actions (Make Admin, Remove Admin, Remove from Group) ---
+        document.querySelectorAll('.make-admin-btn').forEach(button => {
+            button.addEventListener('click', function(event) {
+                event.preventDefault();
+                event.stopPropagation();
+                const memberId = this.dataset.memberId;
+                if (confirm('Are you sure you want to make this user an admin?')) {
+                    fetch(`/api/group/${groupId}/make_admin/${memberId}`, { method: 'POST' })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                alert(data.message);
+                                location.reload();
+                            } else {
+                                alert('Failed to make admin: ' + data.message);
+                            }
+                        })
+                        .catch(error => console.error('Error making admin:', error));
+                }
+            });
+        });
+
+        document.querySelectorAll('.remove-admin-btn').forEach(button => {
+            button.addEventListener('click', function(event) {
+                event.preventDefault();
+                event.stopPropagation();
+                const memberId = this.dataset.memberId;
+                if (confirm('Are you sure you want to remove admin privileges from this user?')) {
+                    fetch(`/api/group/${groupId}/remove_admin/${memberId}`, { method: 'POST' })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                alert(data.message);
+                                location.reload();
+                            } else {
+                                alert('Failed to remove admin: ' + data.message);
+                            }
+                        })
+                        .catch(error => console.error('Error removing admin:', error));
+                }
+            });
+        });
+
+        document.querySelectorAll('.remove-member-btn').forEach(button => {
+            button.addEventListener('click', function(event) {
+                event.preventDefault();
+                event.stopPropagation();
+                const memberId = this.dataset.memberId;
+                const memberUsername = this.closest('.group-member-item').dataset.memberUsername;
+                if (confirm(`Are you sure you want to remove @${memberUsername} from the group? They cannot rejoin unless re-added by an admin.`)) {
+                    fetch(`/api/group/${groupId}/remove_member/${memberId}`, { method: 'POST' })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                alert(data.message);
+                                location.reload();
+                            } else {
+                                alert('Failed to remove member: ' + data.message);
+                            }
+                        })
+                        .catch(error => console.error('Error removing member:', error));
+                }
+            });
+        });
+
+        // --- Exit Group Actions ---
+        document.getElementById('confirmLeaveBtn').addEventListener('click', function() {
+            fetch(`/api/group/${groupId}/leave_group`, { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('You have left the group.');
+                        window.location.href = "{{ url_for('inbox') }}"; // Redirect to inbox
+                    } else {
+                        alert('Failed to leave group: ' + data.message);
+                    }
+                })
+                .catch(error => console.error('Error leaving group:', error));
+        });
+
+        document.getElementById('submitReportBtn').addEventListener('click', function() {
+            const reportReason = document.getElementById('reportReason').value.trim();
+            if (reportReason) {
+                fetch(`/api/group/${groupId}/report_group`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ reason: reportReason })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('Group reported to admin and you have exited.');
+                        window.location.href = "{{ url_for('inbox') }}"; // Redirect to inbox
+                    } else {
+                        alert('Failed to submit report: ' + data.message);
+                    }
+                })
+                .catch(error => console.error('Error submitting report:', error));
+            } else {
+                alert('Please provide a reason for reporting.');
+            }
+        });
+
+        // --- Invite Members Modal Logic ---
+        const inviteMembersModal = document.getElementById('inviteMembersModal');
+        const inviteSearchInput = document.getElementById('inviteSearchInput');
+        const friendsToInviteList = document.getElementById('friendsToInviteList');
+        let allFriends = []; // To store friends for client-side search
+
+        inviteMembersModal.addEventListener('show.bs.modal', function() {
+            // Load friends who are not already in the group
+            friendsToInviteList.innerHTML = `<p class="text-center text-muted">Loading friends...</p>`;
+            fetch(`/api/group/${groupId}/friends_to_invite`) // Backend needs to return friends not in group
+                .then(response => response.json())
+                .then(data => {
+                    allFriends = data.friends || [];
+                    renderFriendsToInvite(allFriends);
+                })
+                .catch(error => {
+                    console.error('Error loading friends to invite:', error);
+                    friendsToInviteList.innerHTML = `<p class="text-danger text-center">Failed to load friends.</p>`;
+                });
+        });
+
+        inviteSearchInput.addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase();
+            const filteredFriends = allFriends.filter(friend =>
+                friend.real_name.toLowerCase().includes(searchTerm) ||
+                friend.username.toLowerCase().includes(searchTerm)
+            );
+            renderFriendsToInvite(filteredFriends);
+        });
+
+        function renderFriendsToInvite(friends) {
+            friendsToInviteList.innerHTML = '';
+            if (friends.length > 0) {
+                friends.forEach(friend => {
+                    const friendItem = document.createElement('div');
+                    friendItem.classList.add('list-group-item', 'list-group-item-action', 'd-flex', 'align-items-center');
+                    friendItem.innerHTML = `
+                        <img src="${friend.profile_pic}" alt="${friend.username} Profile" class="profile-pic me-3" style="width: 40px; height: 40px; border-radius: 50%;">
+                        <p class="mb-0 flex-grow-1">${friend.real_name} <span class="text-muted small">@${friend.username}</span></p>
+                        <button class="btn btn-sm btn-primary invite-friend-btn" data-user-id="${friend.id}">Invite</button>
+                    `;
+                    friendsToInviteList.appendChild(friendItem);
+                });
+                friendsToInviteList.querySelectorAll('.invite-friend-btn').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const friendId = this.dataset.userId;
+                        fetch(`/api/group/${groupId}/invite_member/${friendId}`, { method: 'POST' })
+                            .then(response => response.json())
+                            .then(data => {
+                                if (data.success) {
+                                    alert(`Invitation sent to ${data.friend_name}!`);
+                                    this.textContent = 'Sent!';
+                                    this.disabled = true;
+                                    // Remove from allFriends for future searches
+                                    allFriends = allFriends.filter(f => f.id != friendId);
+                                } else {
+                                    alert('Failed to send invitation: ' + data.message);
+                                }
+                            })
+                            .catch(error => console.error('Error sending invitation:', error));
+                    });
+                });
+            } else {
+                friendsToInviteList.innerHTML = `<p class="text-center text-muted">No friends available to invite.</p>`;
+            }
+        }
+
+
+        // --- Modals for Media Display (reused from index.html/reels.html) ---
+        const postDetailModalElement = document.getElementById('postDetailModal');
+        const postDetailModalBody = document.getElementById('postDetailModalBody');
+        const reelViewerModalElement = document.getElementById('reelViewerModal');
+        const reelViewerVideo = document.getElementById('reelViewerVideo');
+        const reelOwnerProfilePic = document.getElementById('reelOwnerProfilePic');
+        const reelOwnerUsername = document.getElementById('reelOwnerUsername');
+
+        // Post Detail Modal Logic
+        if (postDetailModalElement && postDetailModalBody) {
+            postDetailModalElement.addEventListener('show.bs.modal', function (event) {
+                const button = event.relatedTarget;
+                const itemId = button.getAttribute('data-item-id');
+
+                postDetailModalBody.innerHTML = `
+                    <div class="text-center py-5">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading post...</span>
+                        </div>
+                    </div>`;
+
+                fetch(`/api/post-details/${itemId}`) // Assuming posts and media shared in group can be fetched this way
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Network response was not ok');
+                        }
+                        return response.text();
+                    })
+                    .then(html => {
+                        postDetailModalBody.innerHTML = html;
+                    })
+                    .catch(error => {
+                        console.error('Error fetching post details:', error);
+                        postDetailModalBody.innerHTML = `<p class="text-danger text-center">Failed to load post. Please try again.</p>`;
+                    });
+            });
+            postDetailModalElement.addEventListener('hidden.bs.modal', function () {
+                postDetailModalBody.innerHTML = '';
+            });
+        }
+        
+        // Reel Viewer Modal Logic
+        if (reelViewerModalElement && reelViewerVideo) {
+            reelViewerModalElement.addEventListener('show.bs.modal', function (event) {
+                const button = event.relatedTarget;
+                const itemId = button.getAttribute('data-item-id'); // This will be the reel ID
+
+                // Find the reel data from group_media_posts
+                const reel = {% if group_media_posts %}{{ group_media_posts | tojson | safe }}{% else %}[]{% endif %}.find(item => item.id == itemId && item.media_type === 'video');
+
+                if (reel && reel.media_url) {
+                    reelViewerVideo.src = reel.media_url;
+                    // Assuming reel owner info is available in the reel object or current_user_profile
+                    reelOwnerProfilePic.src = reel.owner_profile_pic || '{{ group.profile_pic }}'; // Fallback to group pic
+                    reelOwnerUsername.textContent = '@' + (reel.owner_username || 'Group Shared');
+                    reelViewerVideo.style.display = 'block';
+                    reelViewerVideo.play().catch(e => console.error("Video autoplay error:", e));
+                } else {
+                    console.error("Reel not found for ID:", itemId);
+                }
+            });
+
+            reelViewerModalElement.addEventListener('hidden.bs.modal', function () {
+                reelViewerVideo.pause();
+                reelViewerVideo.currentTime = 0;
+                reelViewerVideo.src = '';
+                reelViewerVideo.style.display = 'none';
+                reelOwnerProfilePic.src = '';
+                reelOwnerUsername.textContent = '';
+            });
+
+            reelViewerModalElement.addEventListener('click', function(e) {
+                if (e.target === reelViewerVideo) {
+                    if (reelViewerVideo.paused) {
+                        reelViewerVideo.play();
+                    } else {
+                        reelViewerVideo.pause();
+                    }
+                }
+            });
+        }
+    });
+</script>
+{% endblock %}
