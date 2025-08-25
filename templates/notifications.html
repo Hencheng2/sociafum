@@ -1,176 +1,318 @@
-{% extends "base.html" %}
+{% extends 'base.html' %}
 
-{% block title %}Notifications - SociaFam{% endblock %}
+{% block title %}Notifications{% endblock %}
 
-{% block extra_css %}
+{% block content %}
 <style>
-    .notifications-container {
-        max-width: 600px;
-        margin: 0 auto;
+    /* Custom styles for the Notifications page */
+    body {
+        padding-top: 0;
+        padding-bottom: var(--navbar-height); /* Space for fixed bottom navbar */
+        overflow-x: hidden;
     }
-    
-    .notifications-header {
-        background-color: white;
-        border-radius: 8px;
-        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-        padding: 20px;
-        margin-bottom: 20px;
-    }
-    
-    .notifications-title {
-        font-size: 24px;
-        font-weight: 600;
-        margin-bottom: 20px;
-    }
-    
-    .notifications-tabs {
+
+    .notifications-main-container {
         display: flex;
-        border-bottom: 1px solid #e4e6eb;
+        flex-direction: column;
+        min-height: calc(100vh - var(--navbar-height)); /* Full height minus bottom nav */
+        background-color: var(--background-light);
+        padding: 0; /* Remove padding from container to let header/footer manage it */
     }
-    
-    .notifications-tab {
-        padding: 10px 20px;
-        cursor: pointer;
-        border-bottom: 2px solid transparent;
+
+    /* Fixed Top Header for Notifications */
+    .notifications-fixed-header {
+        position: sticky;
+        top: 0;
+        z-index: 1000;
+        background-color: var(--card-background);
+        padding: 15px 20px;
+        border-bottom: 1px solid var(--border-color-light);
+        box-shadow: 0 2px 5px var(--shadow-soft);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
     }
-    
-    .notifications-tab.active {
-        border-bottom-color: #1877f2;
-        color: #1877f2;
-        font-weight: 600;
+
+    .notifications-fixed-header h2 {
+        color: var(--primary-text);
+        font-weight: 700;
+        margin: 0;
+        font-size: 1.6em;
     }
-    
-    .notifications-list {
-        background-color: white;
-        border-radius: 8px;
-        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-        overflow: hidden;
+
+    .mark-read-btn {
+        background-color: transparent;
+        border: none;
+        color: var(--secondary-text);
+        font-size: 0.9em;
+        padding: 5px 10px;
+        border-radius: 20px;
+        transition: background-color 0.2s ease, color 0.2s ease;
     }
-    
+    .mark-read-btn:hover {
+        background-color: var(--background-light);
+        color: var(--primary-color);
+    }
+
+    /* Scrollable Notifications List */
+    .notifications-list-scrollable {
+        flex: 1; /* Takes remaining vertical space */
+        overflow-y: auto; /* Make this section scrollable */
+        -webkit-overflow-scrolling: touch;
+        padding: 15px; /* Padding within the scrollable content */
+    }
+
     .notification-item {
         display: flex;
         align-items: center;
-        padding: 15px 20px;
-        border-bottom: 1px solid #e4e6eb;
+        padding: 12px 15px;
+        margin-bottom: 10px;
+        background-color: var(--card-background);
+        border-radius: 12px;
+        box-shadow: 0 2px 8px var(--shadow-soft);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        text-decoration: none;
+        color: inherit;
     }
-    
-    .notification-item:last-child {
-        border-bottom: none;
-    }
-    
+    /* Style for unread notifications */
     .notification-item.unread {
-        background-color: #f0f2f5;
+        background-color: var(--primary-color-light); /* Lighter background for unread */
+        border-left: 5px solid var(--primary-color); /* Highlight with a left border */
+        padding-left: 10px; /* Adjust padding due to border */
     }
-    
-    .notification-avatar {
-        width: 50px;
-        height: 50px;
-        border-radius: 50%;
+    .dark-theme .notification-item.unread {
+        background-color: #3a4750; /* Darker variant for unread in dark theme */
+    }
+
+
+    .notification-item:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 4px 12px var(--shadow-medium);
+    }
+
+    .notification-icon {
+        font-size: 1.5em;
+        color: var(--primary-color);
         margin-right: 15px;
+        flex-shrink: 0;
     }
-    
+    .notification-item.unread .notification-icon {
+        color: var(--primary-color-dark); /* Stronger color for unread icons */
+    }
+
+
     .notification-content {
         flex-grow: 1;
+        overflow: hidden;
     }
-    
-    .notification-text {
-        margin-bottom: 5px;
+
+    .notification-content p {
+        margin: 0;
+        color: var(--primary-text);
         line-height: 1.4;
+        font-size: 0.95em;
     }
-    
-    .notification-time {
-        font-size: 12px;
-        color: #65676b;
+
+    .notification-content .timestamp {
+        font-size: 0.8em;
+        color: var(--secondary-text);
+        margin-top: 5px;
+        display: block;
     }
-    
-    .notification-action {
-        margin-left: 15px;
-    }
-    
-    .notification-empty {
+
+    .no-notifications-message {
         text-align: center;
-        padding: 40px;
-        color: #65676b;
+        color: var(--secondary-text);
+        padding: 30px;
+        margin-top: 20px;
+        background-color: var(--card-background);
+        border-radius: 12px;
+        box-shadow: 0 4px 10px var(--shadow-soft);
     }
-    
-    .notification-empty i {
-        font-size: 48px;
-        margin-bottom: 15px;
+
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+        .notifications-fixed-header {
+            padding: 10px 15px;
+        }
+        .notifications-fixed-header h2 {
+            font-size: 1.4em;
+        }
+        .mark-read-btn {
+            font-size: 0.8em;
+            padding: 4px 8px;
+        }
+        .notifications-list-scrollable {
+            padding: 10px;
+        }
+        .notification-item {
+            padding: 10px 12px;
+            margin-bottom: 8px;
+            border-radius: 10px;
+        }
+        .notification-item.unread {
+            padding-left: 8px;
+        }
+        .notification-icon {
+            font-size: 1.3em;
+            margin-right: 10px;
+        }
+        .notification-content p {
+            font-size: 0.9em;
+        }
+        .notification-content .timestamp {
+            font-size: 0.75em;
+        }
     }
-    
-    .notification-empty p {
-        font-size: 18px;
+
+    @media (max-width: 480px) {
+        .notifications-fixed-header h2 {
+            font-size: 1.2em;
+        }
+        .mark-read-btn {
+            font-size: 0.75em;
+        }
+        .notification-item {
+            padding: 8px 10px;
+        }
+        .notification-icon {
+            font-size: 1.2em;
+            margin-right: 8px;
+        }
+        .notification-content p {
+            font-size: 0.85em;
+        }
+        .notification-content .timestamp {
+            font-size: 0.7em;
+        }
     }
 </style>
-{% endblock %}
 
-{% block content %}
-<div class="notifications-container">
-    <div class="notifications-header">
-        <h1 class="notifications-title">Notifications</h1>
-        
-        <div class="notifications-tabs">
-            <div class="notifications-tab active" data-tab="all">All</div>
-            <div class="notifications-tab" data-tab="mentions">Mentions</div>
-            <div class="notifications-tab" data-tab="follows">Follows</div>
-            <div class="notifications-tab" data-tab="likes">Likes</div>
-        </div>
+<div class="notifications-main-container">
+    {# Fixed Top Header for Notifications #}
+    <div class="notifications-fixed-header">
+        <h2>Notifications</h2>
+        {% if notifications|length > 0 %}
+            <button class="mark-read-btn" id="markAllAsReadBtn">
+                <i class="fas fa-check-double me-1"></i> Mark All as Read
+            </button>
+        {% endif %}
     </div>
-    
-    <div class="notifications-list">
+
+    {# Scrollable Notifications List #}
+    <div class="notifications-list-scrollable">
         {% if notifications %}
             {% for notification in notifications %}
-            <div class="notification-item {% if not notification.is_read %}unread{% endif %}">
-                <img src="{{ url_for('static', filename='images/default-profile.png') }}" alt="Notification" class="notification-avatar">
-                
-                <div class="notification-content">
-                    <div class="notification-text">{{ notification.content }}</div>
-                    <div class="notification-time">{{ notification.created_at|timesince }}</div>
-                </div>
-                
-                <div class="notification-action">
-                    {% if notification.type == 'follow' %}
-                    <button class="btn btn-primary">Follow Back</button>
-                    {% endif %}
-                </div>
-            </div>
+                <a href="{{ notification.link }}" class="notification-item {% if not notification.is_read %}unread{% endif %}" data-notification-id="{{ notification.id }}">
+                    <div class="notification-icon">
+                        {% if notification.type == 'system_message' %}
+                            <i class="fas fa-bullhorn"></i> {# System message from admin #}
+                        {% elif notification.type == 'warning' %}
+                            <i class="fas fa-exclamation-triangle"></i> {# Warning from admin #}
+                        {% elif notification.type == 'friend_request' %}
+                            <i class="fas fa-user-plus"></i> {# Incoming friend request #}
+                        {% elif notification.type == 'friend_accepted' %}
+                            <i class="fas fa-user-check"></i> {# Friend request accepted #}
+                        {% elif notification.type == 'post_liked' %}
+                            <i class="fas fa-heart"></i> {# Post liked #}
+                        {% elif notification.type == 'message_received' %}
+                            <i class="fas fa-comment-alt"></i> {# New message #}
+                        {% elif notification.type == 'group_invite' %}
+                            <i class="fas fa-user-friends"></i> {# Group invitation #}
+                        {% elif notification.type == 'comment_received' %}
+                            <i class="fas fa-comments"></i> {# New comment on your post/reel #}
+                        {% elif notification.type == 'tagged' %}
+                            <i class="fas fa-at"></i> {# Tagged in comment or bio #}
+                        {% else %}
+                            <i class="fas fa-bell"></i> {# Generic notification #}
+                        {% endif %}
+                    </div>
+                    <div class="notification-content">
+                        <p>{{ notification.message | safe }}</p>
+                        <span class="timestamp">{{ moment(notification.timestamp).fromNow() }}</span>
+                    </div>
+                </a>
             {% endfor %}
         {% else %}
-            <div class="notification-empty">
-                <i class="fas fa-bell-slash"></i>
-                <p>No notifications yet</p>
+            <div class="no-notifications-message">
+                <i class="fas fa-bell fa-3x mb-3"></i>
+                <p class="lead">No new notifications.</p>
+                <p>You're all caught up!</p>
             </div>
         {% endif %}
     </div>
 </div>
-{% endblock %}
 
-{% block extra_js %}
 <script>
-    // Handle notifications tabs
-    document.querySelectorAll('.notifications-tab').forEach(tab => {
-        tab.addEventListener('click', function() {
-            const tabName = this.dataset.tab;
-            
-            // Remove active class from all tabs
-            document.querySelectorAll('.notifications-tab').forEach(t => t.classList.remove('active'));
-            
-            // Add active class to clicked tab
-            this.classList.add('active');
-            
-            // Filter notifications based on tab
-            filterNotifications(tabName);
+    document.addEventListener('DOMContentLoaded', function() {
+        // Auto-hide flash messages (if any) - copied from base.html for consistency
+        const flashMessages = document.querySelectorAll('.alert-container .alert');
+        flashMessages.forEach(function(flash) {
+            setTimeout(function() {
+                flash.style.opacity = '0';
+                flash.style.transition = 'opacity 0.5s ease-out';
+                setTimeout(function() {
+                    flash.remove();
+                }, 500);
+            }, 5000);
+        });
+
+        const markAllAsReadBtn = document.getElementById('markAllAsReadBtn');
+
+        if (markAllAsReadBtn) {
+            markAllAsReadBtn.addEventListener('click', function() {
+                // Confirm with user
+                if (confirm('Are you sure you want to mark all notifications as read?')) {
+                    fetch('/api/notifications/mark_all_read', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            // Update UI: remove 'unread' class from all notifications
+                            document.querySelectorAll('.notification-item.unread').forEach(item => {
+                                item.classList.remove('unread');
+                            });
+                            // Hide "Mark All as Read" button
+                            markAllAsReadBtn.style.display = 'none';
+                            alert('All notifications marked as read.'); // Replace with custom modal
+                        } else {
+                            alert('Failed to mark notifications as read: ' + data.message);
+                        }
+                    })
+                    .catch(error => console.error('Error marking all notifications as read:', error));
+                }
+            });
+        }
+
+        // Optional: Mark single notification as read on click, but still navigate
+        document.querySelectorAll('.notification-item').forEach(item => {
+            item.addEventListener('click', function(event) {
+                const notificationId = this.dataset.notificationId;
+                if (this.classList.contains('unread')) {
+                    // Send an AJAX request to mark this specific notification as read
+                    fetch(`/api/notifications/mark_read/${notificationId}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            item.classList.remove('unread');
+                            // Check if no more unread notifications, then hide "Mark All as Read" button
+                            if (document.querySelectorAll('.notification-item.unread').length === 0 && markAllAsReadBtn) {
+                                markAllAsReadBtn.style.display = 'none';
+                            }
+                        } else {
+                            console.error('Failed to mark single notification as read:', data.message);
+                        }
+                    })
+                    .catch(error => console.error('Error marking single notification as read:', error));
+                }
+                // Allow default link navigation to proceed
+            });
         });
     });
-    
-    function filterNotifications(tabName) {
-        const notificationItems = document.querySelectorAll('.notification-item');
-        
-        notificationItems.forEach(item => {
-            // In a real implementation, this would filter based on notification type
-            // For now, we'll just show all notifications
-            item.style.display = 'flex';
-        });
-    }
 </script>
 {% endblock %}
