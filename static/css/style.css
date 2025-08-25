@@ -1,0 +1,294 @@
+/* Google Fonts Import: Poppins - As per previous context and suitable for social media */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&display=swap');
+
+/* --- Root Variables for Theme Colors (Light Theme) --- */
+:root {
+    --primary-text: #333d29; /* Dark olive green/brown for main text */
+    --secondary-text: #588157; /* Muted green for secondary text */
+    --accent-gold: #c38c1b; /* Rich, warm gold/ochre */
+    --accent-orange: #e07a5f; /* Soft, warm orange */
+    --background-light: #f7f9f7; /* Very light, off-white background */
+    --card-background: #ffffff; /* Clean white for cards */
+    --footer-background: #3a5a40; /* Deep green for footer/header, used for navbar base */
+    --border-color-light: #e0e0e0; /* Light gray for borders */
+    --shadow-soft: rgba(0, 0, 0, 0.1);
+    --shadow-medium: rgba(0, 0, 0, 0.15);
+    --shadow-strong: rgba(0, 0, 0, 0.25);
+    --success-color: #4CAF50; /* Green for success messages */
+    --info-color: #2196F3;    /* Blue for info messages */
+    --warning-color: #ff9800; /* Orange for warning messages */
+    --danger-color: #f44336;  /* Red for danger messages */
+    --button-bg-primary: #588157; /* Primary button background */
+    --button-text-primary: #ffffff; /* Primary button text */
+    --button-bg-secondary: #a3b18a; /* Secondary button background */
+    --button-text-secondary: #ffffff; /* Secondary button text */
+    --input-border-color: #ccc;
+    --nav-link-hover-bg: #4a627a; /* Example hover for nav links */
+}
+
+/* --- Dark Theme Variables --- */
+.dark-theme {
+    --primary-text: #e0e0e0; /* Light grey for main text */
+    --secondary-text: #a3b18a; /* Lighter muted green */
+    --accent-gold: #e5ac2f; /* Brighter gold */
+    --accent-orange: #f28c6e; /* Brighter soft orange */
+    --background-light: #1a1a1a; /* Dark background */
+    --card-background: #2d2d2d; /* Darker grey for cards */
+    --footer-background: #2c3e50; /* Dark blue-grey for navbar base */
+    --border-color-light: #444; /* Darker gray for borders */
+    --shadow-soft: rgba(0, 0, 0, 0.3);
+    --shadow-medium: rgba(0, 0, 0, 0.4);
+    --shadow-strong: rgba(0, 0, 0, 0.5);
+    --success-color: #4CAF50;
+    --info-color: #64B5F6;
+    --warning-color: #FFB74D;
+    --danger-color: #EF5350;
+    --button-bg-primary: #4a627a; /* Dark primary button background */
+    --button-text-primary: #ffffff;
+    --button-bg-secondary: #607d8b; /* Dark secondary button background */
+    --button-text-secondary: #ffffff;
+    --input-border-color: #555;
+    --nav-link-hover-bg: #3e5166; /* Darker hover for nav links */
+}
+
+/* --- General Body Styles --- */
+body {
+    font-family: 'Poppins', sans-serif; /* Using Poppins as suggested */
+    background-color: var(--background-light);
+    color: var(--primary-text);
+    margin: 0;
+    line-height: 1.6;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* --- Main Content Area --- */
+.content {
+    flex: 1; /* Allows content to take up available vertical space */
+    padding-top: 20px; /* Space from the top edge */
+    padding-bottom: 80px; /* More space to clear the fixed bottom navbar */
+    position: relative; /* For alert positioning */
+}
+
+/* --- Alerts and Flash Messages --- */
+.alert-container {
+    position: fixed;
+    top: 20px; /* Position below any potential top-fixed element, or just from the top */
+    left: 50%;
+    transform: translateX(-50%);
+    width: 90%;
+    max-width: 500px;
+    z-index: 2000; /* Ensure it's above almost everything */
+    text-align: center;
+}
+
+.alert {
+    padding: 10px 15px;
+    margin-bottom: 10px;
+    border-radius: 8px;
+    font-size: 0.9em;
+    opacity: 1;
+    transition: opacity 0.5s ease-out;
+}
+
+.alert-success { background-color: var(--flash-success-bg); color: var(--flash-success-text); border-color: transparent;}
+.alert-info { background-color: var(--flash-info-bg); color: var(--flash-info-text); border-color: transparent;}
+.alert-warning { background-color: var(--flash-warning-bg); color: var(--flash-warning-text); border-color: transparent;}
+.alert-danger { background-color: var(--flash-danger-bg); color: var(--flash-danger-text); border-color: transparent;}
+
+/* --- Navbar Styling (Fixed Bottom) --- */
+.navbar {
+    height: var(--navbar-height); /* Defined in base.html style block */
+    background-color: var(--footer-background); /* Fallback */
+    /* Gradient applied in base.html inline style */
+    box-shadow: 0 -4px 15px var(--shadow-medium); /* Stronger shadow for the fixed bar */
+    border-top: 1px solid rgba(255, 255, 255, 0.1); /* Subtle separator */
+}
+
+.navbar-nav-bottom {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0 5px; /* Reduced padding for more icons */
+}
+
+.navbar-nav-bottom .nav-item {
+    flex-grow: 1;
+    text-align: center;
+    position: relative; /* For badge positioning */
+}
+
+.navbar-nav-bottom .nav-link {
+    color: #ffffff !important; /* Force white for gradient background */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 5px 0;
+    font-size: 0.68em; /* Slightly smaller text for more compact look */
+    text-decoration: none;
+    transition: color 0.2s ease, transform 0.2s ease;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.3); /* Subtle text shadow for readability */
+}
+
+.navbar-nav-bottom .nav-link:hover,
+.navbar-nav-bottom .nav-link.active {
+    color: var(--accent-gold) !important; /* Highlight color on hover/active */
+    transform: translateY(-3px); /* More pronounced lift */
+}
+
+.navbar-nav-bottom .nav-link i {
+    font-size: 1.5em; /* Slightly larger icon size */
+    margin-bottom: 2px;
+}
+
+/* Profile image in navbar for current user */
+.navbar-profile-img {
+    width: 28px; /* Slightly smaller profile picture */
+    height: 28px;
+    object-fit: cover;
+    border-radius: 50%;
+    border: 2px solid var(--accent-gold); /* Highlight with accent color */
+    margin-bottom: 2px;
+}
+
+.navbar-nav-bottom .nav-link .badge {
+    position: absolute;
+    top: 0px; /* Adjust badge position */
+    right: 5px;
+    font-size: 0.6em;
+    padding: .3em .6em;
+    background-color: var(--danger-color); /* Red badge */
+    color: white;
+    border-radius: 50%;
+    transform: translate(50%, -50%);
+    z-index: 10;
+    min-width: 1.5em; /* Ensure badge is circular even for single digits */
+    height: 1.5em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+
+/* --- Card Styles (for pages like dashboard, register, login) --- */
+.card {
+    background-color: var(--card-background);
+    border: 1px solid var(--border-color-light);
+    border-radius: 12px; /* More rounded cards */
+    box-shadow: 0 6px 15px var(--shadow-soft);
+    padding: 20px;
+}
+
+.card-header {
+    background-color: var(--footer-background); /* Using a similar background for headers */
+    color: var(--button-text-primary);
+    border-bottom: 1px solid var(--border-color-light);
+    padding: 15px 20px;
+    border-top-left-radius: 12px;
+    border-top-right-radius: 12px;
+    font-weight: 600;
+}
+
+/* --- Form Control Styles --- */
+.form-control {
+    background-color: var(--background-light);
+    color: var(--primary-text);
+    border: 1px solid var(--input-border-color);
+    border-radius: 8px;
+    padding: 10px 15px;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.form-control:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.2rem rgba(88, 129, 87, 0.25); /* Subtle focus ring */
+    background-color: var(--card-background); /* Lighter on focus */
+}
+
+.form-label {
+    color: var(--secondary-text);
+    font-weight: 500;
+    margin-bottom: 5px;
+}
+
+/* --- Button Styles --- */
+.btn {
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-weight: 600;
+    transition: background-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.btn-primary {
+    background-color: var(--button-bg-primary);
+    color: var(--button-text-primary);
+    border-color: var(--button-bg-primary);
+}
+
+.btn-primary:hover {
+    background-color: darken(var(--button-bg-primary), 10%); /* Needs a JS/SCSS darken function */
+    border-color: darken(var(--button-bg-primary), 10%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px var(--shadow-soft);
+}
+
+.btn-secondary {
+    background-color: var(--button-bg-secondary);
+    color: var(--button-text-secondary);
+    border-color: var(--button-bg-secondary);
+}
+
+.btn-secondary:hover {
+    background-color: darken(var(--button-bg-secondary), 10%);
+    border-color: darken(var(--button-bg-secondary), 10%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px var(--shadow-soft);
+}
+
+/* --- Links --- */
+a {
+    color: var(--link-color);
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+
+a:hover {
+    color: darken(var(--link-color), 10%);
+    text-decoration: underline;
+}
+
+/* --- General Text Styles --- */
+h1, h2, h3, h4, h5, h6 {
+    color: var(--primary-text);
+    font-weight: 700;
+    margin-bottom: 15px;
+}
+
+p {
+    margin-bottom: 10px;
+}
+
+/* --- Responsive Adjustments --- */
+@media (min-width: 768px) {
+    .navbar-nav-bottom .nav-link {
+        font-size: 0.7em; /* Even smaller text on desktop to be discreet */
+    }
+    .navbar-nav-bottom .nav-link i {
+        font-size: 1.3em;
+    }
+    .navbar-profile-img {
+        width: 25px;
+        height: 25px;
+    }
+    .content {
+        padding-left: 20px; /* Add horizontal padding on larger screens */
+        padding-right: 20px;
+    }
+}
