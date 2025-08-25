@@ -1,0 +1,279 @@
+{% extends 'base.html' %}
+
+{% block title %}Blocked Users{% endblock %}
+
+{% block content %}
+<style>
+    /* Custom styles for the Blocked Users page */
+    body {
+        padding-top: 0;
+        padding-bottom: var(--navbar-height); /* Space for fixed bottom navbar */
+        overflow-x: hidden;
+    }
+
+    .blocked-users-container {
+        max-width: 700px;
+        margin: 20px auto;
+        padding: 20px 15px;
+        background-color: var(--background-light);
+    }
+
+    .blocked-users-card {
+        background-color: var(--card-background);
+        border-radius: 12px;
+        box-shadow: 0 4px 15px var(--shadow-medium);
+        padding: 25px;
+    }
+
+    .blocked-users-card h2 {
+        text-align: center;
+        color: var(--primary-text);
+        margin-bottom: 30px;
+        font-weight: 700;
+        font-size: 2em;
+    }
+
+    .blocked-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .blocked-list-item {
+        display: flex;
+        align-items: center;
+        padding: 12px 15px;
+        margin-bottom: 10px;
+        background-color: var(--background-light);
+        border-radius: 10px;
+        box-shadow: 0 2px 5px var(--shadow-soft);
+        text-decoration: none;
+        color: inherit;
+        transition: background-color 0.2s ease;
+    }
+
+    .blocked-list-item:hover {
+        background-color: var(--primary-color-light);
+    }
+    .dark-theme .blocked-list-item:hover {
+        background-color: #3a4750;
+    }
+
+
+    .blocked-user-pic {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        object-fit: cover;
+        margin-right: 15px;
+        border: 2px solid var(--secondary-text);
+        flex-shrink: 0;
+    }
+
+    .blocked-user-details {
+        flex-grow: 1;
+        overflow: hidden;
+    }
+
+    .blocked-user-details .name {
+        font-weight: 600;
+        color: var(--primary-text);
+        margin-bottom: 3px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        font-size: 1.1em;
+    }
+
+    .blocked-user-details .username {
+        font-size: 0.9em;
+        color: var(--secondary-text);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .btn-unblock {
+        background-color: var(--warning-color);
+        color: white;
+        border: none;
+        border-radius: 20px;
+        padding: 8px 15px;
+        font-size: 0.9em;
+        font-weight: 500;
+        transition: background-color 0.2s ease, transform 0.2s ease;
+        flex-shrink: 0;
+    }
+    .btn-unblock:hover {
+        background-color: darken(var(--warning-color), 10%);
+        transform: translateY(-1px);
+    }
+
+    .no-blocked-users-message {
+        text-align: center;
+        color: var(--secondary-text);
+        padding: 30px;
+        margin-top: 20px;
+        background-color: var(--card-background);
+        border-radius: 12px;
+        box-shadow: 0 4px 10px var(--shadow-soft);
+    }
+
+    .back-to-settings-btn {
+        display: block;
+        width: fit-content;
+        margin: 40px auto 0 auto;
+        padding: 12px 30px;
+        background-color: var(--button-bg-secondary);
+        color: var(--button-text-secondary);
+        border-radius: 25px;
+        font-size: 1.1em;
+        font-weight: 600;
+        transition: background-color 0.2s ease, transform 0.2s ease;
+        text-decoration: none;
+    }
+    .back-to-settings-btn:hover {
+        background-color: darken(var(--button-bg-secondary), 10%);
+        transform: translateY(-2px);
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+        .blocked-users-container {
+            margin: 15px auto;
+            padding: 15px 10px;
+        }
+        .blocked-users-card {
+            padding: 20px;
+        }
+        .blocked-users-card h2 {
+            font-size: 1.8em;
+            margin-bottom: 25px;
+        }
+        .blocked-list-item {
+            padding: 10px 12px;
+            margin-bottom: 8px;
+        }
+        .blocked-user-pic {
+            width: 45px;
+            height: 45px;
+            margin-right: 10px;
+        }
+        .blocked-user-details .name {
+            font-size: 1em;
+        }
+        .blocked-user-details .username {
+            font-size: 0.85em;
+        }
+        .btn-unblock {
+            padding: 6px 12px;
+            font-size: 0.85em;
+        }
+        .back-to-settings-btn {
+            padding: 10px 25px;
+            font-size: 1em;
+            margin-top: 30px;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .blocked-users-card {
+            padding: 15px;
+        }
+        .blocked-users-card h2 {
+            font-size: 1.5em;
+        }
+        .blocked-user-pic {
+            width: 40px;
+            height: 40px;
+        }
+        .blocked-user-details .name {
+            font-size: 0.95em;
+        }
+        .blocked-user-details .username {
+            font-size: 0.8em;
+        }
+        .btn-unblock {
+            padding: 5px 10px;
+            font-size: 0.8em;
+        }
+        .back-to-settings-btn {
+            padding: 8px 20px;
+            font-size: 0.95em;
+        }
+    }
+</style>
+
+<div class="blocked-users-container">
+    <div class="blocked-users-card">
+        <h2>Blocked Users</h2>
+
+        <div class="blocked-list" id="blockedUsersList">
+            {% if blocked_users %}
+                {% for user in blocked_users %}
+                    <div class="blocked-list-item" data-user-id="{{ user.id }}">
+                        <img src="{{ user.profile_pic }}" alt="{{ user.real_name }} Profile" class="blocked-user-pic">
+                        <div class="blocked-user-details">
+                            <p class="name">{{ user.real_name }}</p>
+                            <p class="username">@{{ user.username }}</p>
+                        </div>
+                        <button type="button" class="btn btn-unblock" data-user-id="{{ user.id }}">Unblock</button>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div class="no-blocked-users-message">
+                    <i class="fas fa-user-slash fa-3x mb-3"></i>
+                    <p class="lead">You haven't blocked anyone yet.</p>
+                </div>
+            {% endif %}
+        </div>
+
+        <a href="{{ url_for('settings') }}" class="btn back-to-settings-btn">
+            <i class="fas fa-arrow-left me-2"></i> Back to Settings
+        </a>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const blockedUsersList = document.getElementById('blockedUsersList');
+
+        blockedUsersList.querySelectorAll('.btn-unblock').forEach(button => {
+            button.addEventListener('click', function() {
+                const userIdToUnblock = this.dataset.userId;
+                const listItem = this.closest('.blocked-list-item');
+
+                if (confirm('Are you sure you want to unblock this user?')) {
+                    fetch(`/api/unblock_user/${userIdToUnblock}`, {
+                        method: 'POST', // Or DELETE depending on API design
+                        headers: { 'Content-Type': 'application/json' }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            alert(data.message); // Replace with custom modal
+                            listItem.remove(); // Remove the user from the list
+
+                            // Check if the list is now empty and display 'no users' message
+                            if (blockedUsersList.children.length === 0) {
+                                blockedUsersList.innerHTML = `
+                                    <div class="no-blocked-users-message">
+                                        <i class="fas fa-user-slash fa-3x mb-3"></i>
+                                        <p class="lead">You haven't blocked anyone yet.</p>
+                                    </div>
+                                `;
+                            }
+                        } else {
+                            alert('Failed to unblock user: ' + data.message);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error unblocking user:', error);
+                        alert('An error occurred while unblocking the user.');
+                    });
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}
