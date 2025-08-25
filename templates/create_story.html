@@ -1,0 +1,685 @@
+{% extends 'base.html' %}
+
+{% block title %}Create New Story{% endblock %}
+
+{% block content %}
+<style>
+    /* Custom styles for the Create New Story page - similar to create_post/reel.html */
+    body {
+        padding-top: 0;
+        padding-bottom: var(--navbar-height); /* Space for fixed bottom navbar */
+        overflow-x: hidden;
+    }
+
+    .create-story-container {
+        max-width: 700px;
+        margin: 20px auto;
+        padding: 20px 15px;
+        background-color: var(--background-light);
+    }
+
+    .create-story-card {
+        background-color: var(--card-background);
+        border-radius: 12px;
+        box-shadow: 0 4px 15px var(--shadow-medium);
+        padding: 25px;
+    }
+
+    .create-story-card h2 {
+        text-align: center;
+        color: var(--primary-text);
+        margin-bottom: 30px;
+        font-weight: 700;
+    }
+
+    .media-upload-wrapper {
+        text-align: center;
+        margin-bottom: 30px;
+        border: 2px dashed var(--border-color-light);
+        border-radius: 12px;
+        padding: 20px;
+        background-color: var(--background-light);
+    }
+
+    .media-preview-area {
+        min-height: 150px;
+        max-height: 350px;
+        overflow: hidden;
+        margin-bottom: 15px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: rgba(0,0,0,0.05);
+        border-radius: 8px;
+    }
+
+    .media-preview {
+        max-width: 100%;
+        max-height: 100%;
+        object-fit: contain;
+        border-radius: 8px;
+        display: none;
+    }
+    .media-preview.active {
+        display: block;
+    }
+
+    .upload-buttons {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 10px;
+    }
+
+    .btn-media-action {
+        background-color: var(--button-bg-secondary);
+        color: var(--button-text-secondary);
+        border: none;
+        padding: 10px 18px;
+        border-radius: 25px;
+        font-size: 0.9em;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        transition: background-color 0.2s ease, transform 0.2s ease;
+    }
+    .btn-media-action:hover {
+        background-color: darken(var(--button-bg-secondary), 5%);
+        transform: translateY(-1px);
+    }
+
+    .form-group {
+        margin-bottom: 20px;
+    }
+
+    .form-label {
+        font-weight: 600;
+        color: var(--primary-text);
+        margin-bottom: 8px;
+    }
+
+    .form-control, .form-select {
+        border-radius: 8px;
+        padding: 10px 15px;
+        background-color: var(--background-light);
+        color: var(--primary-text);
+        border: 1px solid var(--input-border-color);
+    }
+    .form-control:focus, .form-select:focus {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 0.2rem rgba(88, 129, 87, 0.25);
+    }
+
+    .btn-submit {
+        background-color: var(--primary-color);
+        color: white;
+        padding: 12px 25px;
+        border-radius: 25px;
+        font-size: 1.1em;
+        font-weight: 600;
+        transition: background-color 0.2s ease, transform 0.2s ease;
+    }
+    .btn-submit:hover {
+        background-color: darken(var(--primary-color), 10%);
+        transform: translateY(-2px);
+    }
+
+    .btn-cancel {
+        background-color: var(--secondary-color);
+        color: white;
+        padding: 12px 25px;
+        border-radius: 25px;
+        font-size: 1.1em;
+        font-weight: 600;
+    }
+    .btn-cancel:hover {
+        background-color: darken(var(--secondary-color), 10%);
+        transform: translateY(-2px);
+    }
+
+    /* Specific styles for voice note and camera */
+    #voiceNoteSection, #cameraCaptureSection {
+        margin-top: 20px;
+        padding-top: 20px;
+        border-top: 1px dashed var(--border-color-light);
+    }
+
+    #voiceNoteControls {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 15px;
+        margin-top: 15px;
+    }
+
+    #voiceNoteControls button {
+        background-color: var(--primary-color);
+        color: white;
+        border: none;
+        border-radius: 50%;
+        width: 50px;
+        height: 50px;
+        font-size: 1.5em;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: background-color 0.2s ease;
+    }
+    #voiceNoteControls button:hover {
+        background-color: darken(var(--primary-color), 10%);
+    }
+    #voiceNoteControls button.stop {
+        background-color: var(--danger-color);
+    }
+    #voiceNoteControls button.stop:hover {
+        background-color: darken(var(--danger-color), 10%);
+    }
+
+    #voiceNoteTimer {
+        font-size: 1.1em;
+        font-weight: 600;
+        color: var(--primary-text);
+    }
+
+    #audioPreviewPlayer {
+        width: 100%;
+        margin-top: 15px;
+        display: none;
+    }
+
+    #cameraLiveFeed {
+        width: 100%;
+        max-height: 300px;
+        object-fit: contain;
+        background-color: black;
+        border-radius: 8px;
+        margin-bottom: 15px;
+        display: none;
+    }
+    #cameraControls {
+        display: flex;
+        justify-content: center;
+        gap: 15px;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+        .create-story-container {
+            margin: 15px auto;
+            padding: 15px 10px;
+        }
+        .create-story-card {
+            padding: 20px;
+        }
+        .create-story-card h2 {
+            font-size: 1.8em;
+            margin-bottom: 25px;
+        }
+        .media-upload-wrapper {
+            padding: 15px;
+            margin-bottom: 25px;
+        }
+        .media-preview-area {
+            min-height: 120px;
+            max-height: 250px;
+        }
+        .upload-buttons {
+            flex-direction: column;
+            gap: 8px;
+        }
+        .btn-media-action {
+            width: 100%;
+            padding: 8px 15px;
+            font-size: 0.85em;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-label {
+            font-size: 0.9em;
+        }
+        .form-control, .form-select {
+            padding: 8px 12px;
+            font-size: 0.9em;
+        }
+        .btn-submit, .btn-cancel {
+            padding: 10px 20px;
+            font-size: 1em;
+        }
+        #voiceNoteControls button {
+            width: 45px;
+            height: 45px;
+            font-size: 1.3em;
+        }
+        #voiceNoteTimer {
+            font-size: 1em;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .create-story-card {
+            padding: 15px;
+        }
+        .create-story-card h2 {
+            font-size: 1.5em;
+        }
+        .media-preview-area {
+            min-height: 100px;
+            max-height: 200px;
+        }
+        .btn-media-action {
+            font-size: 0.8em;
+            padding: 7px 12px;
+        }
+        .form-label {
+            font-size: 0.85em;
+        }
+        .form-control, .form-select {
+            font-size: 0.85em;
+        }
+        .btn-submit, .btn-cancel {
+            font-size: 0.95em;
+        }
+    }
+</style>
+
+<div class="create-story-container">
+    <div class="create-story-card">
+        <h2>Create New Story</h2>
+
+        <form action="{{ url_for('create_story') }}" method="POST" enctype="multipart/form-data">
+            {# Media Upload Section #}
+            <div class="media-upload-wrapper">
+                <div class="media-preview-area">
+                    <img id="imagePreview" class="media-preview" alt="Image Preview" style="display: none;">
+                    <video id="videoPreview" class="media-preview" controls muted playsinline preload="metadata" style="display: none;"></video>
+                    <p id="noMediaText">Upload a photo or video, or record a voice note</p>
+                </div>
+                <div class="upload-buttons">
+                    <label for="mediaFile" class="btn btn-media-action">
+                        <i class="fas fa-upload me-2"></i> Select Photo/Video
+                    </label>
+                    <input type="file" class="form-control-file" id="mediaFile" name="mediaFile" style="display:none;" accept="image/*,video/*">
+
+                    <button type="button" class="btn btn-media-action" id="recordVoiceNoteBtn">
+                        <i class="fas fa-microphone me-2"></i> Record Voice Note
+                    </button>
+
+                    <button type="button" class="btn btn-media-action" id="openCameraBtn">
+                        <i class="fas fa-camera me-2"></i> Open Camera
+                    </button>
+                </div>
+            </div>
+
+            {# Voice Note Recording Section #}
+            <div class="form-group" id="voiceNoteSection" style="display: none;">
+                <label class="form-label">Voice Note</label>
+                <div id="voiceNoteControls">
+                    <button type="button" id="startRecordingBtn" title="Start Recording"><i class="fas fa-play"></i></button>
+                    <button type="button" id="stopRecordingBtn" title="Stop Recording" style="display: none;"><i class="fas fa-stop"></i></button>
+                    <span id="voiceNoteTimer">00:00</span>
+                </div>
+                <audio id="audioPreviewPlayer" controls></audio>
+                <input type="hidden" id="voiceNoteData" name="voiceNoteData">
+                <small class="form-text text-muted">Max 30 seconds.</small>
+            </div>
+
+            {# Audio Upload Section (conditionally shown for photos) #}
+            <div class="form-group" id="audioUploadSection" style="display: none;">
+                <label for="audioFile" class="form-label">Add Background Audio (Optional, for photos only)</label>
+                <input type="file" class="form-control-file" id="audioFile" name="audioFile" accept="audio/*">
+                <small class="form-text text-muted">Upload an audio file to accompany your photo story.</small>
+                <audio id="backgroundAudioPreview" controls style="width: 100%; margin-top: 10px; display: none;"></audio>
+            </div>
+
+            {# Camera Live Feed Section #}
+            <div class="form-group" id="cameraCaptureSection" style="display: none;">
+                <label class="form-label">Live Camera Feed</label>
+                <video id="cameraLiveFeed" autoplay playsinline></video>
+                <div id="cameraControls">
+                    <button type="button" class="btn btn-primary" id="takePhotoBtn"><i class="fas fa-camera"></i> Take Photo</button>
+                    <button type="button" class="btn btn-primary" id="startVideoCaptureBtn"><i class="fas fa-video"></i> Record Video</button>
+                    <button type="button" class="btn btn-danger" id="stopVideoCaptureBtn" style="display: none;"><i class="fas fa-stop"></i> Stop Recording</button>
+                </div>
+                <input type="hidden" id="cameraCapturedData" name="cameraCapturedData">
+                <input type="hidden" id="cameraCapturedMediaType" name="cameraCapturedMediaType">
+                <small class="form-text text-muted">Videos max 30 seconds.</small>
+            </div>
+
+
+            {# Story Description #}
+            <div class="form-group">
+                <label for="description" class="form-label">Description (Optional)</label>
+                <textarea class="form-control" id="description" name="description" rows="3" placeholder="Add some text to your story..."></textarea>
+                <small class="form-text text-muted">You can tag other users using @username.</small>
+            </div>
+
+            {# Visibility - Fixed to Friends Only #}
+            <div class="form-group">
+                <label class="form-label">Who can see this story?</label>
+                <p class="form-control-static">Friends Only</p>
+                <input type="hidden" name="visibility" value="friends">
+            </div>
+
+            <div class="d-grid gap-2 mt-5">
+                <button type="submit" class="btn btn-primary btn-submit">Create Story</button>
+                <a href="{{ url_for('add_to') }}" class="btn btn-secondary btn-cancel">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const mediaFile = document.getElementById('mediaFile');
+        const imagePreview = document.getElementById('imagePreview');
+        const videoPreview = document.getElementById('videoPreview');
+        const noMediaText = document.getElementById('noMediaText');
+
+        const audioUploadSection = document.getElementById('audioUploadSection');
+        const audioFile = document.getElementById('audioFile');
+        const backgroundAudioPreview = document.getElementById('backgroundAudioPreview');
+
+        const voiceNoteSection = document.getElementById('voiceNoteSection');
+        const recordVoiceNoteBtn = document.getElementById('recordVoiceNoteBtn');
+        const startRecordingBtn = document.getElementById('startRecordingBtn');
+        const stopRecordingBtn = document.getElementById('stopRecordingBtn');
+        const voiceNoteTimer = document.getElementById('voiceNoteTimer');
+        const audioPreviewPlayer = document.getElementById('audioPreviewPlayer');
+        const voiceNoteDataInput = document.getElementById('voiceNoteData');
+
+        const cameraCaptureSection = document.getElementById('cameraCaptureSection');
+        const openCameraBtn = document.getElementById('openCameraBtn');
+        const cameraLiveFeed = document.getElementById('cameraLiveFeed');
+        const takePhotoBtn = document.getElementById('takePhotoBtn');
+        const startVideoCaptureBtn = document.getElementById('startVideoCaptureBtn');
+        const stopVideoCaptureBtn = document.getElementById('stopVideoCaptureBtn');
+        const cameraCapturedDataInput = document.getElementById('cameraCapturedData');
+        const cameraCapturedMediaTypeInput = document.getElementById('cameraCapturedMediaType');
+
+        let currentActiveMediaType = null; // 'file-image', 'file-video', 'voice-note', 'camera-photo', 'camera-video'
+        let mediaRecorder;
+        let audioChunks = [];
+        let voiceNoteInterval;
+        let voiceNoteSeconds = 0;
+        let cameraStream;
+        let videoCaptureRecorder;
+        let videoCaptureChunks = [];
+        let videoCaptureTimer;
+        let videoCaptureSeconds = 0;
+
+        const MAX_STORY_VIDEO_DURATION = 30; // seconds
+        const MAX_VOICE_NOTE_DURATION = 30; // seconds
+
+        function resetAllMediaInputs() {
+            // Hide all media sections
+            imagePreview.classList.remove('active');
+            videoPreview.classList.remove('active');
+            noMediaText.style.display = 'block';
+
+            imagePreview.src = '';
+            videoPreview.src = '';
+            videoPreview.pause();
+
+            audioUploadSection.style.display = 'none';
+            audioFile.value = '';
+            backgroundAudioPreview.src = '';
+            backgroundAudioPreview.style.display = 'none';
+            backgroundAudioPreview.pause();
+
+            voiceNoteSection.style.display = 'none';
+            stopRecordingBtn.style.display = 'none';
+            startRecordingBtn.style.display = 'block';
+            voiceNoteTimer.textContent = '00:00';
+            audioPreviewPlayer.src = '';
+            audioPreviewPlayer.style.display = 'none';
+            voiceNoteDataInput.value = '';
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                mediaRecorder.stop();
+            }
+            clearInterval(voiceNoteInterval);
+            voiceNoteSeconds = 0;
+
+            cameraCaptureSection.style.display = 'none';
+            cameraLiveFeed.style.display = 'none';
+            cameraLiveFeed.pause();
+            if (cameraStream) {
+                cameraStream.getTracks().forEach(track => track.stop());
+            }
+            takePhotoBtn.style.display = 'block';
+            startVideoCaptureBtn.style.display = 'block';
+            stopVideoCaptureBtn.style.display = 'none';
+            cameraCapturedDataInput.value = '';
+            cameraCapturedMediaTypeInput.value = '';
+            if (videoCaptureRecorder && videoCaptureRecorder.state !== 'inactive') {
+                videoCaptureRecorder.stop();
+            }
+            clearInterval(videoCaptureTimer);
+            videoCaptureSeconds = 0;
+            videoCaptureChunks = [];
+
+            mediaFile.value = ''; // Clear file input
+            currentActiveMediaType = null;
+        }
+
+        // --- Select Photo/Video File ---
+        mediaFile.addEventListener('change', function(event) {
+            resetAllMediaInputs(); // Clear other media inputs first
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    noMediaText.style.display = 'none';
+                    if (file.type.startsWith('image/')) {
+                        imagePreview.src = e.target.result;
+                        imagePreview.classList.add('active');
+                        currentActiveMediaType = 'file-image';
+                        audioUploadSection.style.display = 'block'; // Show audio section for photos
+                    } else if (file.type.startsWith('video/')) {
+                        // Check video duration
+                        const tempVideo = document.createElement('video');
+                        tempVideo.preload = 'metadata';
+                        tempVideo.onloadedmetadata = function() {
+                            window.URL.revokeObjectURL(tempVideo.src);
+                            if (tempVideo.duration > MAX_STORY_VIDEO_DURATION) {
+                                alert(`Video is too long (${Math.round(tempVideo.duration)}s). Max ${MAX_STORY_VIDEO_DURATION} seconds allowed.`);
+                                resetAllMediaInputs();
+                                return;
+                            }
+                            videoPreview.src = e.target.result;
+                            videoPreview.classList.add('active');
+                            videoPreview.play();
+                            currentActiveMediaType = 'file-video';
+                        };
+                        tempVideo.src = URL.createObjectURL(file);
+                    }
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // --- Background Audio for Photo Stories ---
+        audioFile.addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            if (file && currentActiveMediaType === 'file-image') {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    backgroundAudioPreview.src = e.target.result;
+                    backgroundAudioPreview.style.display = 'block';
+                    backgroundAudioPreview.play();
+                };
+                reader.readAsDataURL(file);
+            } else {
+                backgroundAudioPreview.src = '';
+                backgroundAudioPreview.style.display = 'none';
+                backgroundAudioPreview.pause();
+            }
+        });
+
+
+        // --- Voice Note Recording ---
+        recordVoiceNoteBtn.addEventListener('click', function() {
+            resetAllMediaInputs(); // Clear other media inputs
+            voiceNoteSection.style.display = 'block';
+            currentActiveMediaType = 'voice-note';
+        });
+
+        startRecordingBtn.addEventListener('click', async function() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRecorder = new MediaRecorder(stream);
+                audioChunks = [];
+                voiceNoteSeconds = 0;
+                voiceNoteTimer.textContent = '00:00';
+                audioPreviewPlayer.style.display = 'none'; // Hide player during recording
+                audioPreviewPlayer.src = ''; // Clear previous audio
+
+                mediaRecorder.ondataavailable = event => {
+                    audioChunks.push(event.data);
+                };
+
+                mediaRecorder.onstop = () => {
+                    const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                    const audioUrl = URL.createObjectURL(audioBlob);
+                    audioPreviewPlayer.src = audioUrl;
+                    audioPreviewPlayer.style.display = 'block';
+                    voiceNoteDataInput.value = audioUrl; // Store data URL or send blob to backend
+
+                    stream.getTracks().forEach(track => track.stop()); // Stop microphone
+                    clearInterval(voiceNoteInterval);
+                    startRecordingBtn.style.display = 'block';
+                    stopRecordingBtn.style.display = 'none';
+                };
+
+                mediaRecorder.start();
+                startRecordingBtn.style.display = 'none';
+                stopRecordingBtn.style.display = 'block';
+
+                voiceNoteInterval = setInterval(() => {
+                    voiceNoteSeconds++;
+                    const minutes = String(Math.floor(voiceNoteSeconds / 60)).padStart(2, '0');
+                    const seconds = String(voiceNoteSeconds % 60).padStart(2, '0');
+                    voiceNoteTimer.textContent = `${minutes}:${seconds}`;
+
+                    if (voiceNoteSeconds >= MAX_VOICE_NOTE_DURATION) {
+                        mediaRecorder.stop();
+                        alert(`Voice note reached max ${MAX_VOICE_NOTE_DURATION} seconds.`);
+                    }
+                }, 1000);
+
+            } catch (err) {
+                console.error('Error accessing microphone:', err);
+                alert('Could not access microphone. Please ensure permissions are granted.');
+                resetAllMediaInputs();
+            }
+        });
+
+        stopRecordingBtn.addEventListener('click', function() {
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                mediaRecorder.stop();
+            }
+        });
+
+
+        // --- Camera Capture ---
+        openCameraBtn.addEventListener('click', async function() {
+            resetAllMediaInputs(); // Clear other media inputs
+            cameraCaptureSection.style.display = 'block';
+            try {
+                cameraStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+                cameraLiveFeed.srcObject = cameraStream;
+                cameraLiveFeed.style.display = 'block';
+                cameraLiveFeed.play();
+                currentActiveMediaType = 'camera-live'; // Temp state
+            } catch (err) {
+                console.error('Error accessing camera:', err);
+                alert('Could not access camera. Please ensure permissions are granted.');
+                resetAllMediaInputs();
+            }
+        });
+
+        takePhotoBtn.addEventListener('click', function() {
+            if (cameraStream) {
+                const canvas = document.createElement('canvas');
+                canvas.width = cameraLiveFeed.videoWidth;
+                canvas.height = cameraLiveFeed.videoHeight;
+                canvas.getContext('2d').drawImage(cameraLiveFeed, 0, 0, canvas.width, canvas.height);
+                const imageDataUrl = canvas.toDataURL('image/png');
+
+                imagePreview.src = imageDataUrl;
+                imagePreview.classList.add('active');
+                noMediaText.style.display = 'none';
+                currentActiveMediaType = 'camera-photo';
+                cameraCapturedDataInput.value = imageDataUrl;
+                cameraCapturedMediaTypeInput.value = 'image/png';
+
+                // Stop camera stream after taking photo
+                cameraStream.getTracks().forEach(track => track.stop());
+                cameraLiveFeed.srcObject = null;
+                cameraCaptureSection.style.display = 'none';
+                cameraLiveFeed.style.display = 'none';
+                audioUploadSection.style.display = 'block'; // Allow audio for captured photo
+            }
+        });
+
+        startVideoCaptureBtn.addEventListener('click', function() {
+            if (cameraStream) {
+                videoCaptureChunks = [];
+                videoCaptureRecorder = new MediaRecorder(cameraStream);
+                videoCaptureSeconds = 0;
+                startVideoCaptureBtn.style.display = 'none';
+                takePhotoBtn.style.display = 'none';
+                stopVideoCaptureBtn.style.display = 'block';
+
+                videoCaptureRecorder.ondataavailable = event => {
+                    videoCaptureChunks.push(event.data);
+                };
+
+                videoCaptureRecorder.onstop = () => {
+                    const videoBlob = new Blob(videoCaptureChunks, { type: 'video/webm' });
+                    const videoUrl = URL.createObjectURL(videoBlob);
+                    
+                    videoPreview.src = videoUrl;
+                    videoPreview.classList.add('active');
+                    videoPreview.play();
+                    noMediaText.style.display = 'none';
+                    currentActiveMediaType = 'camera-video';
+                    cameraCapturedDataInput.value = videoUrl; // Store data URL or send blob to backend
+                    cameraCapturedMediaTypeInput.value = 'video/webm';
+
+                    cameraStream.getTracks().forEach(track => track.stop()); // Stop camera
+                    cameraLiveFeed.srcObject = null;
+                    cameraCaptureSection.style.display = 'none';
+                    cameraLiveFeed.style.display = 'none';
+
+                    clearInterval(videoCaptureTimer);
+                    startVideoCaptureBtn.style.display = 'block';
+                    takePhotoBtn.style.display = 'block';
+                    stopVideoCaptureBtn.style.display = 'none';
+                };
+
+                videoCaptureRecorder.start();
+                videoCaptureTimer = setInterval(() => {
+                    videoCaptureSeconds++;
+                    if (videoCaptureSeconds >= MAX_STORY_VIDEO_DURATION) {
+                        videoCaptureRecorder.stop();
+                        alert(`Video recording reached max ${MAX_STORY_VIDEO_DURATION} seconds.`);
+                    }
+                }, 1000);
+
+            }
+        });
+
+        stopVideoCaptureBtn.addEventListener('click', function() {
+            if (videoCaptureRecorder && videoCaptureRecorder.state !== 'inactive') {
+                videoCaptureRecorder.stop();
+            }
+        });
+
+        // Ensure that only one media input method is active at a time
+        // This is primarily handled by resetAllMediaInputs() called before activating a new method.
+    });
+</script>
+{% endblock %}
