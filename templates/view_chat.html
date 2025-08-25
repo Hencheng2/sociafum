@@ -1,0 +1,854 @@
+{% extends 'base.html' %}
+
+{% block title %}Chat with {{ other_user.real_name }}{% endblock %}
+
+{% block content %}
+<style>
+    /* Custom styles for the 1-on-1 Conversation page */
+    body {
+        /* Override base.html padding and hide overflow for full-screen chat experience */
+        padding-top: 0 !important;
+        padding-bottom: 0 !important;
+        overflow: hidden; /* Crucial: Prevents main body scroll */
+    }
+
+    /* Main chat container to hold all chat elements */
+    .chat-page-container {
+        display: flex;
+        flex-direction: column; /* Stack header, messages, input vertically */
+        height: 100vh; /* Takes full viewport height */
+        background-color: var(--background-light); /* Default background */
+        color: var(--primary-text);
+        position: relative; /* For chat background image */
+
+        /* Chat background image styling - dynamic from Flask */
+        background-image: url('{{ chat_background_image_url | default("none") }}');
+        background-size: cover;
+        background-position: center;
+        background-attachment: fixed; /* Keep background fixed when scrolling messages */
+    }
+
+    /* Fixed Top Navbar for the Chat */
+    .chat-fixed-top-navbar {
+        flex-shrink: 0; /* Prevents shrinking */
+        background-color: var(--card-background); /* White or light background for nav */
+        border-bottom: 1px solid var(--border-color-light);
+        box-shadow: 0 2px 5px var(--shadow-soft);
+        padding: 10px 15px;
+        display: flex;
+        align-items: center;
+        z-index: 1020; /* Above message area */
+    }
+
+    .chat-fixed-top-navbar .back-btn {
+        color: var(--primary-text);
+        font-size: 1.4em;
+        margin-right: 15px;
+        text-decoration: none;
+    }
+
+    .chat-fixed-top-navbar .profile-pic {
+        width: 45px;
+        height: 45px;
+        border-radius: 50%;
+        object-fit: cover;
+        margin-right: 10px;
+        border: 2px solid var(--primary-color);
+    }
+
+    .chat-fixed-top-navbar .user-info {
+        flex-grow: 1; /* Takes available space */
+        overflow: hidden;
+    }
+
+    .chat-fixed-top-navbar .user-info .real-name {
+        font-weight: 600;
+        font-size: 1.1em;
+        color: var(--primary-text);
+        margin-bottom: 0; /* Remove default paragraph margin */
+        line-height: 1.2;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .chat-fixed-top-navbar .user-info .username {
+        font-size: 0.8em;
+        color: var(--secondary-text);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .chat-fixed-top-navbar .dropdown-toggle {
+        background: none;
+        border: none;
+        color: var(--secondary-text);
+        font-size: 1.4em;
+        padding: 5px;
+        border-radius: 5px;
+        transition: background-color 0.2s ease;
+        margin-left: 10px; /* Space from user info */
+    }
+    .chat-fixed-top-navbar .dropdown-toggle:hover {
+        background-color: var(--background-light);
+    }
+
+    .chat-fixed-top-navbar .dropdown-menu {
+        background-color: var(--card-background);
+        border: 1px solid var(--border-color-light);
+        border-radius: 8px;
+        box-shadow: 0 4px 10px var(--shadow-soft);
+    }
+
+    .chat-fixed-top-navbar .dropdown-item {
+        color: var(--primary-text);
+        padding: 8px 15px;
+        transition: background-color 0.2s ease;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .chat-fixed-top-navbar .dropdown-item:hover {
+        background-color: var(--background-light);
+    }
+
+    /* Scrollable Message Area */
+    .chat-message-area {
+        flex: 1; /* Takes all available vertical space */
+        overflow-y: auto; /* Makes this section scrollable */
+        -webkit-overflow-scrolling: touch;
+        padding: 15px;
+        display: flex;
+        flex-direction: column; /* Stack messages vertically */
+        gap: 10px; /* Space between message bubbles */
+    }
+
+    /* Message Bubble Styling */
+    .message-bubble {
+        display: flex;
+        max-width: 80%; /* Limit message width */
+    }
+
+    .message-content {
+        padding: 10px 15px;
+        border-radius: 18px; /* Rounded bubble corners */
+        position: relative;
+        word-wrap: break-word; /* Ensure long words break */
+        white-space: pre-wrap; /* Preserve whitespace and line breaks */
+    }
+
+    .message-timestamp {
+        font-size: 0.7em;
+        color: var(--secondary-text);
+        margin-top: 5px;
+        white-space: nowrap;
+    }
+
+    /* Sent messages (by current user) */
+    .message-sent {
+        margin-left: auto; /* Push to the right */
+        flex-direction: column; /* Stack bubble and timestamp */
+        align-items: flex-end;
+    }
+
+    .message-sent .message-content {
+        background-color: #dcf8c6; /* Light green for sent messages */
+        color: var(--primary-text);
+        border-bottom-right-radius: 4px; /* Pointed corner */
+    }
+    .dark-theme .message-sent .message-content {
+        background-color: #3e5166; /* Darker blue-grey for sent in dark mode */
+        color: var(--primary-text);
+    }
+
+    /* Received messages (from other user) */
+    .message-received {
+        margin-right: auto; /* Push to the left */
+        flex-direction: column; /* Stack bubble and timestamp */
+        align-items: flex-start;
+    }
+
+    .message-received .message-content {
+        background-color: var(--card-background); /* White/light card background for received */
+        color: var(--primary-text);
+        border-bottom-left-radius: 4px; /* Pointed corner */
+    }
+    .dark-theme .message-received .message-content {
+        background-color: #2d2d2d; /* Dark card background for received in dark mode */
+        color: var(--primary-text);
+    }
+
+    /* Media Messages */
+    .message-media img, .message-media video {
+        max-width: 100%;
+        max-height: 250px; /* Limit media height */
+        object-fit: contain;
+        border-radius: 8px;
+        display: block;
+    }
+    .message-media .message-content {
+        padding: 5px; /* Smaller padding for media bubbles */
+    }
+
+    /* Fixed Bottom Input Area */
+    .chat-fixed-bottom-input {
+        flex-shrink: 0; /* Prevents shrinking */
+        background-color: var(--card-background);
+        border-top: 1px solid var(--border-color-light);
+        box-shadow: 0 -2px 5px var(--shadow-soft);
+        padding: 10px 15px;
+        display: flex;
+        align-items: flex-end; /* Align items to the bottom (for textarea expansion) */
+        gap: 10px;
+        z-index: 1020; /* Ensure it's above other page content */
+    }
+
+    .chat-fixed-bottom-input .action-icon {
+        background: none;
+        border: none;
+        color: var(--secondary-text);
+        font-size: 1.6em;
+        padding: 5px;
+        cursor: pointer;
+        transition: color 0.2s ease;
+    }
+
+    .chat-fixed-bottom-input .action-icon:hover {
+        color: var(--primary-color);
+    }
+
+    .chat-fixed-bottom-input .message-textarea {
+        flex-grow: 1; /* Takes most of the space */
+        min-height: 40px; /* Initial height */
+        max-height: 120px; /* Max height before scroll */
+        resize: none; /* Disable manual resize */
+        border-radius: 20px; /* Rounded textarea */
+        padding: 10px 15px;
+        border: 1px solid var(--input-border-color);
+        background-color: var(--background-light);
+        color: var(--primary-text);
+        font-size: 0.95em;
+        overflow-y: auto; /* Enable scroll when max-height is reached */
+    }
+
+    .chat-fixed-bottom-input .send-btn {
+        background-color: var(--primary-color);
+        color: white;
+        border: none;
+        border-radius: 50%; /* Circular send button */
+        width: 45px;
+        height: 45px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.4em;
+        cursor: pointer;
+        transition: background-color 0.2s ease, transform 0.2s ease;
+        flex-shrink: 0; /* Prevents shrinking */
+    }
+
+    .chat-fixed-bottom-input .send-btn:hover {
+        background-color: darken(var(--primary-color), 10%); /* Needs JS/SCSS darken */
+        transform: scale(1.05);
+    }
+
+    /* Modals specific to chat actions */
+    .chat-action-modal .modal-content {
+        background-color: var(--card-background);
+        color: var(--primary-text);
+        border-radius: 12px;
+        box-shadow: 0 8px 25px var(--shadow-medium);
+    }
+    .chat-action-modal .modal-header {
+        border-bottom-color: var(--border-color-light);
+    }
+    .chat-action-modal .modal-footer {
+        border-top-color: var(--border-color-light);
+    }
+    .chat-action-modal .form-control {
+        background-color: var(--background-light);
+        color: var(--primary-text);
+    }
+    .chat-action-modal .dropdown-menu {
+        background-color: var(--card-background);
+        border: 1px solid var(--border-color-light);
+    }
+    .chat-action-modal .dropdown-item {
+        color: var(--primary-text);
+    }
+    .chat-action-modal .dropdown-item:hover {
+        background-color: var(--background-light);
+    }
+
+
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+        .chat-fixed-top-navbar {
+            padding: 8px 10px;
+        }
+        .chat-fixed-top-navbar .back-btn {
+            margin-right: 10px;
+        }
+        .chat-fixed-top-navbar .profile-pic {
+            width: 40px;
+            height: 40px;
+            margin-right: 8px;
+        }
+        .chat-fixed-top-navbar .user-info .real-name {
+            font-size: 1em;
+        }
+        .chat-fixed-top-navbar .user-info .username {
+            font-size: 0.75em;
+        }
+        .chat-fixed-top-navbar .dropdown-toggle {
+            font-size: 1.2em;
+            margin-left: 8px;
+        }
+        .chat-message-area {
+            padding: 10px;
+        }
+        .message-content {
+            padding: 8px 12px;
+            font-size: 0.9em;
+        }
+        .message-timestamp {
+            font-size: 0.65em;
+        }
+        .chat-fixed-bottom-input {
+            padding: 8px 10px;
+            gap: 8px;
+        }
+        .chat-fixed-bottom-input .action-icon {
+            font-size: 1.4em;
+            padding: 3px;
+        }
+        .chat-fixed-bottom-input .message-textarea {
+            min-height: 35px;
+            padding: 8px 12px;
+            font-size: 0.9em;
+        }
+        .chat-fixed-bottom-input .send-btn {
+            width: 40px;
+            height: 40px;
+            font-size: 1.2em;
+        }
+    }
+</style>
+
+<div class="chat-page-container">
+    {# Fixed Top Navbar for the Chat #}
+    <div class="chat-fixed-top-navbar">
+        <a href="{{ url_for('inbox') }}" class="back-btn"><i class="fas fa-arrow-left"></i></a>
+        <img src="{{ other_user.profile_pic }}" alt="{{ other_user.username }} Profile" class="profile-pic">
+        <div class="user-info">
+            <p class="real-name">{{ other_user.real_name }}</p>
+            <p class="username">@{{ other_user.username }}</p>
+        </div>
+        {# Dropdown Options for Chat Actions #}
+        <div class="dropdown">
+            <button class="dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="fas fa-ellipsis-v"></i> {# Vertical ellipsis for more options #}
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end chat-action-modal">
+                <li>
+                    <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#customizeNameModal">
+                        <i class="fas fa-user-edit me-2"></i> Customize Name
+                    </a>
+                </li>
+                <li>
+                    <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#changeChatWallpaperModal">
+                        <i class="fas fa-image me-2"></i> Change Chat Wallpaper
+                    </a>
+                </li>
+                <li>
+                    <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#searchChatMessagesModal">
+                        <i class="fas fa-search me-2"></i> Search Chat
+                    </a>
+                </li>
+                <li>
+                    <a class="dropdown-item" href="{{ url_for('profile', username=other_user.username) }}">
+                        <i class="fas fa-user me-2"></i> View User Profile
+                    </a>
+                </li>
+                <li>
+                    <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#disappearingMessageModal">
+                        <i class="fas fa-hourglass-half me-2"></i> Disappearing Messages
+                    </a>
+                </li>
+                <li><hr class="dropdown-divider"></li>
+                <li>
+                    <a class="dropdown-item text-danger" href="#" data-bs-toggle="modal" data-bs-target="#blockUserModal">
+                        <i class="fas fa-ban me-2"></i> Block User
+                    </a>
+                </li>
+                <li>
+                    <a class="dropdown-item text-danger" href="#" data-bs-toggle="modal" data-bs-target="#reportUserModal">
+                        <i class="fas fa-flag me-2"></i> Report
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    {# Scrollable Message Area #}
+    <div class="chat-message-area" id="chatMessageArea">
+        {% for message in chat_messages %}
+            <div class="message-bubble {% if message.sender_id == current_user.id %}message-sent{% else %}message-received{% endif %}">
+                <div class="message-content">
+                    {% if message.media_path %}
+                        <div class="message-media">
+                            {% if message.media_type == 'image' %}
+                                <img src="{{ message.media_path }}" alt="Chat Image">
+                            {% elif message.media_type == 'video' %}
+                                <video src="{{ message.media_path }}" controls muted playsinline></video>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                    {% if message.content %}
+                        <p>{{ message.content }}</p>
+                    {% endif %}
+                </div>
+                <span class="message-timestamp">{{ moment(message.timestamp).format('HH:mm') }}</span>
+            </div>
+        {% endfor %}
+    </div>
+
+    {# Fixed Bottom Input Area #}
+    <div class="chat-fixed-bottom-input">
+        <button class="action-icon" title="Stickers"><i class="fas fa-smile"></i></button>
+        <button class="action-icon" title="Attach Media" data-bs-toggle="modal" data-bs-target="#attachMediaModal"><i class="fas fa-paperclip"></i></button>
+        <button class="action-icon" title="Camera"><i class="fas fa-camera"></i></button>
+        <button class="action-icon" title="Voice Note"><i class="fas fa-microphone"></i></button>
+        <textarea class="message-textarea" id="messageInput" placeholder="Type your message..." rows="1"></textarea>
+        <button class="send-btn" title="Send Message"><i class="fas fa-paper-plane"></i></button>
+    </div>
+</div>
+
+{# --- Modals for Dropdown Actions --- #}
+
+{# Customize Name Modal #}
+<div class="modal fade chat-action-modal" id="customizeNameModal" tabindex="-1" aria-labelledby="customizeNameModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="customizeNameModalLabel">Customize Name for {{ other_user.real_name }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="customizeNameForm">
+                    <div class="mb-3">
+                        <label for="customNameInput" class="form-label">Custom Name</label>
+                        <input type="text" class="form-control" id="customNameInput" placeholder="Enter a custom name">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="saveCustomNameBtn">Save Changes</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{# Change Chat Wallpaper Modal #}
+<div class="modal fade chat-action-modal" id="changeChatWallpaperModal" tabindex="-1" aria-labelledby="changeChatWallpaperModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="changeChatWallpaperModalLabel">Change Chat Wallpaper</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="changeWallpaperForm" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label for="wallpaperFileInput" class="form-label">Upload New Wallpaper</label>
+                        <input type="file" class="form-control" id="wallpaperFileInput" name="wallpaperFile" accept="image/*">
+                    </div>
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="clearWallpaperCheckbox">
+                        <label class="form-check-label" for="clearWallpaperCheckbox">Clear current wallpaper</label>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="saveWallpaperBtn">Apply Wallpaper</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{# Search Chat Messages Modal #}
+<div class="modal fade chat-action-modal" id="searchChatMessagesModal" tabindex="-1" aria-labelledby="searchChatMessagesModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="searchChatMessagesModalLabel">Search Chat Messages</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <input type="text" class="form-control" id="chatSearchInput" placeholder="Enter keyword to search...">
+                </div>
+                <div id="chatSearchResults" class="list-group">
+                    {# Search results will be loaded here via JS #}
+                    <p class="text-muted text-center">Start typing to see results.</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{# Disappearing Messages Modal #}
+<div class="modal fade chat-action-modal" id="disappearingMessageModal" tabindex="-1" aria-labelledby="disappearingMessageModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="disappearingMessageModalLabel">Disappearing Messages</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Messages will automatically delete after:</p>
+                <div class="list-group">
+                    <label class="list-group-item">
+                        <input class="form-check-input me-1" type="radio" name="disappearingTime" value="off" checked> Off
+                    </label>
+                    <label class="list-group-item">
+                        <input class="form-check-input me-1" type="radio" name="disappearingTime" value="24h"> 24 Hours
+                    </label>
+                    <label class="list-group-item">
+                        <input class="form-check-input me-1" type="radio" name="disappearingTime" value="1w"> 1 Week
+                    </label>
+                    <label class="list-group-item">
+                        <input class="form-check-input me-1" type="radio" name="disappearingTime" value="1m"> 1 Month
+                    </label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="saveDisappearingSettingsBtn">Save Settings</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{# Attach Media Modal #}
+<div class="modal fade chat-action-modal" id="attachMediaModal" tabindex="-1" aria-labelledby="attachMediaModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="attachMediaModalLabel">Attach Media</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="attachMediaForm" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label for="mediaFileInput" class="form-label">Select Image or Video</label>
+                        <input type="file" class="form-control" id="mediaFileInput" name="mediaFile" accept="image/*,video/*">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="uploadMediaBtn">Send</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{# Block User Modal #}
+<div class="modal fade chat-action-modal" id="blockUserModal" tabindex="-1" aria-labelledby="blockUserModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="blockUserModalLabel">Block {{ other_user.real_name }}?</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to block <strong>{{ other_user.real_name }}</strong>? You will no longer be able to send or receive messages from this user.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirmBlockUserBtn">Block</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{# Report User Modal #}
+<div class="modal fade chat-action-modal" id="reportUserModal" tabindex="-1" aria-labelledby="reportUserModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="reportUserModalLabel">Report {{ other_user.real_name }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="reportUserForm">
+                    <div class="mb-3">
+                        <label for="reportReason" class="form-label">Reason for reporting:</label>
+                        <textarea class="form-control" id="reportReason" rows="4" placeholder="Describe the violation..."></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="submitReportBtn">Submit Report</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const chatMessageArea = document.getElementById('chatMessageArea');
+        const messageInput = document.getElementById('messageInput');
+        const sendBtn = document.querySelector('.send-btn');
+
+        // Scroll to bottom on load
+        chatMessageArea.scrollTop = chatMessageArea.scrollHeight;
+
+        // Auto-resize textarea
+        messageInput.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = (this.scrollHeight) + 'px';
+        });
+
+        // Send message button click (or Enter key)
+        sendBtn.addEventListener('click', sendMessage);
+        messageInput.addEventListener('keydown', function(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault(); // Prevent new line in textarea
+                sendMessage();
+            }
+        });
+
+        function sendMessage() {
+            const messageContent = messageInput.value.trim();
+            if (messageContent) {
+                // TODO: Send message via AJAX to Flask backend
+                console.log('Sending message:', messageContent);
+                // Example:
+                // fetch('/send_chat_message/{{ other_user.id }}', {
+                //     method: 'POST',
+                //     headers: { 'Content-Type': 'application/json' },
+                //     body: JSON.stringify({ content: messageContent })
+                // })
+                // .then(response => response.json())
+                // .then(data => {
+                //     if (data.success) {
+                //         messageInput.value = ''; // Clear input
+                //         messageInput.style.height = 'auto'; // Reset textarea height
+                //         // Ideally, message should be appended to chatMessageArea dynamically
+                //         // For now, reload or fetch new messages
+                //         // window.location.reload(); // Simple reload
+                //     } else {
+                //         alert('Failed to send message: ' + data.message);
+                //     }
+                // })
+                // .catch(error => console.error('Error sending message:', error));
+
+                messageInput.value = ''; // Clear input immediately
+                messageInput.style.height = 'auto'; // Reset height
+                chatMessageArea.scrollTop = chatMessageArea.scrollHeight; // Scroll to bottom
+            }
+        }
+
+        // --- Modal Action Button Handlers (AJAX Integration) ---
+        const otherUserId = {{ other_user.id }};
+
+        // Customize Name
+        document.getElementById('saveCustomNameBtn').addEventListener('click', function() {
+            const customName = document.getElementById('customNameInput').value.trim();
+            if (customName) {
+                fetch(`/api/chat/customize_name/${otherUserId}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ custom_name: customName })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('Custom name saved!'); // Replace with custom modal
+                        location.reload(); // Or dynamically update header
+                    } else {
+                        alert('Failed to save custom name: ' + data.message);
+                    }
+                })
+                .catch(error => console.error('Error saving custom name:', error));
+            }
+        });
+
+        // Change Chat Wallpaper
+        document.getElementById('saveWallpaperBtn').addEventListener('click', function() {
+            const wallpaperFileInput = document.getElementById('wallpaperFileInput');
+            const clearWallpaper = document.getElementById('clearWallpaperCheckbox').checked;
+            const formData = new FormData();
+
+            if (clearWallpaper) {
+                formData.append('action', 'clear');
+            } else if (wallpaperFileInput.files.length > 0) {
+                formData.append('wallpaperFile', wallpaperFileInput.files[0]);
+                formData.append('action', 'upload');
+            } else {
+                alert('Please select a file or choose to clear.');
+                return;
+            }
+
+            fetch(`/api/chat/change_wallpaper/${otherUserId}`, {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(data.message); // Replace with custom modal
+                    location.reload(); // To apply new wallpaper
+                } else {
+                    alert('Failed to change wallpaper: ' + data.message);
+                }
+            })
+            .catch(error => console.error('Error changing wallpaper:', error));
+        });
+
+        // Search Chat Messages (client-side simple example)
+        let allChatMessages = []; // Populate this on page load from Flask if needed for client-side search
+        document.querySelectorAll('.message-bubble').forEach(bubble => {
+            const content = bubble.querySelector('.message-content p')?.textContent || '';
+            const timestamp = bubble.querySelector('.message-timestamp')?.textContent || '';
+            const sender = bubble.classList.contains('message-sent') ? 'You' : '{{ other_user.real_name }}';
+            allChatMessages.push({ content, timestamp, sender, element: bubble });
+        });
+
+        document.getElementById('chatSearchInput').addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase();
+            const resultsContainer = document.getElementById('chatSearchResults');
+            resultsContainer.innerHTML = ''; // Clear previous results
+
+            if (searchTerm.length < 2) {
+                resultsContainer.innerHTML = `<p class="text-muted text-center">Start typing to see results.</p>`;
+                return;
+            }
+
+            const filteredMessages = allChatMessages.filter(msg => msg.content.toLowerCase().includes(searchTerm));
+
+            if (filteredMessages.length > 0) {
+                filteredMessages.forEach(msg => {
+                    const resultItem = document.createElement('a');
+                    resultItem.href = '#'; // Link to scroll to message
+                    resultItem.classList.add('list-group-item', 'list-group-item-action');
+                    resultItem.innerHTML = `
+                        <strong>${msg.sender}:</strong> ${msg.content} <br>
+                        <small class="text-muted">${msg.timestamp}</small>
+                    `;
+                    resultItem.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        msg.element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        // Highlight the message temporarily
+                        msg.element.style.backgroundColor = 'rgba(255, 255, 0, 0.3)'; // Yellow highlight
+                        setTimeout(() => msg.element.style.backgroundColor = '', 2000);
+                        bootstrap.Modal.getInstance(document.getElementById('searchChatMessagesModal')).hide();
+                    });
+                    resultsContainer.appendChild(resultItem);
+                });
+            } else {
+                resultsContainer.innerHTML = `<p class="text-muted text-center">No messages found.</p>`;
+            }
+        });
+
+
+        // Disappearing Messages
+        document.getElementById('saveDisappearingSettingsBtn').addEventListener('click', function() {
+            const selectedTime = document.querySelector('input[name="disappearingTime"]:checked').value;
+            fetch(`/api/chat/disappearing_messages/${otherUserId}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ setting: selectedTime })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Disappearing message setting saved!'); // Replace with custom modal
+                } else {
+                    alert('Failed to save setting: ' + data.message);
+                }
+            })
+            .catch(error => console.error('Error saving disappearing message setting:', error));
+        });
+
+        // Attach Media
+        document.getElementById('uploadMediaBtn').addEventListener('click', function() {
+            const mediaFileInput = document.getElementById('mediaFileInput');
+            if (mediaFileInput.files.length > 0) {
+                const formData = new FormData();
+                formData.append('mediaFile', mediaFileInput.files[0]);
+
+                fetch(`/api/chat/send_media/${otherUserId}`, {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('Media sent!'); // Replace with custom modal
+                        location.reload(); // To show new media
+                    } else {
+                        alert('Failed to send media: ' + data.message);
+                    }
+                })
+                .catch(error => console.error('Error sending media:', error));
+            } else {
+                alert('Please select a file to send.');
+            }
+        });
+
+        // Block User
+        document.getElementById('confirmBlockUserBtn').addEventListener('click', function() {
+            fetch(`/api/chat/block_user/${otherUserId}`, {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('User blocked!'); // Replace with custom modal
+                    window.location.href = "{{ url_for('inbox') }}"; // Redirect to inbox
+                } else {
+                    alert('Failed to block user: ' + data.message);
+                }
+            })
+            .catch(error => console.error('Error blocking user:', error));
+        });
+
+        // Report User
+        document.getElementById('submitReportBtn').addEventListener('click', function() {
+            const reportReason = document.getElementById('reportReason').value.trim();
+            if (reportReason) {
+                fetch(`/api/chat/report_user/${otherUserId}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ reason: reportReason })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('Report submitted to admin!'); // Replace with custom modal
+                        bootstrap.Modal.getInstance(document.getElementById('reportUserModal')).hide();
+                    } else {
+                        alert('Failed to submit report: ' + data.message);
+                    }
+                })
+                .catch(error => console.error('Error submitting report:', error));
+            } else {
+                alert('Please provide a reason for reporting.');
+            }
+        });
+
+    });
+</script>
+{% endblock %}
