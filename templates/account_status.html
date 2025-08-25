@@ -1,0 +1,306 @@
+{% extends 'base.html' %}
+
+{% block title %}Account Status{% endblock %}
+
+{% block content %}
+<style>
+    /* Custom styles for the Account Status page */
+    body {
+        padding-top: 0;
+        padding-bottom: var(--navbar-height); /* Space for fixed bottom navbar */
+        overflow-x: hidden;
+    }
+
+    .account-status-container {
+        max-width: 700px;
+        margin: 20px auto;
+        padding: 20px 15px;
+        background-color: var(--background-light);
+    }
+
+    .account-status-card {
+        background-color: var(--card-background);
+        border-radius: 12px;
+        box-shadow: 0 4px 15px var(--shadow-medium);
+        padding: 25px;
+    }
+
+    .account-status-card h2 {
+        text-align: center;
+        color: var(--primary-text);
+        margin-bottom: 30px;
+        font-weight: 700;
+        font-size: 2em;
+    }
+
+    .status-section {
+        margin-bottom: 30px;
+    }
+
+    .status-section h3 {
+        color: var(--primary-color);
+        font-weight: 600;
+        margin-bottom: 15px;
+        font-size: 1.4em;
+        border-bottom: 2px solid var(--primary-color-light);
+        padding-bottom: 10px;
+    }
+
+    .status-item {
+        display: flex;
+        align-items: flex-start;
+        margin-bottom: 15px;
+        padding: 10px 0;
+        border-bottom: 1px dashed var(--border-color-light);
+    }
+    .status-item:last-child {
+        border-bottom: none;
+    }
+
+    .status-icon-wrapper {
+        flex-shrink: 0;
+        margin-right: 15px;
+        font-size: 1.8em;
+    }
+
+    .status-icon-ok { color: var(--success-color); }
+    .status-icon-warning { color: var(--warning-color); }
+    .status-icon-danger { color: var(--danger-color); }
+    .status-icon-info { color: var(--info-color); }
+
+    .status-details {
+        flex-grow: 1;
+    }
+
+    .status-details h4 {
+        margin: 0 0 5px 0;
+        color: var(--primary-text);
+        font-weight: 600;
+        font-size: 1.1em;
+    }
+
+    .status-details p {
+        margin: 0;
+        color: var(--secondary-text);
+        font-size: 0.9em;
+        line-height: 1.5;
+    }
+
+    .status-details .violation-list {
+        list-style: disc;
+        padding-left: 20px;
+        margin-top: 5px;
+        color: var(--secondary-text);
+    }
+    .status-details .violation-list li {
+        margin-bottom: 5px;
+    }
+
+    .back-to-menu-btn {
+        display: block;
+        width: fit-content;
+        margin: 40px auto 0 auto;
+        padding: 12px 30px;
+        background-color: var(--button-bg-secondary);
+        color: var(--button-text-secondary);
+        border-radius: 25px;
+        font-size: 1.1em;
+        font-weight: 600;
+        transition: background-color 0.2s ease, transform 0.2s ease;
+        text-decoration: none;
+    }
+    .back-to-menu-btn:hover {
+        background-color: darken(var(--button-bg-secondary), 10%);
+        transform: translateY(-2px);
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+        .account-status-container {
+            margin: 15px auto;
+            padding: 15px 10px;
+        }
+        .account-status-card {
+            padding: 20px;
+        }
+        .account-status-card h2 {
+            font-size: 1.8em;
+            margin-bottom: 25px;
+        }
+        .status-section h3 {
+            font-size: 1.2em;
+            margin-bottom: 15px;
+        }
+        .status-item {
+            padding: 8px 0;
+            margin-bottom: 10px;
+        }
+        .status-icon-wrapper {
+            font-size: 1.5em;
+            margin-right: 10px;
+        }
+        .status-details h4 {
+            font-size: 1em;
+        }
+        .status-details p {
+            font-size: 0.85em;
+        }
+        .back-to-menu-btn {
+            padding: 10px 25px;
+            font-size: 1em;
+            margin-top: 30px;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .account-status-card {
+            padding: 15px;
+        }
+        .account-status-card h2 {
+            font-size: 1.5em;
+        }
+        .status-section h3 {
+            font-size: 1.1em;
+        }
+        .status-icon-wrapper {
+            font-size: 1.3em;
+            margin-right: 8px;
+        }
+        .status-details h4 {
+            font-size: 0.95em;
+        }
+        .status-details p {
+            font-size: 0.8em;
+        }
+        .back-to-menu-btn {
+            padding: 8px 20px;
+            font-size: 0.95em;
+        }
+    }
+</style>
+
+<div class="account-status-container">
+    <div class="account-status-card">
+        <h2>Your Account Status</h2>
+
+        {# Account Health Status #}
+        <div class="status-section">
+            <h3><i class="fas fa-heartbeat me-2"></i> Overall Health</h3>
+            <div class="status-item">
+                <div class="status-icon-wrapper {% if account_health.is_good %}status-icon-ok{% else %}status-icon-warning{% endif %}">
+                    {% if account_health.is_good %}
+                        <i class="fas fa-check-circle"></i>
+                    {% else %}
+                        <i class="fas fa-exclamation-circle"></i>
+                    {% endif %}
+                </div>
+                <div class="status-details">
+                    <h4>Account Standing: {% if account_health.is_good %}Good{% else %}Needs Attention{% endif %}</h4>
+                    <p>{% if account_health.is_good %}Your account is in good standing and has no active violations or warnings.{% else %}There are some issues with your account that require your attention. Please review the details below.{% endif %}</p>
+                </div>
+            </div>
+        </div>
+
+        {# Violations & Warnings Section #}
+        <div class="status-section">
+            <h3><i class="fas fa-exclamation-triangle me-2"></i> Violations & Warnings</h3>
+            <div class="status-item">
+                <div class="status-icon-wrapper {% if account_status.warnings|length == 0 %}status-icon-ok{% elif account_status.warnings|length < 3 %}status-icon-warning{% else %}status-icon-danger{% endif %}">
+                    {% if account_status.warnings|length == 0 %}
+                        <i class="fas fa-ban"></i>
+                    {% else %}
+                        <i class="fas fa-times-circle"></i>
+                    {% endif %}
+                </div>
+                <div class="status-details">
+                    <h4>Active Warnings: {{ account_status.warnings|length }}</h4>
+                    {% if account_status.warnings|length > 0 %}
+                        <p>You have received warnings for violating our community guidelines. Please review and adhere to the rules to avoid further action.</p>
+                        <ul class="violation-list">
+                            {% for warning in account_status.warnings %}
+                                <li><strong>{{ warning.title }}</strong>: {{ warning.description }} (Issued: {{ moment(warning.timestamp).format('LL') }})</li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <p>No active warnings or policy violations on your account. Keep up the good work!</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="status-item">
+                <div class="status-icon-wrapper {% if account_status.strikes|length == 0 %}status-icon-ok{% elif account_status.strikes|length < 2 %}status-icon-warning{% else %}status-icon-danger{% endif %}">
+                    {% if account_status.strikes|length == 0 %}
+                        <i class="fas fa-gavel"></i>
+                    {% else %}
+                        <i class="fas fa-frown"></i>
+                    {% endif %}
+                </div>
+                <div class="status-details">
+                    <h4>Account Strikes: {{ account_status.strikes|length }}</h4>
+                    {% if account_status.strikes|length > 0 %}
+                        <p>Accumulating strikes can lead to temporary or permanent account restrictions. Resolve these issues promptly.</p>
+                        <ul class="violation-list">
+                            {% for strike in account_status.strikes %}
+                                <li><strong>{{ strike.title }}</strong>: {{ strike.description }} (Issued: {{ moment(strike.timestamp).format('LL') }})</li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <p>Your account has no strikes. Maintain compliance with our rules.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            {% if account_status.temporary_ban %}
+            <div class="status-item">
+                <div class="status-icon-wrapper status-icon-danger">
+                    <i class="fas fa-user-slash"></i>
+                </div>
+                <div class="status-details">
+                    <h4>Temporary Ban Active</h4>
+                    <p>Your account is temporarily restricted until <strong>{{ moment(account_status.temporary_ban.ends_at).format('LLL') }}</strong>. Reason: {{ account_status.temporary_ban.reason }}</p>
+                </div>
+            </div>
+            {% endif %}
+
+            {% if account_status.permanent_ban %}
+            <div class="status-item">
+                <div class="status-icon-wrapper status-icon-danger">
+                    <i class="fas fa-ban"></i>
+                </div>
+                <div class="status-details">
+                    <h4>Permanent Ban Active</h4>
+                    <p>Your account has been permanently banned. This action is typically irreversible. Reason: {{ account_status.permanent_ban.reason }}</p>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        {# Information Section #}
+        <div class="status-section">
+            <h3><i class="fas fa-info-circle me-2"></i> Information</h3>
+            <div class="status-item">
+                <div class="status-icon-wrapper status-icon-info">
+                    <i class="fas fa-user-shield"></i>
+                </div>
+                <div class="status-details">
+                    <h4>Account Created</h4>
+                    <p>{{ moment(account_status.created_at).format('LL') }}</p>
+                </div>
+            </div>
+             <div class="status-item">
+                <div class="status-icon-wrapper status-icon-info">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <div class="status-details">
+                    <h4>Last Policy Review</h4>
+                    <p>Your last policy review was on {{ moment(account_status.last_policy_review).format('LL') }}.</p>
+                </div>
+            </div>
+        </div>
+
+        <a href="{{ url_for('menu') }}" class="btn back-to-menu-btn">
+            <i class="fas fa-arrow-left me-2"></i> Back to Menu
+        </a>
+    </div>
+</div>
+{% endblock %}
