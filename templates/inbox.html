@@ -1,258 +1,441 @@
-{% extends "base.html" %}
+{% extends 'base.html' %}
 
-{% block title %}Inbox - SociaFam{% endblock %}
+{% block title %}Inbox{% endblock %}
 
-{% block extra_css %}
+{% block content %}
 <style>
-    .inbox-container {
-        display: flex;
-        height: calc(100vh - 70px);
+    /* Custom styles for the comprehensive Inbox page */
+    body {
+        padding-top: 0;
+        padding-bottom: var(--navbar-height); /* Space for main fixed bottom navbar */
+        overflow-x: hidden;
     }
-    
-    .inbox-sidebar {
-        width: 350px;
-        border-right: 1px solid #e4e6eb;
-        background-color: white;
-        overflow-y: auto;
-    }
-    
-    .inbox-main {
-        flex-grow: 1;
-        background-color: #f0f2f5;
+
+    .inbox-main-container {
         display: flex;
         flex-direction: column;
+        height: calc(100vh - var(--navbar-height)); /* Full viewport height minus bottom navbar */
+        position: relative;
+        background-color: var(--background-light);
     }
-    
-    .inbox-tabs {
-        display: flex;
-        border-bottom: 1px solid #e4e6eb;
-        padding: 0 20px;
+
+    /* Fixed Top Section: Inbox Title, Search, and Tab Nav */
+    .inbox-top-fixed-header {
+        position: sticky; /* Sticky to top within the inbox-main-container scroll */
+        top: 0;
+        z-index: 1000;
+        background-color: var(--background-light);
+        padding: 15px;
+        border-bottom: 1px solid var(--border-color-light);
+        box-shadow: 0 2px 5px var(--shadow-soft);
     }
-    
-    .inbox-tab {
-        padding: 15px 20px;
-        cursor: pointer;
-        border-bottom: 2px solid transparent;
+
+    .inbox-search-bar {
+        position: relative;
+        margin-bottom: 15px;
     }
-    
-    .inbox-tab.active {
-        border-bottom-color: #1877f2;
-        color: #1877f2;
-        font-weight: 600;
-    }
-    
-    .inbox-tab-badge {
-        background-color: #e41e3f;
-        color: white;
-        border-radius: 10px;
-        padding: 2px 6px;
-        font-size: 12px;
-        margin-left: 5px;
-    }
-    
-    .inbox-search {
-        padding: 15px 20px;
-        border-bottom: 1px solid #e4e6eb;
-    }
-    
-    .inbox-search input {
+
+    .inbox-search-bar .form-control {
         width: 100%;
-        padding: 10px;
-        border: 1px solid #dddfe2;
-        border-radius: 20px;
-        outline: none;
+        border-radius: 25px;
+        padding-left: 40px;
+        background-color: var(--card-background);
+        border: 1px solid var(--input-border-color);
     }
-    
-    .inbox-chats {
-        flex-grow: 1;
-        overflow-y: auto;
+
+    .inbox-search-bar .search-icon {
+        position: absolute;
+        left: 15px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--secondary-text);
+        font-size: 1.1em;
     }
-    
-    .chat-item {
+
+    /* Inner Tab Navigation for Chats, Groups, New */
+    .inbox-tabs-nav {
+        background-color: var(--card-background);
+        border-bottom: 1px solid var(--border-color-light);
         display: flex;
-        align-items: center;
-        padding: 15px 20px;
-        border-bottom: 1px solid #e4e6eb;
-        cursor: pointer;
+        justify-content: space-around;
+        padding: 0 5px;
     }
-    
-    .chat-item:hover {
-        background-color: #f0f2f5;
-    }
-    
-    .chat-item.unread {
-        background-color: #f0f2f5;
+
+    .inbox-tabs-nav .nav-link {
+        color: var(--secondary-text);
         font-weight: 600;
-    }
-    
-    .chat-avatar {
-        width: 50px;
-        height: 50px;
-        border-radius: 50%;
-        margin-right: 15px;
-    }
-    
-    .chat-info {
+        padding: 12px 10px;
+        border-bottom: 3px solid transparent;
+        transition: color 0.2s ease, border-color 0.2s ease;
         flex-grow: 1;
-    }
-    
-    .chat-name {
-        font-weight: 600;
-        margin-bottom: 5px;
-    }
-    
-    .chat-preview {
-        font-size: 14px;
-        color: #65676b;
+        text-align: center;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
-        max-width: 200px;
-    }
-    
-    .chat-meta {
         display: flex;
-        flex-direction: column;
-        align-items: flex-end;
+        align-items: center;
+        justify-content: center;
+        gap: 5px;
     }
-    
-    .chat-time {
-        font-size: 12px;
-        color: #65676b;
-        margin-bottom: 5px;
+
+    .inbox-tabs-nav .nav-link.active {
+        color: var(--primary-color);
+        border-bottom-color: var(--primary-color);
     }
-    
-    .chat-badge {
-        background-color: #1877f2;
+
+    .inbox-tabs-nav .nav-link:hover:not(.active) {
+        color: var(--primary-text);
+    }
+
+    .inbox-tabs-nav .badge {
+        background-color: var(--danger-color);
         color: white;
+        font-size: 0.7em;
+        padding: .3em .6em;
         border-radius: 50%;
-        width: 20px;
-        height: 20px;
+        margin-left: 5px;
+        line-height: 1;
+    }
+
+    /* Scrollable Tab Content Area */
+    .inbox-tab-content-scrollable {
+        flex: 1; /* Takes remaining vertical space */
+        overflow-y: auto; /* Make this section scrollable */
+        -webkit-overflow-scrolling: touch;
+        padding: 15px; /* Padding within the scrollable content */
+    }
+
+    /* Conversation List Item Styling (Shared for Chats and Groups) */
+    .conversation-list-item {
         display: flex;
         align-items: center;
-        justify-content: center;
-        font-size: 12px;
+        padding: 12px 15px;
+        margin-bottom: 10px;
+        background-color: var(--card-background);
+        border-radius: 12px;
+        box-shadow: 0 2px 8px var(--shadow-soft);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        text-decoration: none;
+        color: inherit;
+        position: relative;
     }
-    
-    .inbox-empty {
+
+    .conversation-list-item:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 4px 12px var(--shadow-medium);
+    }
+
+    .conversation-list-item.unread {
+        background-color: var(--flash-info-bg);
+        border-left: 5px solid var(--primary-color);
+    }
+
+    .conversation-profile-pic {
+        width: 55px;
+        height: 55px;
+        border-radius: 50%;
+        object-fit: cover;
+        margin-right: 15px;
+        border: 2px solid var(--primary-color);
+        flex-shrink: 0;
+    }
+
+    .conversation-details {
+        flex-grow: 1;
+        overflow: hidden;
+    }
+
+    .conversation-details .name {
+        font-weight: 600;
+        color: var(--primary-text);
+        margin-bottom: 3px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        font-size: 1.1em;
+    }
+
+    .conversation-details .latest-message-snippet {
+        font-size: 0.9em;
+        color: var(--secondary-text);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .conversation-meta {
         display: flex;
         flex-direction: column;
+        align-items: flex-end; /* Align timestamp and badge to right */
+        flex-shrink: 0;
+        margin-left: 15px;
+    }
+
+    .conversation-meta .timestamp {
+        font-size: 0.75em;
+        color: var(--secondary-text);
+        margin-bottom: 3px;
+    }
+
+    .conversation-meta .message-count-badge {
+        background-color: var(--danger-color);
+        color: white;
+        padding: 4px 8px;
+        border-radius: 50%; /* Rounded circle */
+        min-width: 25px; /* Ensure circular shape for single digits */
+        height: 25px;
+        display: flex;
         align-items: center;
         justify-content: center;
-        height: 100%;
-        color: #65676b;
+        font-size: 0.75em;
+        font-weight: 600;
     }
-    
-    .inbox-empty i {
-        font-size: 48px;
+
+    .empty-list-message {
+        text-align: center;
+        color: var(--secondary-text);
+        padding: 30px;
+        margin-top: 20px;
+        background-color: var(--card-background);
+        border-radius: 12px;
+        box-shadow: 0 4px 10px var(--shadow-soft);
+    }
+
+    /* Create Group Form Styling (for 'New' tab content) */
+    .create-group-form .form-group {
         margin-bottom: 15px;
     }
-    
-    .inbox-empty p {
-        font-size: 18px;
+    .create-group-form .profile-pic-upload-wrapper {
+        text-align: center;
+        margin-bottom: 20px;
+    }
+    .create-group-form .profile-pic-preview {
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 2px solid var(--primary-color);
+        margin-bottom: 10px;
+    }
+    .create-group-form .btn-upload-photo {
+        background-color: var(--button-bg-secondary);
+        color: var(--button-text-secondary);
+        border: none;
+        padding: 8px 15px;
+        border-radius: 20px;
+        font-size: 0.9em;
+        cursor: pointer;
+    }
+
+
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+        .inbox-top-fixed-header {
+            padding: 10px;
+        }
+        .inbox-search-bar .search-icon {
+            left: 10px;
+        }
+        .inbox-tabs-nav .nav-link {
+            padding: 10px 5px;
+            font-size: 0.9em;
+        }
+        .inbox-tab-content-scrollable {
+            padding: 10px;
+        }
+        .conversation-list-item {
+            padding: 10px;
+            margin-bottom: 8px;
+        }
+        .conversation-profile-pic {
+            width: 45px;
+            height: 45px;
+            margin-right: 10px;
+        }
+        .conversation-details .name {
+            font-size: 1em;
+        }
+        .conversation-details .latest-message-snippet {
+            font-size: 0.8em;
+        }
+        .conversation-meta {
+            margin-left: 10px;
+        }
+        .conversation-meta .timestamp {
+            font-size: 0.7em;
+        }
+        .conversation-meta .message-count-badge {
+            width: 22px;
+            height: 22px;
+            font-size: 0.7em;
+            padding: 2px;
+        }
     }
 </style>
-{% endblock %}
 
-{% block content %}
-<div class="inbox-container">
-    <div class="inbox-sidebar">
-        <div class="inbox-tabs">
-            <div class="inbox-tab {% if tab == 'chats' %}active{% endif %}" data-tab="chats">
-                Chats <span class="inbox-tab-badge">{{ chats|sum(attribute='unread_count') }}</span>
-            </div>
-            <div class="inbox-tab {% if tab == 'groups' %}active{% endif %}" data-tab="groups">
-                Groups <span class="inbox-tab-badge">0</span>
-            </div>
-            <div class="inbox-tab {% if tab == 'new' %}active{% endif %}" data-tab="new">
-                New
-            </div>
+<div class="inbox-main-container">
+    <div class="inbox-top-fixed-header">
+        <h2 class="text-center mb-3">Inbox</h2>
+        {# Search Bar #}
+        <div class="inbox-search-bar">
+            <i class="fas fa-search search-icon"></i>
+            <input type="text" class="form-control" id="inboxSearchInput" placeholder="Search chats, groups, or users...">
         </div>
-        
-        <div class="inbox-search">
-            <input type="text" placeholder="Search messages..." id="inboxSearch">
-        </div>
-        
-        <div class="inbox-chats">
-            {% if tab == 'chats' %}
+
+        {# Inner Tab Navigation for Chats, Groups, New #}
+        <ul class="nav nav-pills inbox-tabs-nav" id="inboxTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="chats-tab" data-bs-toggle="tab" data-bs-target="#chatsContent" type="button" role="tab" aria-controls="chatsContent" aria-selected="true">
+                    Chats <span class="badge" id="chatsUnreadCount">{{ unread_chats_count | default(0) }}</span>
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="groups-tab" data-bs-toggle="tab" data-bs-target="#groupsContent" type="button" role="tab" aria-controls="groupsContent" aria-selected="false">
+                    Groups <span class="badge" id="groupsUnreadCount">{{ unread_groups_count | default(0) }}</span>
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="new-tab" data-bs-toggle="tab" data-bs-target="#newContent" type="button" role="tab" aria-controls="newContent" aria-selected="false">
+                    <i class="fas fa-plus-circle me-1"></i> New
+                </button>
+            </li>
+        </ul>
+    </div>
+
+    {# Scrollable Tab Content Area #}
+    <div class="tab-content inbox-tab-content-scrollable" id="inboxTabContent">
+        {# Chats Tab Content #}
+        <div class="tab-pane fade show active" id="chatsContent" role="tabpanel" aria-labelledby="chats-tab">
+            {% if chats %}
                 {% for chat in chats %}
-                <div class="chat-item {% if chat.unread_count > 0 %}unread{% endif %}" onclick="location.href='{{ url_for('chat', user_id=chat.user.id) }}'">
-                    <img src="{{ url_for('get_profile_image', user_id=chat.user.id) }}" alt="{{ chat.user.username }}" class="chat-avatar">
-                    <div class="chat-info">
-                        <div class="chat-name">{{ chat.user.real_name or chat.user.username }}</div>
-                        <div class="chat-preview">{{ chat.last_message.content|truncate(30) }}</div>
+                <a href="{{ url_for('view_chat', other_user_id=chat.other_user.id) }}" class="conversation-list-item {% if chat.is_unread %}unread{% endif %}" data-search-terms="{{ chat.other_user.real_name | lower }} {{ chat.other_user.username | lower }}">
+                    <img src="{{ chat.other_user.profile_pic }}" alt="{{ chat.other_user.username }} Profile" class="conversation-profile-pic">
+                    <div class="conversation-details">
+                        <p class="name">{{ chat.other_user.real_name }}</p>
+                        <p class="latest-message-snippet">{{ chat.latest_message_snippet }}</p>
                     </div>
-                    <div class="chat-meta">
-                        <div class="chat-time">{{ chat.last_message.created_at|timesince }}</div>
+                    <div class="conversation-meta">
+                        <span class="timestamp">{{ moment(chat.timestamp).fromNow() }}</span>
                         {% if chat.unread_count > 0 %}
-                        <div class="chat-badge">{{ chat.unread_count }}</div>
+                            <span class="message-count-badge">{{ chat.unread_count }}</span>
                         {% endif %}
                     </div>
-                </div>
+                </a>
                 {% endfor %}
-            
-            {% elif tab == 'groups' %}
-                {% for group in groups %}
-                <div class="chat-item" onclick="location.href='#'">
-                    <img src="{{ url_for('static', filename='images/default-group.png') }}" alt="{{ group.name }}" class="chat-avatar">
-                    <div class="chat-info">
-                        <div class="chat-name">{{ group.name }}</div>
-                        <div class="chat-preview">Last message preview...</div>
-                    </div>
-                    <div class="chat-meta">
-                        <div class="chat-time">2h ago</div>
-                        <div class="chat-badge">3</div>
-                    </div>
-                </div>
-                {% endfor %}
-            
-            {% elif tab == 'new' %}
-                <div class="inbox-empty">
-                    <i class="fas fa-comment-medical"></i>
-                    <p>Start a new conversation</p>
-                    <button class="btn btn-primary mt-3">New Message</button>
+            {% else %}
+                <div class="empty-list-message">
+                    <i class="fas fa-comment-dots fa-3x mb-3"></i>
+                    <p class="lead">No direct messages yet.</p>
+                    <p>Start a conversation with a friend!</p>
                 </div>
             {% endif %}
         </div>
-    </div>
-    
-    <div class="inbox-main">
-        <div class="inbox-empty">
-            <i class="fas fa-comments"></i>
-            <p>Select a conversation to start messaging</p>
+
+        {# Groups Tab Content #}
+        <div class="tab-pane fade" id="groupsContent" role="tabpanel" aria-labelledby="groups-tab">
+            {% if groups %}
+                {% for group in groups %}
+                <a href="{{ url_for('view_group_chat', group_id=group.id) }}" class="conversation-list-item {% if group.is_unread %}unread{% endif %}" data-search-terms="{{ group.name | lower }}">
+                    <img src="{{ group.profile_pic }}" alt="{{ group.name }} Profile" class="conversation-profile-pic">
+                    <div class="conversation-details">
+                        <p class="name">{{ group.name }}</p>
+                        <p class="latest-message-snippet">{{ group.latest_message_snippet }}</p>
+                    </div>
+                    <div class="conversation-meta">
+                        <span class="timestamp">{{ moment(group.timestamp).fromNow() }}</span>
+                        {% if group.unread_count > 0 %}
+                            <span class="message-count-badge">{{ group.unread_count }}</span>
+                        {% endif %}
+                    </div>
+                </a>
+                {% endfor %}
+            {% else %}
+                <div class="empty-list-message">
+                    <i class="fas fa-users fa-3x mb-3"></i>
+                    <p class="lead">No group chats yet.</p>
+                    <p>Create a new group or join an existing one!</p>
+                </div>
+            {% endif %}
+        </div>
+
+        {# New Tab Content (Create Group) #}
+        <div class="tab-pane fade" id="newContent" role="tabpanel" aria-labelledby="new-tab">
+            <div class="card p-4 shadow">
+                <h3 class="card-title text-center mb-4">Create New Group</h3>
+                <form action="{{ url_for('create_group') }}" method="POST" enctype="multipart/form-data" class="create-group-form">
+                    <div class="profile-pic-upload-wrapper">
+                        <img id="groupProfilePicPreview" src="{{ url_for('static', filename='img/default_group.png') }}" alt="Group Profile Preview" class="profile-pic-preview">
+                        <label for="groupProfilePic" class="btn btn-upload-photo">
+                            <i class="fas fa-camera me-2"></i> Upload Photo
+                        </label>
+                        <input type="file" class="form-control-file" id="groupProfilePic" name="groupProfilePic" style="display:none;" accept="image/*">
+                    </div>
+                    <div class="form-group mb-3">
+                        <label for="groupName" class="form-label">Group Name</label>
+                        <input type="text" class="form-control" id="groupName" name="groupName" required>
+                    </div>
+                    {# Potentially add more group info fields here later if needed as per doc: 'other group info that may be required are described in the group profile below' #}
+                    <div class="d-grid gap-2 mt-4">
+                        <button type="submit" class="btn btn-primary btn-lg">Create Group</button>
+                        <button type="button" class="btn btn-secondary btn-lg" onclick="window.location.reload();">Cancel</button>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
 </div>
-{% endblock %}
 
-{% block extra_js %}
 <script>
-    // Handle inbox tabs
-    document.querySelectorAll('.inbox-tab').forEach(tab => {
-        tab.addEventListener('click', function() {
-            const tabName = this.dataset.tab;
-            window.location.href = `{{ url_for('inbox') }}?tab=${tabName}`;
-        });
-    });
-    
-    // Handle inbox search
-    const searchInput = document.getElementById('inboxSearch');
-    if (searchInput) {
-        searchInput.addEventListener('input', function() {
-            const searchTerm = this.value.toLowerCase();
-            const chatItems = document.querySelectorAll('.chat-item');
-            
-            chatItems.forEach(item => {
-                const chatName = item.querySelector('.chat-name').textContent.toLowerCase();
-                const chatPreview = item.querySelector('.chat-preview').textContent.toLowerCase();
-                
-                if (chatName.includes(searchTerm) || chatPreview.includes(searchTerm)) {
+    document.addEventListener('DOMContentLoaded', function() {
+        const inboxSearchInput = document.getElementById('inboxSearchInput');
+        const chatsContent = document.getElementById('chatsContent');
+        const groupsContent = document.getElementById('groupsContent');
+
+        // Function to filter conversation list items
+        function filterConversations() {
+            const searchTerm = inboxSearchInput.value.toLowerCase();
+
+            // Filter Chat items
+            chatsContent.querySelectorAll('.conversation-list-item').forEach(item => {
+                const searchTerms = item.dataset.searchTerms.toLowerCase();
+                if (searchTerms.includes(searchTerm)) {
                     item.style.display = 'flex';
                 } else {
                     item.style.display = 'none';
                 }
             });
-        });
-    }
+
+            // Filter Group items
+            groupsContent.querySelectorAll('.conversation-list-item').forEach(item => {
+                const searchTerms = item.dataset.searchTerms.toLowerCase();
+                if (searchTerms.includes(searchTerm)) {
+                    item.style.display = 'flex';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        }
+
+        inboxSearchInput.addEventListener('input', filterConversations);
+
+        // Group Profile Picture Preview
+        const groupProfilePicInput = document.getElementById('groupProfilePic');
+        const groupProfilePicPreview = document.getElementById('groupProfilePicPreview');
+
+        if (groupProfilePicInput && groupProfilePicPreview) {
+            groupProfilePicInput.addEventListener('change', function(event) {
+                const file = event.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        groupProfilePicPreview.src = e.target.result;
+                    };
+                    reader.readAsDataURL(file);
+                } else {
+                    groupProfilePicPreview.src = "{{ url_for('static', filename='img/default_group.png') }}";
+                }
+            });
+        }
+    });
 </script>
 {% endblock %}
