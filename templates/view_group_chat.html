@@ -1,0 +1,810 @@
+{% extends 'base.html' %}
+
+{% block title %}Group Chat: {{ group.name }}{% endblock %}
+
+{% block content %}
+<style>
+    /* Custom styles for the Group Conversation page - similar to view_chat.html */
+    body {
+        padding-top: 0 !important;
+        padding-bottom: 0 !important;
+        overflow: hidden;
+    }
+
+    .chat-page-container {
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+        background-color: var(--background-light);
+        color: var(--primary-text);
+        position: relative;
+
+        /* Group Chat background image styling - dynamic from Flask */
+        background-image: url('{{ chat_background_image_url | default("none") }}');
+        background-size: cover;
+        background-position: center;
+        background-attachment: fixed;
+    }
+
+    /* Fixed Top Navbar for the Group Chat */
+    .chat-fixed-top-navbar {
+        flex-shrink: 0;
+        background-color: var(--card-background);
+        border-bottom: 1px solid var(--border-color-light);
+        box-shadow: 0 2px 5px var(--shadow-soft);
+        padding: 10px 15px;
+        display: flex;
+        align-items: center;
+        z-index: 1020;
+    }
+
+    .chat-fixed-top-navbar .back-btn {
+        color: var(--primary-text);
+        font-size: 1.4em;
+        margin-right: 15px;
+        text-decoration: none;
+    }
+
+    .chat-fixed-top-navbar .profile-pic {
+        width: 45px;
+        height: 45px;
+        border-radius: 50%;
+        object-fit: cover;
+        margin-right: 10px;
+        border: 2px solid var(--primary-color);
+    }
+
+    .chat-fixed-top-navbar .group-info {
+        flex-grow: 1;
+        overflow: hidden;
+    }
+
+    .chat-fixed-top-navbar .group-info .group-name {
+        font-weight: 600;
+        font-size: 1.1em;
+        color: var(--primary-text);
+        margin-bottom: 0;
+        line-height: 1.2;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .chat-fixed-top-navbar .dropdown-toggle {
+        background: none;
+        border: none;
+        color: var(--secondary-text);
+        font-size: 1.4em;
+        padding: 5px;
+        border-radius: 5px;
+        transition: background-color 0.2s ease;
+        margin-left: 10px;
+    }
+    .chat-fixed-top-navbar .dropdown-toggle:hover {
+        background-color: var(--background-light);
+    }
+
+    .chat-fixed-top-navbar .dropdown-menu {
+        background-color: var(--card-background);
+        border: 1px solid var(--border-color-light);
+        border-radius: 8px;
+        box-shadow: 0 4px 10px var(--shadow-soft);
+    }
+
+    .chat-fixed-top-navbar .dropdown-item {
+        color: var(--primary-text);
+        padding: 8px 15px;
+        transition: background-color 0.2s ease;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .chat-fixed-top-navbar .dropdown-item:hover {
+        background-color: var(--background-light);
+    }
+
+    /* Scrollable Message Area */
+    .chat-message-area {
+        flex: 1;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        padding: 15px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    /* Message Bubble Styling */
+    .message-bubble {
+        display: flex;
+        max-width: 80%;
+    }
+
+    .message-content-wrapper {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start; /* Default for received */
+    }
+
+    .message-sender-name {
+        font-size: 0.75em;
+        font-weight: 600;
+        color: var(--secondary-text);
+        margin-bottom: 2px;
+        margin-left: 5px; /* Indent sender name slightly */
+    }
+
+    .message-content {
+        padding: 10px 15px;
+        border-radius: 18px;
+        position: relative;
+        word-wrap: break-word;
+        white-space: pre-wrap;
+    }
+
+    .message-timestamp {
+        font-size: 0.7em;
+        color: var(--secondary-text);
+        margin-top: 5px;
+        white-space: nowrap;
+    }
+
+    /* Sent messages (by current user) */
+    .message-sent {
+        margin-left: auto;
+        flex-direction: column;
+        align-items: flex-end; /* Stack bubble and timestamp to the right */
+    }
+
+    .message-sent .message-content-wrapper {
+        align-items: flex-end; /* Sender name and bubble align right */
+    }
+
+    .message-sent .message-content {
+        background-color: #dcf8c6;
+        color: var(--primary-text);
+        border-bottom-right-radius: 4px;
+    }
+    .dark-theme .message-sent .message-content {
+        background-color: #3e5166;
+        color: var(--primary-text);
+    }
+    /* Hide sender name for own messages */
+    .message-sent .message-sender-name {
+        display: none;
+    }
+
+    /* Received messages (from other group members) */
+    .message-received {
+        margin-right: auto;
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .message-received .message-content {
+        background-color: var(--card-background);
+        color: var(--primary-text);
+        border-bottom-left-radius: 4px;
+    }
+    .dark-theme .message-received .message-content {
+        background-color: #2d2d2d;
+        color: var(--primary-text);
+    }
+
+    /* Media Messages */
+    .message-media img, .message-media video {
+        max-width: 100%;
+        max-height: 250px;
+        object-fit: contain;
+        border-radius: 8px;
+        display: block;
+    }
+    .message-media .message-content {
+        padding: 5px;
+    }
+
+    /* Fixed Bottom Input Area */
+    .chat-fixed-bottom-input {
+        flex-shrink: 0;
+        background-color: var(--card-background);
+        border-top: 1px solid var(--border-color-light);
+        box-shadow: 0 -2px 5px var(--shadow-soft);
+        padding: 10px 15px;
+        display: flex;
+        align-items: flex-end;
+        gap: 10px;
+        z-index: 1020;
+    }
+
+    .chat-fixed-bottom-input .action-icon {
+        background: none;
+        border: none;
+        color: var(--secondary-text);
+        font-size: 1.6em;
+        padding: 5px;
+        cursor: pointer;
+        transition: color 0.2s ease;
+    }
+
+    .chat-fixed-bottom-input .action-icon:hover {
+        color: var(--primary-color);
+    }
+
+    .chat-fixed-bottom-input .message-textarea {
+        flex-grow: 1;
+        min-height: 40px;
+        max-height: 120px;
+        resize: none;
+        border-radius: 20px;
+        padding: 10px 15px;
+        border: 1px solid var(--input-border-color);
+        background-color: var(--background-light);
+        color: var(--primary-text);
+        font-size: 0.95em;
+        overflow-y: auto;
+    }
+
+    .chat-fixed-bottom-input .send-btn {
+        background-color: var(--primary-color);
+        color: white;
+        border: none;
+        border-radius: 50%;
+        width: 45px;
+        height: 45px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.4em;
+        cursor: pointer;
+        transition: background-color 0.2s ease, transform 0.2s ease;
+        flex-shrink: 0;
+    }
+
+    .chat-fixed-bottom-input .send-btn:hover {
+        background-color: darken(var(--primary-color), 10%);
+        transform: scale(1.05);
+    }
+
+    /* Modals specific to chat actions */
+    .chat-action-modal .modal-content {
+        background-color: var(--card-background);
+        color: var(--primary-text);
+        border-radius: 12px;
+        box-shadow: 0 8px 25px var(--shadow-medium);
+    }
+    .chat-action-modal .modal-header {
+        border-bottom-color: var(--border-color-light);
+    }
+    .chat-action-modal .modal-footer {
+        border-top-color: var(--border-color-light);
+    }
+    .chat-action-modal .form-control {
+        background-color: var(--background-light);
+        color: var(--primary-text);
+    }
+    .chat-action-modal .dropdown-menu {
+        background-color: var(--card-background);
+        border: 1px solid var(--border-color-light);
+    }
+    .chat-action-modal .dropdown-item {
+        color: var(--primary-text);
+    }
+    .chat-action-modal .dropdown-item:hover {
+        background-color: var(--background-light);
+    }
+
+    /* Responsive adjustments - Same as view_chat.html */
+    @media (max-width: 768px) {
+        .chat-fixed-top-navbar {
+            padding: 8px 10px;
+        }
+        .chat-fixed-top-navbar .back-btn {
+            margin-right: 10px;
+        }
+        .chat-fixed-top-navbar .profile-pic {
+            width: 40px;
+            height: 40px;
+            margin-right: 8px;
+        }
+        .chat-fixed-top-navbar .group-info .group-name {
+            font-size: 1em;
+        }
+        .chat-fixed-top-navbar .dropdown-toggle {
+            font-size: 1.2em;
+            margin-left: 8px;
+        }
+        .chat-message-area {
+            padding: 10px;
+        }
+        .message-content {
+            padding: 8px 12px;
+            font-size: 0.9em;
+        }
+        .message-timestamp {
+            font-size: 0.65em;
+        }
+        .chat-fixed-bottom-input {
+            padding: 8px 10px;
+            gap: 8px;
+        }
+        .chat-fixed-bottom-input .action-icon {
+            font-size: 1.4em;
+            padding: 3px;
+        }
+        .chat-fixed-bottom-input .message-textarea {
+            min-height: 35px;
+            padding: 8px 12px;
+            font-size: 0.9em;
+        }
+        .chat-fixed-bottom-input .send-btn {
+            width: 40px;
+            height: 40px;
+            font-size: 1.2em;
+        }
+    }
+</style>
+
+<div class="chat-page-container">
+    {# Fixed Top Navbar for the Group Chat #}
+    <div class="chat-fixed-top-navbar">
+        <a href="{{ url_for('inbox') }}" class="back-btn"><i class="fas fa-arrow-left"></i></a>
+        <img src="{{ group.profile_pic }}" alt="{{ group.name }} Profile" class="profile-pic">
+        <div class="group-info">
+            <p class="group-name">{{ group.name }}</p>
+            {# Optionally add group members count or active members here #}
+        </div>
+        {# Dropdown Options for Group Chat Actions #}
+        <div class="dropdown">
+            <button class="dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="fas fa-ellipsis-v"></i>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end chat-action-modal">
+                <li>
+                    <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#changeChatWallpaperModal">
+                        <i class="fas fa-image me-2"></i> Change Chat Wallpaper
+                    </a>
+                </li>
+                <li>
+                    <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#searchChatMessagesModal">
+                        <i class="fas fa-search me-2"></i> Search Chat
+                    </a>
+                </li>
+                <li>
+                    <a class="dropdown-item" href="{{ url_for('view_group_profile', group_id=group.id) }}">
+                        <i class="fas fa-users me-2"></i> View Group
+                    </a>
+                </li>
+                <li>
+                    <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#disappearingMessageModal">
+                        <i class="fas fa-hourglass-half me-2"></i> Disappearing Messages (for me)
+                    </a>
+                </li>
+                <li><hr class="dropdown-divider"></li>
+                <li>
+                    <a class="dropdown-item text-danger" href="#" data-bs-toggle="modal" data-bs-target="#leaveGroupModal">
+                        <i class="fas fa-sign-out-alt me-2"></i> Leave Group
+                    </a>
+                </li>
+                <li>
+                    <a class="dropdown-item text-danger" href="#" data-bs-toggle="modal" data-bs-target="#reportGroupModal">
+                        <i class="fas fa-flag me-2"></i> Report
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    {# Scrollable Message Area #}
+    <div class="chat-message-area" id="chatMessageArea">
+        {% for message in chat_messages %}
+            <div class="message-bubble {% if message.sender_id == current_user.id %}message-sent{% else %}message-received{% endif %}">
+                <div class="message-content-wrapper">
+                    {% if message.sender_id != current_user.id %}
+                        <span class="message-sender-name">{{ message.sender_real_name or message.sender_username }}</span>
+                    {% endif %}
+                    <div class="message-content">
+                        {% if message.media_path %}
+                            <div class="message-media">
+                                {% if message.media_type == 'image' %}
+                                    <img src="{{ message.media_path }}" alt="Group Chat Image">
+                                {% elif message.media_type == 'video' %}
+                                    <video src="{{ message.media_path }}" controls muted playsinline></video>
+                                {% endif %}
+                            </div>
+                        {% endif %}
+                        {% if message.content %}
+                            <p>{{ message.content }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+                <span class="message-timestamp">{{ moment(message.timestamp).format('HH:mm') }}</span>
+            </div>
+        {% endfor %}
+    </div>
+
+    {# Fixed Bottom Input Area #}
+    <div class="chat-fixed-bottom-input">
+        <button class="action-icon" title="Stickers"><i class="fas fa-smile"></i></button>
+        <button class="action-icon" title="Attach Media" data-bs-toggle="modal" data-bs-target="#attachMediaModal"><i class="fas fa-paperclip"></i></button>
+        <button class="action-icon" title="Camera"><i class="fas fa-camera"></i></button>
+        <button class="action-icon" title="Voice Note"><i class="fas fa-microphone"></i></button>
+        <textarea class="message-textarea" id="messageInput" placeholder="Type your message..." rows="1"></textarea>
+        <button class="send-btn" title="Send Message"><i class="fas fa-paper-plane"></i></button>
+    </div>
+</div>
+
+{# --- Modals for Dropdown Actions --- #}
+
+{# Change Chat Wallpaper Modal (reused from view_chat) #}
+<div class="modal fade chat-action-modal" id="changeChatWallpaperModal" tabindex="-1" aria-labelledby="changeChatWallpaperModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="changeChatWallpaperModalLabel">Change Chat Wallpaper</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="changeWallpaperForm" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label for="wallpaperFileInput" class="form-label">Upload New Wallpaper</label>
+                        <input type="file" class="form-control" id="wallpaperFileInput" name="wallpaperFile" accept="image/*">
+                    </div>
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="clearWallpaperCheckbox">
+                        <label class="form-check-label" for="clearWallpaperCheckbox">Clear current wallpaper</label>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="saveWallpaperBtn">Apply Wallpaper</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{# Search Chat Messages Modal (reused from view_chat) #}
+<div class="modal fade chat-action-modal" id="searchChatMessagesModal" tabindex="-1" aria-labelledby="searchChatMessagesModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="searchChatMessagesModalLabel">Search Group Messages</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <input type="text" class="form-control" id="chatSearchInput" placeholder="Enter keyword to search...">
+                </div>
+                <div id="chatSearchResults" class="list-group">
+                    <p class="text-muted text-center">Start typing to see results.</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{# Disappearing Messages Modal (reused from view_chat) #}
+<div class="modal fade chat-action-modal" id="disappearingMessageModal" tabindex="-1" aria-labelledby="disappearingMessageModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="disappearingMessageModalLabel">Disappearing Messages (for you)</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Messages will automatically delete for you after:</p>
+                <div class="list-group">
+                    <label class="list-group-item">
+                        <input class="form-check-input me-1" type="radio" name="disappearingTime" value="off" checked> Off
+                    </label>
+                    <label class="list-group-item">
+                        <input class="form-check-input me-1" type="radio" name="disappearingTime" value="24h"> 24 Hours
+                    </label>
+                    <label class="list-group-item">
+                        <input class="form-check-input me-1" type="radio" name="disappearingTime" value="1w"> 1 Week
+                    </label>
+                    <label class="list-group-item">
+                        <input class="form-check-input me-1" type="radio" name="disappearingTime" value="1m"> 1 Month
+                    </label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="saveDisappearingSettingsBtn">Save Settings</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{# Attach Media Modal (reused from view_chat) #}
+<div class="modal fade chat-action-modal" id="attachMediaModal" tabindex="-1" aria-labelledby="attachMediaModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="attachMediaModalLabel">Attach Media</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="attachMediaForm" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label for="mediaFileInput" class="form-label">Select Image or Video</label>
+                        <input type="file" class="form-control" id="mediaFileInput" name="mediaFile" accept="image/*,video/*">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="uploadMediaBtn">Send</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{# Leave Group Modal #}
+<div class="modal fade chat-action-modal" id="leaveGroupModal" tabindex="-1" aria-labelledby="leaveGroupModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="leaveGroupModalLabel">Leave Group: {{ group.name }}?</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to leave <strong>{{ group.name }}</strong>? You will no longer receive messages from this group.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirmLeaveGroupBtn">Leave</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{# Report Group Modal #}
+<div class="modal fade chat-action-modal" id="reportGroupModal" tabindex="-1" aria-labelledby="reportGroupModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="reportGroupModalLabel">Report Group: {{ group.name }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="reportGroupForm">
+                    <div class="mb-3">
+                        <label for="reportReason" class="form-label">Reason for reporting:</label>
+                        <textarea class="form-control" id="reportReason" rows="4" placeholder="Describe the violation..."></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="submitReportBtn">Submit Report</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const chatMessageArea = document.getElementById('chatMessageArea');
+        const messageInput = document.getElementById('messageInput');
+        const sendBtn = document.querySelector('.send-btn');
+
+        // Scroll to bottom on load
+        chatMessageArea.scrollTop = chatMessageArea.scrollHeight;
+
+        // Auto-resize textarea
+        messageInput.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = (this.scrollHeight) + 'px';
+        });
+
+        // Send message button click (or Enter key)
+        sendBtn.addEventListener('click', sendMessage);
+        messageInput.addEventListener('keydown', function(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                sendMessage();
+            }
+        });
+
+        function sendMessage() {
+            const messageContent = messageInput.value.trim();
+            if (messageContent) {
+                // TODO: Send message via AJAX to Flask backend for group chat
+                console.log('Sending group message:', messageContent);
+                // Example:
+                // fetch('/send_group_message/{{ group.id }}', {
+                //     method: 'POST',
+                //     headers: { 'Content-Type': 'application/json' },
+                //     body: JSON.stringify({ content: messageContent })
+                // })
+                // .then(response => response.json())
+                // .then(data => {
+                //     if (data.success) {
+                //         messageInput.value = '';
+                //         messageInput.style.height = 'auto';
+                //         // window.location.reload(); // Simple reload for now
+                //     } else {
+                //         alert('Failed to send message: ' + data.message);
+                //     }
+                // })
+                // .catch(error => console.error('Error sending message:', error));
+
+                messageInput.value = '';
+                messageInput.style.height = 'auto';
+                chatMessageArea.scrollTop = chatMessageArea.scrollHeight;
+            }
+        }
+
+        // --- Modal Action Button Handlers (AJAX Integration) ---
+        const groupId = {{ group.id }};
+
+        // Change Chat Wallpaper
+        document.getElementById('saveWallpaperBtn').addEventListener('click', function() {
+            const wallpaperFileInput = document.getElementById('wallpaperFileInput');
+            const clearWallpaper = document.getElementById('clearWallpaperCheckbox').checked;
+            const formData = new FormData();
+
+            if (clearWallpaper) {
+                formData.append('action', 'clear');
+            } else if (wallpaperFileInput.files.length > 0) {
+                formData.append('wallpaperFile', wallpaperFileInput.files[0]);
+                formData.append('action', 'upload');
+            } else {
+                alert('Please select a file or choose to clear.');
+                return;
+            }
+
+            fetch(`/api/group_chat/change_wallpaper/${groupId}`, {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(data.message);
+                    location.reload();
+                } else {
+                    alert('Failed to change wallpaper: ' + data.message);
+                }
+            })
+            .catch(error => console.error('Error changing wallpaper:', error));
+        });
+
+        // Search Chat Messages (client-side simple example)
+        let allChatMessages = []; // Populate this on page load from Flask if needed for client-side search
+        document.querySelectorAll('.message-bubble').forEach(bubble => {
+            const senderName = bubble.querySelector('.message-sender-name')?.textContent || '';
+            const content = bubble.querySelector('.message-content p')?.textContent || '';
+            const timestamp = bubble.querySelector('.message-timestamp')?.textContent || '';
+            allChatMessages.push({ content: `${senderName} ${content}`, timestamp, element: bubble });
+        });
+
+        document.getElementById('chatSearchInput').addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase();
+            const resultsContainer = document.getElementById('chatSearchResults');
+            resultsContainer.innerHTML = '';
+
+            if (searchTerm.length < 2) {
+                resultsContainer.innerHTML = `<p class="text-muted text-center">Start typing to see results.</p>`;
+                return;
+            }
+
+            const filteredMessages = allChatMessages.filter(msg => msg.content.toLowerCase().includes(searchTerm));
+
+            if (filteredMessages.length > 0) {
+                filteredMessages.forEach(msg => {
+                    const resultItem = document.createElement('a');
+                    resultItem.href = '#';
+                    resultItem.classList.add('list-group-item', 'list-group-item-action');
+                    resultItem.innerHTML = `
+                        ${msg.content} <br>
+                        <small class="text-muted">${msg.timestamp}</small>
+                    `;
+                    resultItem.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        msg.element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        msg.element.style.backgroundColor = 'rgba(255, 255, 0, 0.3)';
+                        setTimeout(() => msg.element.style.backgroundColor = '', 2000);
+                        bootstrap.Modal.getInstance(document.getElementById('searchChatMessagesModal')).hide();
+                    });
+                    resultsContainer.appendChild(resultItem);
+                });
+            } else {
+                resultsContainer.innerHTML = `<p class="text-muted text-center">No messages found.</p>`;
+            }
+        });
+
+        // Disappearing Messages
+        document.getElementById('saveDisappearingSettingsBtn').addEventListener('click', function() {
+            const selectedTime = document.querySelector('input[name="disappearingTime"]:checked').value;
+            fetch(`/api/group_chat/disappearing_messages/${groupId}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ setting: selectedTime })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Disappearing message setting saved for you!');
+                } else {
+                    alert('Failed to save setting: ' + data.message);
+                }
+            })
+            .catch(error => console.error('Error saving disappearing message setting:', error));
+        });
+
+        // Attach Media
+        document.getElementById('uploadMediaBtn').addEventListener('click', function() {
+            const mediaFileInput = document.getElementById('mediaFileInput');
+            if (mediaFileInput.files.length > 0) {
+                const formData = new FormData();
+                formData.append('mediaFile', mediaFileInput.files[0]);
+
+                fetch(`/api/group_chat/send_media/${groupId}`, {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('Media sent to group!');
+                        location.reload();
+                    } else {
+                        alert('Failed to send media: ' + data.message);
+                    }
+                })
+                .catch(error => console.error('Error sending media:', error));
+            } else {
+                alert('Please select a file to send.');
+            }
+        });
+
+        // Leave Group
+        document.getElementById('confirmLeaveGroupBtn').addEventListener('click', function() {
+            fetch(`/api/group_chat/leave_group/${groupId}`, {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('You have left the group.');
+                    window.location.href = "{{ url_for('inbox') }}"; // Redirect to inbox
+                } else {
+                    alert('Failed to leave group: ' + data.message);
+                }
+            })
+            .catch(error => console.error('Error leaving group:', error));
+        });
+
+        // Report Group
+        document.getElementById('submitReportBtn').addEventListener('click', function() {
+            const reportReason = document.getElementById('reportReason').value.trim();
+            if (reportReason) {
+                fetch(`/api/group_chat/report_group/${groupId}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ reason: reportReason })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('Group reported to admin!');
+                        bootstrap.Modal.getInstance(document.getElementById('reportGroupModal')).hide();
+                    } else {
+                        alert('Failed to submit report: ' + data.message);
+                    }
+                })
+                .catch(error => console.error('Error submitting report:', error));
+            } else {
+                alert('Please provide a reason for reporting.');
+            }
+        });
+    });
+</script>
+{% endblock %}
