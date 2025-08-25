@@ -1503,7 +1503,7 @@ def create_post():
     return render_template('create_post.html')
 
 
-@app.route('/create_reel', methods=['GET', 'POST'])
+@app.route('/create_reel', methods=['GET', 'POST']) # Changed URL path to avoid conflict
 @login_required
 def create_reel():
     if request.method == 'POST':
@@ -1556,6 +1556,35 @@ def create_reel():
             return render_template('create_reel.html', form_data=request.form.to_dict())
 
     return render_template('create_reel.html')
+
+
+@app.route('/reels') # This is now exclusively for viewing reels
+@login_required
+def reels():
+    db = get_db()
+    # Logic to fetch and display reels
+    # For now, a placeholder, but this would query the 'reels' table
+    all_reels_data = db.execute(
+        """
+        SELECT r.*, u.username, m.profilePhoto
+        FROM reels r
+        JOIN users u ON r.user_id = u.id
+        LEFT JOIN members m ON u.id = m.user_id
+        WHERE r.visibility = 'public' OR (r.visibility = 'friends' AND EXISTS (
+            SELECT 1 FROM friendships WHERE ((user1_id = ? AND user2_id = r.user_id) OR (user1_id = r.user_id AND user2_id = ?)) AND status = 'accepted'
+        ))
+        ORDER BY r.timestamp DESC
+        """,
+        (current_user.id, current_user.id)
+    ).fetchall()
+
+    reels_to_display = []
+    for reel_item in all_reels_data:
+        reel_dict = dict(reel_item)
+        reel_dict['profilePhoto'] = get_member_profile_pic(reel_dict['user_id'])
+        reels_to_display.append(reel_dict)
+
+    return render_template('reels.html', reels=reels_to_display)
 
 
 @app.route('/create_story', methods=['GET', 'POST'])
