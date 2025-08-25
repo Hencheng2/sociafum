@@ -1,0 +1,344 @@
+{% extends 'base.html' %}
+
+{% block title %}Create New Reel{% endblock %}
+
+{% block content %}
+<style>
+    /* Custom styles for the Create New Reel page - similar to create_post.html */
+    body {
+        padding-top: 0;
+        padding-bottom: var(--navbar-height); /* Space for fixed bottom navbar */
+        overflow-x: hidden;
+    }
+
+    .create-reel-container {
+        max-width: 700px;
+        margin: 20px auto;
+        padding: 20px 15px;
+        background-color: var(--background-light);
+    }
+
+    .create-reel-card {
+        background-color: var(--card-background);
+        border-radius: 12px;
+        box-shadow: 0 4px 15px var(--shadow-medium);
+        padding: 25px;
+    }
+
+    .create-reel-card h2 {
+        text-align: center;
+        color: var(--primary-text);
+        margin-bottom: 30px;
+        font-weight: 700;
+    }
+
+    .media-upload-wrapper {
+        text-align: center;
+        margin-bottom: 30px;
+        border: 2px dashed var(--border-color-light);
+        border-radius: 12px;
+        padding: 20px;
+        background-color: var(--background-light);
+    }
+
+    .media-preview-area {
+        min-height: 150px;
+        max-height: 350px;
+        overflow: hidden;
+        margin-bottom: 15px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: rgba(0,0,0,0.05);
+        border-radius: 8px;
+    }
+
+    .media-preview {
+        max-width: 100%;
+        max-height: 100%;
+        object-fit: contain;
+        border-radius: 8px;
+        display: none;
+    }
+    .media-preview.active {
+        display: block;
+    }
+
+    .upload-buttons {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 10px;
+    }
+
+    .btn-media-action {
+        background-color: var(--button-bg-secondary);
+        color: var(--button-text-secondary);
+        border: none;
+        padding: 10px 18px;
+        border-radius: 25px;
+        font-size: 0.9em;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        transition: background-color 0.2s ease, transform 0.2s ease;
+    }
+    .btn-media-action:hover {
+        background-color: darken(var(--button-bg-secondary), 5%);
+        transform: translateY(-1px);
+    }
+
+    .form-group {
+        margin-bottom: 20px;
+    }
+
+    .form-label {
+        font-weight: 600;
+        color: var(--primary-text);
+        margin-bottom: 8px;
+    }
+
+    .form-control, .form-select {
+        border-radius: 8px;
+        padding: 10px 15px;
+        background-color: var(--background-light);
+        color: var(--primary-text);
+        border: 1px solid var(--input-border-color);
+    }
+    .form-control:focus, .form-select:focus {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 0.2rem rgba(88, 129, 87, 0.25);
+    }
+
+    .btn-submit {
+        background-color: var(--primary-color);
+        color: white;
+        padding: 12px 25px;
+        border-radius: 25px;
+        font-size: 1.1em;
+        font-weight: 600;
+        transition: background-color 0.2s ease, transform 0.2s ease;
+    }
+    .btn-submit:hover {
+        background-color: darken(var(--primary-color), 10%);
+        transform: translateY(-2px);
+    }
+
+    .btn-cancel {
+        background-color: var(--secondary-color);
+        color: white;
+        padding: 12px 25px;
+        border-radius: 25px;
+        font-size: 1.1em;
+        font-weight: 600;
+    }
+    .btn-cancel:hover {
+        background-color: darken(var(--secondary-color), 10%);
+        transform: translateY(-2px);
+    }
+
+    /* Audio section for photos */
+    #audioUploadSection {
+        margin-top: 20px;
+        border-top: 1px dashed var(--border-color-light);
+        padding-top: 20px;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+        .create-reel-container {
+            margin: 15px auto;
+            padding: 15px 10px;
+        }
+        .create-reel-card {
+            padding: 20px;
+        }
+        .create-reel-card h2 {
+            font-size: 1.8em;
+            margin-bottom: 25px;
+        }
+        .media-upload-wrapper {
+            padding: 15px;
+            margin-bottom: 25px;
+        }
+        .media-preview-area {
+            min-height: 120px;
+            max-height: 250px;
+        }
+        .upload-buttons {
+            flex-direction: column;
+            gap: 8px;
+        }
+        .btn-media-action {
+            width: 100%;
+            padding: 8px 15px;
+            font-size: 0.85em;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-label {
+            font-size: 0.9em;
+        }
+        .form-control, .form-select {
+            padding: 8px 12px;
+            font-size: 0.9em;
+        }
+        .btn-submit, .btn-cancel {
+            padding: 10px 20px;
+            font-size: 1em;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .create-reel-card {
+            padding: 15px;
+        }
+        .create-reel-card h2 {
+            font-size: 1.5em;
+        }
+        .media-preview-area {
+            min-height: 100px;
+            max-height: 200px;
+        }
+        .btn-media-action {
+            font-size: 0.8em;
+            padding: 7px 12px;
+        }
+        .form-label {
+            font-size: 0.85em;
+        }
+        .form-control, .form-select {
+            font-size: 0.85em;
+        }
+        .btn-submit, .btn-cancel {
+            font-size: 0.95em;
+        }
+    }
+</style>
+
+<div class="create-reel-container">
+    <div class="create-reel-card">
+        <h2>Create New Reel</h2>
+
+        <form action="{{ url_for('create_reel') }}" method="POST" enctype="multipart/form-data">
+            {# Media Upload Section #}
+            <div class="media-upload-wrapper">
+                <div class="media-preview-area">
+                    <img id="imagePreview" class="media-preview" alt="Image Preview" style="display: none;">
+                    <video id="videoPreview" class="media-preview" controls muted playsinline preload="metadata" style="display: none;"></video>
+                    <p id="noMediaText">Upload a video or a photo for your reel</p>
+                </div>
+                <div class="upload-buttons">
+                    <label for="mediaFile" class="btn btn-media-action">
+                        <i class="fas fa-camera-retro me-2"></i> Select Photo/Video
+                    </label>
+                    <input type="file" class="form-control-file" id="mediaFile" name="mediaFile" style="display:none;" accept="image/*,video/*">
+                    {# Camera capture is implied for posts/reels/stories but not directly here to simplify focus #}
+                </div>
+            </div>
+
+            {# Audio Upload Section (conditionally shown for photos) #}
+            <div class="form-group" id="audioUploadSection" style="display: none;">
+                <label for="audioFile" class="form-label">Add Audio (Optional, for photos only)</label>
+                <input type="file" class="form-control-file" id="audioFile" name="audioFile" accept="audio/*">
+                <small class="form-text text-muted">Upload an audio file to accompany your photo reel.</small>
+                <audio id="audioPreview" controls style="width: 100%; margin-top: 10px; display: none;"></audio>
+            </div>
+
+            {# Reel Description #}
+            <div class="form-group">
+                <label for="description" class="form-label">Description</label>
+                <textarea class="form-control" id="description" name="description" rows="4" placeholder="Add a catchy description for your reel!"></textarea>
+                <small class="form-text text-muted">You can tag other users using @username.</small>
+            </div>
+
+            {# Visibility - Fixed to Public as per requirements #}
+            <div class="form-group">
+                <label class="form-label">Who can see this reel?</label>
+                <p class="form-control-static">Everyone (Public)</p>
+                <input type="hidden" name="visibility" value="public">
+            </div>
+
+            <div class="d-grid gap-2 mt-5">
+                <button type="submit" class="btn btn-primary btn-submit">Create Reel</button>
+                <a href="{{ url_for('add_to') }}" class="btn btn-secondary btn-cancel">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const mediaFile = document.getElementById('mediaFile');
+        const imagePreview = document.getElementById('imagePreview');
+        const videoPreview = document.getElementById('videoPreview');
+        const noMediaText = document.getElementById('noMediaText');
+        const audioUploadSection = document.getElementById('audioUploadSection');
+        const audioFile = document.getElementById('audioFile');
+        const audioPreview = document.getElementById('audioPreview');
+
+        let currentMediaType = null; // To track if current media is image or video
+
+        // --- Media Preview Functionality ---
+        mediaFile.addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    noMediaText.style.display = 'none';
+                    if (file.type.startsWith('image/')) {
+                        imagePreview.src = e.target.result;
+                        imagePreview.classList.add('active');
+                        videoPreview.classList.remove('active');
+                        videoPreview.src = ''; // Clear video
+                        currentMediaType = 'image';
+                        audioUploadSection.style.display = 'block'; // Show audio section for images
+                    } else if (file.type.startsWith('video/')) {
+                        videoPreview.src = e.target.result;
+                        videoPreview.classList.add('active');
+                        imagePreview.classList.remove('active');
+                        imagePreview.src = ''; // Clear image
+                        videoPreview.play(); // Auto-play video preview
+                        currentMediaType = 'video';
+                        audioUploadSection.style.display = 'none'; // Hide audio section for videos
+                        audioFile.value = ''; // Clear audio input
+                        audioPreview.src = ''; // Clear audio preview
+                        audioPreview.style.display = 'none';
+                    }
+                };
+                reader.readAsDataURL(file);
+            } else {
+                imagePreview.classList.remove('active');
+                videoPreview.classList.remove('active');
+                imagePreview.src = '';
+                videoPreview.src = '';
+                noMediaText.style.display = 'block';
+                currentMediaType = null;
+                audioUploadSection.style.display = 'none'; // Hide audio section
+                audioFile.value = ''; // Clear audio input
+                audioPreview.src = ''; // Clear audio preview
+                audioPreview.style.display = 'none';
+            }
+        });
+
+        // --- Audio Preview Functionality (for photos only) ---
+        audioFile.addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            if (file && currentMediaType === 'image') {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    audioPreview.src = e.target.result;
+                    audioPreview.style.display = 'block';
+                    audioPreview.play();
+                };
+                reader.readAsDataURL(file);
+            } else {
+                audioPreview.src = '';
+                audioPreview.style.display = 'none';
+            }
+        });
+    });
+</script>
+{% endblock %}
