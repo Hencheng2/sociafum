@@ -1,363 +1,650 @@
-{% extends "base.html" %}
+{% extends 'base.html' %}
 
-{% block title %}{{ user.username }} - SociaFam{% endblock %}
+{% block title %}{{ user_profile.real_name }}'s Profile{% endblock %}
 
-{% block extra_css %}
+{% block content %}
 <style>
+    /* Custom styles for the Other User's Profile page */
+    body {
+        padding-top: 0;
+        padding-bottom: var(--navbar-height); /* Space for fixed bottom navbar */
+        overflow-x: hidden;
+    }
+
     .profile-container {
-        max-width: 900px;
-        margin: 0 auto;
+        max-width: 800px; /* Limit width for better layout on large screens */
+        margin: 0 auto; /* Center the container */
+        padding: 20px 15px;
+        background-color: var(--background-light);
     }
-    
+
     .profile-header {
-        background-color: white;
-        border-radius: 8px;
-        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-        padding: 20px;
-        margin-bottom: 20px;
+        display: flex;
+        align-items: flex-start; /* Align items to the top for vertical stacking if needed */
+        margin-bottom: 25px;
+        flex-wrap: wrap; /* Allow wrapping on small screens */
+        gap: 20px; /* Space between profile photo and info */
     }
-    
-    .profile-cover {
-        height: 200px;
-        background-color: #f0f2f5;
-        border-radius: 8px 8px 0 0;
-        margin: -20px -20px 20px -20px;
+
+    .profile-photo-wrapper {
+        flex-shrink: 0;
         position: relative;
     }
-    
-    .profile-cover img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        border-radius: 8px 8px 0 0;
-    }
-    
-    .profile-info {
-        display: flex;
-        align-items: flex-start;
-    }
-    
-    .profile-avatar {
-        width: 120px;
-        height: 120px;
+
+    .profile-photo {
+        width: 100px;
+        height: 100px;
         border-radius: 50%;
-        border: 4px solid white;
-        margin-right: 20px;
-        margin-top: -60px;
-        background-color: white;
+        object-fit: cover;
+        border: 3px solid var(--primary-color); /* Highlight profile pic */
+        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
     }
-    
-    .profile-details {
-        flex-grow: 1;
+
+    .profile-info {
+        flex-grow: 1; /* Allows info to take available space */
     }
-    
-    .profile-name {
-        font-size: 24px;
-        font-weight: 600;
+
+    .profile-info .real-name {
+        font-weight: 700;
+        font-size: 1.8em;
+        color: var(--primary-text);
         margin-bottom: 5px;
     }
-    
-    .profile-username {
-        color: #65676b;
-        margin-bottom: 10px;
-    }
-    
+
     .profile-stats {
         display: flex;
-        gap: 20px;
+        gap: 20px; /* Space between stats items */
         margin-bottom: 15px;
+        flex-wrap: wrap;
     }
-    
-    .profile-stat {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
+
+    .profile-stat-item {
+        text-align: center;
+        flex-shrink: 0;
     }
-    
-    .profile-stat-value {
+
+    .profile-stat-item .count {
+        font-size: 1.1em;
         font-weight: 600;
-        font-size: 18px;
+        color: var(--primary-text);
     }
-    
-    .profile-stat-label {
-        font-size: 14px;
-        color: #65676b;
+
+    .profile-stat-item .label {
+        font-size: 0.8em;
+        color: var(--secondary-text);
     }
-    
+
     .profile-actions {
         display: flex;
-        gap: 10px;
-        margin-bottom: 15px;
+        gap: 10px; /* Space between buttons */
+        margin-bottom: 25px;
+        flex-wrap: wrap;
     }
-    
-    .profile-bio {
-        margin-bottom: 15px;
-        line-height: 1.5;
-    }
-    
-    .profile-mutual {
-        display: flex;
-        align-items: center;
-        margin-bottom: 15px;
-    }
-    
-    .profile-mutual-friends {
-        display: flex;
-        margin-right: 10px;
-    }
-    
-    .profile-mutual-avatar {
-        width: 30px;
-        height: 30px;
-        border-radius: 50%;
-        border: 2px solid white;
-        margin-left: -5px;
-    }
-    
-    .profile-mutual-text {
-        font-size: 14px;
-        color: #65676b;
-    }
-    
-    .profile-tabs {
-        display: flex;
-        border-bottom: 1px solid #e4e6eb;
-        margin-bottom: 20px;
-    }
-    
-    .profile-tab {
-        padding: 15px 20px;
-        cursor: pointer;
-        border-bottom: 2px solid transparent;
-    }
-    
-    .profile-tab.active {
-        border-bottom-color: #1877f2;
-        color: #1877f2;
+
+    .profile-actions .btn {
+        flex: 1; /* Allow buttons to grow and fill space */
+        min-width: 120px; /* Minimum width for buttons */
+        border-radius: 25px; /* Pill-shaped buttons */
         font-weight: 600;
     }
-    
-    .profile-content {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 10px;
+
+    .profile-actions .btn-follow {
+        background-color: var(--primary-color);
+        color: white;
     }
-    
-    .profile-post {
-        aspect-ratio: 1;
-        background-color: white;
-        border-radius: 8px;
+    .profile-actions .btn-follow.active { /* For "Following" or "Pending" state */
+        background-color: var(--secondary-color);
+        color: white;
+    }
+    .profile-actions .btn-follow:hover {
+        opacity: 0.9;
+    }
+
+    .profile-actions .btn-message {
+        background-color: var(--info-color);
+        color: white;
+    }
+    .profile-actions .btn-message:hover {
+        opacity: 0.9;
+    }
+
+
+    .profile-section {
+        background-color: var(--card-background);
+        border-radius: 12px;
+        box-shadow: 0 4px 10px var(--shadow-soft);
+        padding: 20px;
+        margin-bottom: 25px;
+    }
+
+    .profile-section h3 {
+        color: var(--primary-text);
+        font-weight: 600;
+        margin-bottom: 15px;
+        border-bottom: 1px solid var(--border-color-light);
+        padding-bottom: 10px;
+    }
+
+    .profile-biography {
+        color: var(--primary-text);
+        line-height: 1.8;
+        white-space: pre-wrap; /* Preserve line breaks */
+    }
+
+    .profile-biography .username-tag {
+        color: var(--link-color);
+        font-weight: 600;
+        text-decoration: none;
+    }
+    .profile-biography .username-tag:hover {
+        text-decoration: underline;
+    }
+
+    .mutual-friends-list {
+        list-style: none;
+        padding: 0;
+        margin-top: 10px;
+    }
+    .mutual-friends-list li {
+        display: flex;
+        align-items: center;
+        margin-bottom: 8px;
+        color: var(--secondary-text);
+        font-size: 0.9em;
+    }
+    .mutual-friends-list li i {
+        margin-right: 8px;
+        color: var(--primary-color);
+    }
+
+    /* Posts/Reels Tab Navigation */
+    .profile-tabs-nav {
+        background-color: var(--card-background);
+        border-bottom: 1px solid var(--border-color-light);
+        box-shadow: 0 1px 3px var(--shadow-soft);
+        display: flex;
+        justify-content: space-around;
+        padding: 0 10px;
+        border-top-left-radius: 12px; /* Match card radius */
+        border-top-right-radius: 12px;
+    }
+
+    .profile-tabs-nav .nav-link {
+        color: var(--secondary-text);
+        font-weight: 600;
+        padding: 12px 10px;
+        border-bottom: 3px solid transparent;
+        transition: color 0.2s ease, border-color 0.2s ease;
+        flex-grow: 1;
+        text-align: center;
+        white-space: nowrap;
         overflow: hidden;
-        position: relative;
-        cursor: pointer;
-    }
-    
-    .profile-post img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-    }
-    
-    .profile-post video {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-    }
-    
-    .profile-post-overlay {
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: rgba(0, 0, 0, 0.3);
+        text-overflow: ellipsis;
         display: flex;
         align-items: center;
         justify-content: center;
-        opacity: 0;
-        transition: opacity 0.3s;
+        gap: 8px; /* Space between icon and text */
+        font-size: 1.1em;
     }
-    
-    .profile-post:hover .profile-post-overlay {
-        opacity: 1;
+
+    .profile-tabs-nav .nav-link.active {
+        color: var(--primary-color);
+        border-bottom-color: var(--primary-color);
     }
-    
-    .profile-post-stats {
-        display: flex;
-        gap: 15px;
-        color: white;
+
+    .profile-tabs-nav .nav-link:hover:not(.active) {
+        color: var(--primary-text);
     }
-    
-    .profile-post-stat {
-        display: flex;
-        align-items: center;
-        gap: 5px;
+
+    /* Gallery grid for Posts and Reels */
+    .gallery-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr); /* 3 columns for posts/reels */
+        gap: 10px;
+        padding: 15px;
+        background-color: var(--card-background); /* Background for tab content */
+        border-bottom-left-radius: 12px;
+        border-bottom-right-radius: 12px;
+        box-shadow: 0 4px 10px var(--shadow-soft);
+        margin-bottom: 25px; /* Space after tab content */
     }
-    
-    .profile-locked {
-        text-align: center;
-        padding: 40px;
-        background-color: white;
+
+    .gallery-item {
+        position: relative;
+        padding-bottom: 100%; /* Creates square aspect ratio */
+        overflow: hidden;
         border-radius: 8px;
-        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+        cursor: pointer;
+        background-color: var(--background-light);
     }
-    
-    .profile-locked i {
-        font-size: 48px;
-        color: #65676b;
-        margin-bottom: 15px;
+
+    .gallery-item img, .gallery-item video {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: transform 0.2s ease;
     }
-    
-    .profile-locked p {
-        font-size: 18px;
-        color: #65676b;
-        margin-bottom: 20px;
+
+    .gallery-item:hover img, .gallery-item:hover video {
+        transform: scale(1.05);
+    }
+
+    .gallery-item .video-play-icon {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 2em;
+        color: rgba(255,255,255,0.8);
+        text-shadow: 0 0 5px rgba(0,0,0,0.5);
+        display: none; /* Show only for video items */
+    }
+    .gallery-item[data-media-type="video"] .video-play-icon {
+        display: block;
+    }
+
+
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+        .profile-container {
+            padding: 15px 10px;
+        }
+        .profile-header {
+            flex-direction: column; /* Stack photo and info vertically */
+            align-items: center;
+            text-align: center;
+            gap: 15px;
+        }
+        .profile-photo {
+            width: 90px;
+            height: 90px;
+        }
+        .profile-info .real-name {
+            font-size: 1.6em;
+        }
+        .profile-stats {
+            justify-content: center;
+            gap: 15px;
+        }
+        .profile-actions {
+            flex-direction: column; /* Stack buttons vertically */
+            gap: 8px;
+        }
+        .profile-actions .btn {
+            width: 100%;
+            min-width: unset;
+        }
+        .profile-section {
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        .profile-section h3 {
+            font-size: 1.3em;
+        }
+        .profile-biography {
+            font-size: 0.9em;
+        }
+        .profile-tabs-nav .nav-link {
+            font-size: 1em;
+            padding: 10px 5px;
+        }
+        .gallery-grid {
+            grid-template-columns: repeat(2, 1fr); /* 2 columns on mobile */
+            gap: 8px;
+            padding: 10px;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .profile-photo {
+            width: 80px;
+            height: 80px;
+        }
+        .profile-info .real-name {
+            font-size: 1.4em;
+        }
+        .profile-stats {
+            gap: 10px;
+        }
+        .profile-stat-item .count {
+            font-size: 1em;
+        }
+        .profile-stat-item .label {
+            font-size: 0.75em;
+        }
+        .profile-tabs-nav .nav-link {
+            font-size: 0.9em;
+            gap: 5px;
+        }
     }
 </style>
-{% endblock %}
 
-{% block content %}
 <div class="profile-container">
-    {% if locked %}
-    <div class="profile-locked">
-        <i class="fas fa-lock"></i>
-        <p>This profile is locked. Follow {{ user.username }} to see their content.</p>
-        <button class="btn btn-primary follow-btn" data-user-id="{{ user.id }}">
-            Follow
-        </button>
-    </div>
-    {% else %}
+
     <div class="profile-header">
-        <div class="profile-cover">
-            <!-- Cover photo would go here -->
+        <div class="profile-photo-wrapper">
+            <img src="{{ user_profile.profile_pic }}" alt="{{ user_profile.real_name }} Profile" class="profile-photo">
         </div>
-        
         <div class="profile-info">
-            <img src="{{ url_for('get_profile_image', user_id=user.id) }}" alt="{{ user.username }}" class="profile-avatar">
-            
-            <div class="profile-details">
-                <div class="profile-name">{{ user.real_name or user.username }}</div>
-                <div class="profile-username">@{{ user.username }}</div>
-                
-                <div class="profile-stats">
-                    <div class="profile-stat">
-                        <div class="profile-stat-value">{{ user.posts.count() }}</div>
-                        <div class="profile-stat-label">Posts</div>
-                    </div>
-                    <div class="profile-stat">
-                        <div class="profile-stat-value">{{ user.followers.count() }}</div>
-                        <div class="profile-stat-label">Followers</div>
-                    </div>
-                    <div class="profile-stat">
-                        <div class="profile-stat-value">{{ user.following.count() }}</div>
-                        <div class="profile-stat-label">Following</div>
-                    </div>
+            <h1 class="real-name">{{ user_profile.real_name }}</h1>
+            <div class="profile-stats">
+                <div class="profile-stat-item">
+                    <div class="count">{{ user_profile.friends_count | default(0) }}</div>
+                    <div class="label">Friends</div>
                 </div>
-                
-                <div class="profile-actions">
-                    {% if user.id == current_user.id %}
-                    <a href="{{ url_for('edit_profile') }}" class="btn btn-secondary">Edit Profile</a>
-                    <button class="btn btn-secondary">Share Profile</button>
-                    {% else %}
-                    <button class="btn btn-primary follow-btn" data-user-id="{{ user.id }}">
-                        {% if current_user.is_following(user) %}Following{% else %}Follow{% endif %}
+                <div class="profile-stat-item">
+                    <div class="count">{{ user_profile.followers_count | default(0) }}</div>
+                    <div class="label">Followers</div>
+                </div>
+                <div class="profile-stat-item">
+                    <div class="count">{{ user_profile.following_count | default(0) }}</div>
+                    <div class="label">Following</div>
+                </div>
+            </div>
+            <div class="profile-actions">
+                {% if not user_profile.is_current_user_profile %}
+                    <button class="btn btn-follow" id="followBtn" data-user-id="{{ user_profile.id }}" data-current-status="{{ user_profile.follow_status }}">
+                        {% if user_profile.follow_status == 'following' %}
+                            <i class="fas fa-user-check me-1"></i> Following
+                        {% elif user_profile.follow_status == 'pending' %}
+                            <i class="fas fa-user-clock me-1"></i> Pending
+                        {% elif user_profile.follow_status == 'not_following' %}
+                            <i class="fas fa-user-plus me-1"></i> Follow
+                        {% elif user_profile.follow_status == 'follow_back' %}
+                            <i class="fas fa-user-plus me-1"></i> Follow Back
+                        {% else %}
+                            <i class="fas fa-user-plus me-1"></i> Follow
+                        {% endif %}
                     </button>
-                    <button class="btn btn-secondary">Message</button>
+                    <a href="{{ url_for('view_chat', other_user_id=user_profile.id) }}" class="btn btn-message">
+                        <i class="fas fa-comment-dots me-1"></i> Message
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    {# Biography Section #}
+    <div class="profile-section">
+        <h3>Biography</h3>
+        {% if user_profile.bio %}
+            <p class="profile-biography">
+                {{ user_profile.bio | safe | replace('@', '<a href="#" class="username-tag">@') | replace(' ', '</a> ') | replace('\n', '<br>') | replace('</a><br>', '</a><br>') }}
+            </p>
+        {% else %}
+            <p class="text-muted">No biography available.</p>
+        {% endif %}
+    </div>
+
+    {# Mutual Friends Section #}
+    <div class="profile-section">
+        <h3>Mutual Friends</h3>
+        {% if mutual_friends %}
+            <ul class="mutual-friends-list">
+                {% for friend in mutual_friends %}
+                    <li>
+                        <i class="fas fa-user-friends"></i> <a href="{{ url_for('profile', username=friend.username) }}">{{ friend.real_name }}</a>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p class="text-muted">No mutual friends.</p>
+        {% endif %}
+    </div>
+
+    {# Posts and Reels Tabs #}
+    <div class="profile-section p-0"> {# Remove default padding as tabs provide it #}
+        <ul class="nav nav-pills profile-tabs-nav" id="profileContentTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="posts-tab" data-bs-toggle="tab" data-bs-target="#postsContent" type="button" role="tab" aria-controls="postsContent" aria-selected="true">
+                    <i class="fas fa-th-large me-2"></i> Posts
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="reels-tab" data-bs-toggle="tab" data-bs-target="#reelsContent" type="button" role="tab" aria-controls="reelsContent" aria-selected="false">
+                    <i class="fas fa-video me-2"></i> Reels
+                </button>
+            </li>
+        </ul>
+        <div class="tab-content">
+            <div class="tab-pane fade show active" id="postsContent" role="tabpanel" aria-labelledby="posts-tab">
+                <div class="gallery-grid">
+                    {% if user_posts %}
+                        {% for post in user_posts %}
+                            <div class="gallery-item" data-post-id="{{ post.id }}" data-bs-toggle="modal" data-bs-target="#postDetailModal" data-media-type="image">
+                                <img src="{{ post.media_url }}" alt="Post Image">
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted text-center col-span-full py-4">This user has no posts yet.</p>
                     {% endif %}
                 </div>
-                
-                {% if user.bio %}
-                <div class="profile-bio">
-                    {{ user.bio }}
-                </div>
-                {% endif %}
-                
-                {% if mutual_friends > 0 %}
-                <div class="profile-mutual">
-                    <div class="profile-mutual-friends">
-                        <!-- Mutual friends avatars would go here -->
-                        <img src="{{ url_for('static', filename='images/default-profile.png') }}" alt="Mutual friend" class="profile-mutual-avatar">
-                        <img src="{{ url_for('static', filename='images/default-profile.png') }}" alt="Mutual friend" class="profile-mutual-avatar">
-                        <img src="{{ url_for('static', filename='images/default-profile.png') }}" alt="Mutual friend" class="profile-mutual-avatar">
-                    </div>
-                    <div class="profile-mutual-text">
-                        {{ mutual_friends }} mutual friends
-                    </div>
-                </div>
-                {% endif %}
             </div>
-        </div>
-    </div>
-    
-    <div class="profile-tabs">
-        <div class="profile-tab active" data-tab="posts">Posts</div>
-        <div class="profile-tab" data-tab="reels">Reels</div>
-        <div class="profile-tab" data-tab="saved">Saved</div>
-        <div class="profile-tab" data-tab="tagged">Tagged</div>
-    </div>
-    
-    <div class="profile-content">
-        {% for post in posts %}
-        <div class="profile-post">
-            {% if post.image %}
-            <img src="{{ url_for('get_post_image', post_id=post.id) }}" alt="Post">
-            {% elif post.video %}
-            <video src="{{ url_for('get_post_video', post_id=post.id) }}"></video>
-            {% else %}
-            <div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background-color: #f0f2f5;">
-                <i class="fas fa-file-alt" style="font-size: 24px; color: #65676b;"></i>
-            </div>
-            {% endif %}
-            
-            <div class="profile-post-overlay">
-                <div class="profile-post-stats">
-                    <div class="profile-post-stat">
-                        <i class="fas fa-heart"></i>
-                        <span>{{ post.likes.count() }}</span>
-                    </div>
-                    <div class="profile-post-stat">
-                        <i class="fas fa-comment"></i>
-                        <span>{{ post.comments.count() }}</span>
-                    </div>
+            <div class="tab-pane fade" id="reelsContent" role="tabpanel" aria-labelledby="reels-tab">
+                <div class="gallery-grid">
+                    {% if user_reels %}
+                        {% for reel in user_reels %}
+                            <div class="gallery-item" data-reel-id="{{ reel.id }}" data-bs-toggle="modal" data-bs-target="#reelViewerModal" data-media-type="video">
+                                <video src="{{ reel.video_url }}" muted playsinline preload="metadata"></video>
+                                <i class="fas fa-play-circle video-play-icon"></i>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted text-center col-span-full py-4">This user has no reels yet.</p>
+                    {% endif %}
                 </div>
             </div>
         </div>
-        {% endfor %}
     </div>
-    {% endif %}
-</div>
-{% endblock %}
 
-{% block extra_js %}
+</div>
+
+{# Reusing Post Detail Modal from index.html (or define here if not global) #}
+{# Assuming postDetailModal and reelViewerModal are either global or will be defined #}
+{# in base.html or a shared modal include. For now, referencing them as if they exist. #}
+<div class="modal fade" id="postDetailModal" tabindex="-1" aria-labelledby="postDetailModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="postDetailModalLabel">Post Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="postDetailModalBody">
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading post...</span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{# Reusing Reel Viewer Modal from reels.html (or define here if not global) #}
+<div class="modal fade" id="reelViewerModal" tabindex="-1" aria-labelledby="reelViewerModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-fullscreen">
+        <div class="modal-content bg-dark text-white">
+            <div class="modal-body p-0 d-flex flex-column justify-content-center align-items-center position-relative">
+                <video id="reelViewerVideo" src="" class="img-fluid" style="max-height: 100vh; object-fit: contain; display: none;" autoplay playsinline muted loop></video>
+                <div class="position-absolute top-0 start-0 w-100 p-3 d-flex align-items-center">
+                    <img id="reelOwnerProfilePic" src="" alt="Profile" class="profile-pic me-2" style="width: 40px; height: 40px;">
+                    <span id="reelOwnerUsername" class="fw-bold"></span>
+                    <button type="button" class="btn-close btn-close-white ms-auto" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
 <script>
-    // Handle follow button
-    const followButton = document.querySelector('.follow-btn');
-    if (followButton) {
-        followButton.addEventListener('click', function() {
-            const userId = this.dataset.userId;
-            followUser(userId, this);
+    document.addEventListener('DOMContentLoaded', function() {
+        const followBtn = document.getElementById('followBtn');
+        if (followBtn) {
+            followBtn.addEventListener('click', function() {
+                const userId = this.dataset.userId;
+                let currentStatus = this.dataset.currentStatus;
+
+                let newStatus = '';
+                let endpoint = '';
+                let method = 'POST';
+
+                if (currentStatus === 'not_following' || currentStatus === 'follow_back') {
+                    endpoint = `/api/follow_user/${userId}`; // Or send friend request
+                    newStatus = 'pending';
+                } else if (currentStatus === 'following') {
+                    endpoint = `/api/unfollow_user/${userId}`;
+                    newStatus = 'not_following';
+                    method = 'DELETE'; // Or POST with action: unfollow
+                } else if (currentStatus === 'pending') {
+                    // Option to cancel request, or simply wait
+                    alert('Follow request is already pending.');
+                    return;
+                }
+
+                if (endpoint) {
+                    fetch(endpoint, {
+                        method: method,
+                        headers: { 'Content-Type': 'application/json' },
+                        body: method === 'DELETE' ? null : JSON.stringify({}) // Send empty body for POST
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            // Update button text and class based on newStatus
+                            this.dataset.currentStatus = data.new_follow_status || newStatus; // Backend might return exact status
+                            updateFollowButton(this, this.dataset.currentStatus);
+                            alert(data.message); // Replace with custom modal
+                            // Optionally update counts on page
+                        } else {
+                            alert('Action failed: ' + data.message);
+                        }
+                    })
+                    .catch(error => console.error('Error:', error));
+                }
+            });
+        }
+
+        function updateFollowButton(buttonElement, status) {
+            buttonElement.classList.remove('active'); // Remove any active states
+            let iconClass = '';
+            let text = '';
+
+            if (status === 'following') {
+                iconClass = 'fas fa-user-check me-1';
+                text = 'Following';
+                buttonElement.classList.add('active');
+            } else if (status === 'pending') {
+                iconClass = 'fas fa-user-clock me-1';
+                text = 'Pending';
+                buttonElement.classList.add('active');
+            } else if (status === 'follow_back') {
+                iconClass = 'fas fa-user-plus me-1';
+                text = 'Follow Back';
+            } else { // not_following
+                iconClass = 'fas fa-user-plus me-1';
+                text = 'Follow';
+            }
+            buttonElement.innerHTML = `<i class="${iconClass}"></i> ${text}`;
+        }
+
+        // --- Biography Username Tagging (Clickable) ---
+        document.querySelectorAll('.username-tag').forEach(tag => {
+            tag.addEventListener('click', function(event) {
+                event.preventDefault();
+                const username = this.textContent.substring(1); // Remove '@'
+                window.location.href = `/profile/${username}`; // Navigate to user's profile
+            });
         });
-    }
-    
-    // Handle profile tabs
-    document.querySelectorAll('.profile-tab').forEach(tab => {
-        tab.addEventListener('click', function() {
-            const tabName = this.dataset.tab;
-            
-            // Remove active class from all tabs
-            document.querySelectorAll('.profile-tab').forEach(t => t.classList.remove('active'));
-            
-            // Add active class to clicked tab
-            this.classList.add('active');
-            
-            // Load content for this tab
-            loadProfileTab(tabName);
-        });
+
+        // --- Post Detail Modal Logic (Reused from index.html) ---
+        const postDetailModalElement = document.getElementById('postDetailModal');
+        const postDetailModalBody = document.getElementById('postDetailModalBody');
+
+        if (postDetailModalElement && postDetailModalBody) {
+            postDetailModalElement.addEventListener('show.bs.modal', function (event) {
+                const button = event.relatedTarget; // Button that triggered the modal
+                const postId = button.getAttribute('data-post-id');
+
+                postDetailModalBody.innerHTML = `
+                    <div class="text-center py-5">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading post...</span>
+                        </div>
+                    </div>`;
+
+                fetch(`/api/post-details/${postId}`) // Fetch full post details
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Network response was not ok');
+                        }
+                        return response.text();
+                    })
+                    .then(html => {
+                        postDetailModalBody.innerHTML = html;
+                    })
+                    .catch(error => {
+                        console.error('Error fetching post details:', error);
+                        postDetailModalBody.innerHTML = `<p class="text-danger text-center">Failed to load post. Please try again.</p>`;
+                    });
+            });
+            postDetailModalElement.addEventListener('hidden.bs.modal', function () {
+                postDetailModalBody.innerHTML = '';
+            });
+        }
+        
+        // --- Reel Viewer Modal Logic (Adapted from reels.html) ---
+        const reelViewerModalElement = document.getElementById('reelViewerModal');
+        const reelViewerVideo = document.getElementById('reelViewerVideo');
+        const reelOwnerProfilePic = document.getElementById('reelOwnerProfilePic');
+        const reelOwnerUsername = document.getElementById('reelOwnerUsername');
+
+        if (reelViewerModalElement && reelViewerVideo) {
+            reelViewerModalElement.addEventListener('show.bs.modal', function (event) {
+                const button = event.relatedTarget;
+                const reelId = button.getAttribute('data-reel-id');
+                // You would typically fetch the full reel object here
+                // For now, let's assume we have `user_reels` available for a simple lookup.
+                const reel = {% if user_reels %}{{ user_reels | tojson | safe }}{% else %}[]{% endif %}.find(r => r.id == reelId); // Convert to JSON for JS
+
+                if (reel) {
+                    reelViewerVideo.src = reel.video_url;
+                    reelOwnerProfilePic.src = '{{ user_profile.profile_pic }}'; // Assuming owner is user_profile
+                    reelOwnerUsername.textContent = '@{{ user_profile.username }}';
+                    reelViewerVideo.style.display = 'block';
+                    reelViewerVideo.play().catch(e => console.error("Video autoplay error:", e));
+                } else {
+                    console.error("Reel not found for ID:", reelId);
+                    // Hide modal or show error
+                }
+            });
+
+            reelViewerModalElement.addEventListener('hidden.bs.modal', function () {
+                reelViewerVideo.pause();
+                reelViewerVideo.currentTime = 0;
+                reelViewerVideo.src = '';
+                reelViewerVideo.style.display = 'none';
+                reelOwnerProfilePic.src = '';
+                reelOwnerUsername.textContent = '';
+            });
+
+            // Tap to play/pause (optional for modal, but good for reels experience)
+            reelViewerModalElement.addEventListener('click', function(e) {
+                if (e.target === reelViewerVideo) {
+                    if (reelViewerVideo.paused) {
+                        reelViewerVideo.play();
+                    } else {
+                        reelViewerVideo.pause();
+                    }
+                }
+            });
+        }
     });
-    
-    function loadProfileTab(tabName) {
-        // In a real implementation, this would fetch content for the selected tab
-        console.log('Loading tab:', tabName);
-    }
 </script>
 {% endblock %}
