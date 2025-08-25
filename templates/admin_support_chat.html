@@ -1,0 +1,417 @@
+{% extends 'base.html' %}
+
+{% block title %}Admin Chat with {{ user_for_chat.real_name }}{% endblock %}
+
+{% block content %}
+<style>
+    /* Admin Dashboard Specific Styles - Inherited for consistent look */
+    body {
+        --background-light: #2c2c2c; /* Darker background for admin */
+        --card-background: #3a3a3a; /* Darker cards */
+        --primary-text: #e0e0e0; /* Light text */
+        --secondary-text: #aaaaaa; /* Lighter secondary text */
+        --header-footer-bg: #1e1e1e; /* Even darker for fixed elements */
+        --primary-color: #6200ea; /* Admin accent color (e.g., a deep purple) */
+        --primary-color-light: #bb86fc; /* Lighter accent */
+        --primary-color-dark: #3700b3; /* Darker accent */
+        --success-color: #03dac6; /* Teal for success */
+        --warning-color: #ffcc00; /* Amber for warning */
+        --danger-color: #cf6679; /* Red for danger */
+        --input-border-color: #555555;
+        --border-color-light: #444444;
+        --button-bg-secondary: #555555;
+        --button-text-secondary: #e0e0e0;
+
+        background-color: var(--background-light) !important;
+        color: var(--primary-text) !important;
+        padding-top: 0 !important; /* Override base.html padding */
+        padding-bottom: 0 !important; /* Override base.html padding */
+        overflow-x: hidden;
+    }
+
+    /* Override base navbar/footer for admin dashboard */
+    .main-navbar, .main-footer {
+        display: none !important;
+    }
+
+    .admin-chat-container {
+        display: flex;
+        flex-direction: column;
+        position: fixed; /* Fixed to fill the screen */
+        top: 0; /* Admin dashboard doesn't have base navbar */
+        left: 0;
+        right: 0;
+        bottom: 0; /* Extend to the very bottom of the viewport */
+
+        max-width: 800px; /* Max width for desktop */
+        width: 100%; /* Ensure it takes full width on smaller screens */
+        margin: 0 auto; /* Center the container horizontally on wider screens */
+
+        border-radius: 0; /* Remove border-radius for full screen fit */
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        background-color: var(--card-background); /* Use card background for chat */
+        overflow: hidden; /* Hide scrollbars for the container itself */
+        z-index: 1020;
+    }
+
+    /* Fixed Top Header for Chat */
+    .chat-header {
+        background-color: var(--header-footer-bg);
+        color: white;
+        padding: 15px 20px;
+        display: flex;
+        align-items: center;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        z-index: 10;
+        flex-shrink: 0; /* Prevent header from shrinking */
+    }
+
+    .chat-header .back-btn {
+        color: white;
+        font-size: 1.5em;
+        margin-right: 15px;
+    }
+
+    .chat-header .user-profile-info {
+        display: flex;
+        align-items: center;
+        flex-grow: 1;
+    }
+    .chat-header .user-profile-info .profile-pic {
+        width: 45px;
+        height: 45px;
+        border-radius: 50%;
+        object-fit: cover;
+        margin-right: 10px;
+        border: 2px solid var(--primary-color-light);
+    }
+    .chat-header .user-profile-info .user-name-details h2 {
+        margin: 0;
+        font-size: 1.3em;
+        color: var(--primary-text);
+    }
+    .chat-header .user-profile-info .user-name-details p {
+        margin: 0;
+        font-size: 0.9em;
+        color: var(--secondary-text);
+    }
+
+    /* Chat Messages Area (Scrollable) */
+    .chat-messages {
+        flex-grow: 1; /* Takes available space */
+        overflow-y: auto; /* Make messages scrollable */
+        -webkit-overflow-scrolling: touch;
+        padding: 15px;
+        background-color: var(--background-light); /* Lighter background for messages */
+    }
+
+    .chat-message {
+        display: flex;
+        margin-bottom: 15px;
+    }
+
+    .chat-message.admin-message {
+        justify-content: flex-end; /* Align admin messages to the right */
+    }
+
+    .chat-message.user-message {
+        justify-content: flex-start; /* Align user messages to the left */
+    }
+
+    .message-bubble {
+        max-width: 70%;
+        padding: 12px 18px;
+        border-radius: 20px;
+        line-height: 1.4;
+        position: relative;
+        font-size: 0.95em;
+        word-wrap: break-word; /* Ensure long words break */
+    }
+
+    .admin-message .message-bubble {
+        background-color: var(--primary-color); /* Admin purple */
+        color: white;
+        border-bottom-right-radius: 5px;
+        text-align: right;
+    }
+
+    .user-message .message-bubble {
+        background-color: var(--button-bg-secondary); /* User's bubble color in dark theme */
+        color: var(--primary-text);
+        border-bottom-left-radius: 5px;
+        text-align: left;
+    }
+
+    .message-sender {
+        font-weight: 600;
+        font-size: 0.8em;
+        margin-bottom: 5px;
+        color: rgba(255,255,255,0.7); /* Lighter for admin messages */
+        display: block;
+    }
+    .user-message .message-sender {
+        color: var(--secondary-text); /* Standard for user messages */
+    }
+
+
+    .message-timestamp {
+        font-size: 0.7em;
+        color: rgba(255,255,255,0.6);
+        margin-top: 5px;
+        display: block;
+    }
+    .user-message .message-timestamp {
+        color: var(--secondary-text);
+    }
+
+    /* Chat Input Area */
+    .chat-input-area {
+        background-color: var(--card-background);
+        padding: 15px 20px;
+        display: flex;
+        align-items: center;
+        border-top: 1px solid var(--border-color-light);
+        flex-shrink: 0; /* Prevent input area from shrinking */
+    }
+
+    .chat-input-area .form-control {
+        flex-grow: 1;
+        border-radius: 25px;
+        padding: 10px 15px;
+        border: 1px solid var(--input-border-color);
+        margin-right: 10px;
+        background-color: var(--background-light);
+        color: var(--primary-text);
+        resize: none; /* Disable manual resizing */
+        max-height: 100px; /* Limit height for multi-line input */
+    }
+
+    .chat-input-area .btn-send {
+        background-color: var(--primary-color);
+        color: white;
+        border: none;
+        border-radius: 50%;
+        width: 45px;
+        height: 45px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2em;
+        transition: background-color 0.2s ease;
+    }
+    .chat-input-area .btn-send:hover {
+        background-color: darken(var(--primary-color), 10%);
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+        .chat-header {
+            padding: 12px 15px;
+        }
+        .chat-header .user-profile-info .profile-pic {
+            width: 40px;
+            height: 40px;
+        }
+        .chat-header .user-profile-info .user-name-details h2 {
+            font-size: 1.1em;
+        }
+        .chat-header .user-profile-info .user-name-details p {
+            font-size: 0.8em;
+        }
+        .chat-messages {
+            padding: 10px;
+        }
+        .message-bubble {
+            max-width: 80%;
+            padding: 10px 15px;
+            font-size: 0.9em;
+        }
+        .message-sender {
+            font-size: 0.75em;
+        }
+        .message-timestamp {
+            font-size: 0.65em;
+        }
+        .chat-input-area {
+            padding: 10px 15px;
+        }
+        .chat-input-area .form-control {
+            padding: 8px 12px;
+            font-size: 0.9em;
+        }
+        .chat-input-area .btn-send {
+            width: 40px;
+            height: 40px;
+            font-size: 1em;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .chat-header .user-profile-info .profile-pic {
+            width: 35px;
+            height: 35px;
+        }
+        .chat-header .user-profile-info .user-name-details h2 {
+            font-size: 1em;
+        }
+        .chat-header .user-profile-info .user-name-details p {
+            font-size: 0.75em;
+        }
+        .chat-header .back-btn {
+            font-size: 1.3em;
+            margin-right: 10px;
+        }
+        .message-bubble {
+            max-width: 90%;
+            padding: 8px 12px;
+            font-size: 0.85em;
+        }
+        .message-sender {
+            font-size: 0.7em;
+        }
+        .message-timestamp {
+            font-size: 0.6em;
+        }
+        .chat-input-area .form-control {
+            padding: 7px 10px;
+            font-size: 0.85em;
+        }
+        .chat-input-area .btn-send {
+            width: 38px;
+            height: 38px;
+            font-size: 0.9em;
+        }
+    }
+</style>
+
+<div class="admin-chat-container">
+    {# Chat Header #}
+    <div class="chat-header">
+        <a href="{{ url_for('admin_dashboard') }}" class="back-btn"><i class="fas fa-arrow-left"></i></a>
+        <div class="user-profile-info">
+            <img src="{{ user_for_chat.profile_pic }}" alt="{{ user_for_chat.real_name }} Profile" class="profile-pic">
+            <div class="user-name-details">
+                <h2>{{ user_for_chat.real_name }}</h2>
+                <p>@{{ user_for_chat.username }}</p>
+            </div>
+        </div>
+    </div>
+
+    {# Chat Messages Area #}
+    <div class="chat-messages" id="chatMessages">
+        {% if chat_messages %}
+            {% for message in chat_messages %}
+                <div class="chat-message {% if message.sender_id == admin_user_id %}admin-message{% else %}user-message{% endif %}">
+                    <div class="message-bubble">
+                        <span class="message-sender">{% if message.sender_id == admin_user_id %}Admin{% else %}{{ user_for_chat.real_name }}{% endif %}</span>
+                        {{ message.content | safe }}
+                        <span class="message-timestamp">{{ moment(message.timestamp).fromNow() }}</span>
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <p class="text-center text-muted">No messages in this support chat yet.</p>
+        {% endif %}
+    </div>
+
+    {# Chat Input Area #}
+    <div class="chat-input-area">
+        <textarea class="form-control" id="messageInput" placeholder="Type your response..." rows="1"></textarea>
+        <button class="btn btn-send" id="sendMessageBtn">
+            <i class="fas fa-paper-plane"></i>
+        </button>
+    </div>
+</div>
+
+<script>
+    // Define CSS variables for dark theme to ensure consistency
+    document.documentElement.style.setProperty('--background-color', '#2c2c2c');
+    document.documentElement.style.setProperty('--card-bg', '#3a3a3a');
+    document.documentElement.style.setProperty('--text-color', '#e0e0e0');
+    document.documentElement.style.setProperty('--secondary-text-color', '#aaaaaa');
+    document.documentElement.style.setProperty('--header-footer-bg', '#1e1e1e');
+    document.documentElement.style.setProperty('--primary-color', '#6200ea');
+    document.documentElement.style.setProperty('--primary-color-light', '#bb86fc');
+    document.documentElement.style.setProperty('--primary-color-dark', '#3700b3');
+    document.documentElement.style.setProperty('--success-color', '#03dac6');
+    document.documentElement.style.setProperty('--warning-color', '#ffcc00');
+    document.documentElement.style.setProperty('--danger-color', '#cf6679');
+    document.documentElement.style.setProperty('--input-border-color', '#555555');
+    document.documentElement.style.setProperty('--border-color-light', '#444444');
+    document.documentElement.style.setProperty('--button-bg-secondary', '#555555');
+    document.documentElement.style.setProperty('--button-text-secondary', '#e0e0e0');
+
+    document.addEventListener('DOMContentLoaded', function() {
+        // Ensure the dark theme class is applied globally if needed
+        document.body.classList.add('dark-theme');
+
+        const chatMessages = document.getElementById('chatMessages');
+        const messageInput = document.getElementById('messageInput');
+        const sendMessageBtn = document.getElementById('sendMessageBtn');
+        const adminUserId = {{ admin_user_id | tojson | safe }}; // Flask variable
+        const currentChatId = {{ chat_id | tojson | safe }}; // Flask variable
+        const userRealName = "{{ user_for_chat.real_name | js_string }}";
+
+        // Scroll to the bottom of the chat messages when loaded
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+
+        // Auto-resize textarea
+        messageInput.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = (this.scrollHeight) + 'px';
+        });
+
+        // Send message function
+        async function sendMessage() {
+            const messageContent = messageInput.value.trim();
+            if (messageContent === '') {
+                return; // Don't send empty messages
+            }
+
+            try {
+                const response = await fetch(`/api/admin/send_support_message/${currentChatId}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ content: messageContent })
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    messageInput.value = ''; // Clear input
+                    messageInput.style.height = 'auto'; // Reset textarea height
+
+                    // Append new message to UI
+                    const newMessageElement = document.createElement('div');
+                    newMessageElement.classList.add('chat-message', 'admin-message');
+                    newMessageElement.innerHTML = `
+                        <div class="message-bubble">
+                            <span class="message-sender">Admin</span>
+                            ${data.message.content}
+                            <span class="message-timestamp">${moment(data.message.timestamp).fromNow()}</span>
+                        </div>
+                    `;
+                    chatMessages.appendChild(newMessageElement);
+                    chatMessages.scrollTop = chatMessages.scrollHeight; // Scroll to new message
+                } else {
+                    alert('Failed to send message: ' + data.message); // Replace with custom modal
+                }
+            } catch (error) {
+                console.error('Error sending message:', error);
+                alert('An error occurred while sending your message.'); // Replace with custom modal
+            }
+        }
+
+        // Event listeners for sending messages
+        sendMessageBtn.addEventListener('click', sendMessage);
+        messageInput.addEventListener('keydown', function(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault(); // Prevent new line
+                sendMessage();
+            }
+        });
+
+        // Optional: Implement real-time updates for messages (e.g., polling or WebSockets)
+        // For simplicity, this example only updates on send and assumes page reload for new user messages.
+    });
+</script>
+{% endblock %}
