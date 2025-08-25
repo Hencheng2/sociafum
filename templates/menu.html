@@ -1,318 +1,213 @@
-{% extends "base.html" %}
+{% extends 'base.html' %}
 
-{% block title %}Menu - SociaFam{% endblock %}
-
-{% block extra_css %}
-<style>
-    .menu-container {
-        max-width: 600px;
-        margin: 0 auto;
-    }
-    
-    .menu-header {
-        background-color: white;
-        border-radius: 8px;
-        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-        padding: 20px;
-        margin-bottom: 20px;
-    }
-    
-    .menu-title {
-        font-size: 24px;
-        font-weight: 600;
-        margin-bottom: 20px;
-    }
-    
-    .menu-user {
-        display: flex;
-        align-items: center;
-        margin-bottom: 20px;
-    }
-    
-    .menu-user-avatar {
-        width: 60px;
-        height: 60px;
-        border-radius: 50%;
-        margin-right: 15px;
-    }
-    
-    .menu-user-info {
-        flex-grow: 1;
-    }
-    
-    .menu-user-name {
-        font-weight: 600;
-        margin-bottom: 5px;
-    }
-    
-    .menu-user-username {
-        color: #65676b;
-    }
-    
-    .menu-user-stats {
-        display: flex;
-        gap: 15px;
-        margin-top: 10px;
-    }
-    
-    .menu-user-stat {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-    }
-    
-    .menu-user-stat-value {
-        font-weight: 600;
-    }
-    
-    .menu-user-stat-label {
-        font-size: 14px;
-        color: #65676b;
-    }
-    
-    .menu-sections {
-        background-color: white;
-        border-radius: 8px;
-        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-        overflow: hidden;
-    }
-    
-    .menu-section {
-        border-bottom: 1px solid #e4e6eb;
-    }
-    
-    .menu-section:last-child {
-        border-bottom: none;
-    }
-    
-    .menu-section-title {
-        padding: 15px 20px;
-        font-weight: 600;
-        background-color: #f0f2f5;
-    }
-    
-    .menu-item {
-        display: flex;
-        align-items: center;
-        padding: 15px 20px;
-        border-bottom: 1px solid #e4e6eb;
-        cursor: pointer;
-        transition: background-color 0.3s;
-        text-decoration: none;
-        color: inherit;
-    }
-    
-    .menu-item:last-child {
-        border-bottom: none;
-    }
-    
-    .menu-item:hover {
-        background-color: #f0f2f5;
-    }
-    
-    .menu-item-icon {
-        width: 40px;
-        text-align: center;
-        margin-right: 15px;
-        color: #65676b;
-        font-size: 18px;
-    }
-    
-    .menu-item-content {
-        flex-grow: 1;
-    }
-    
-    .menu-item-title {
-        font-weight: 600;
-        margin-bottom: 5px;
-    }
-    
-    .menu-item-description {
-        font-size: 14px;
-        color: #65676b;
-    }
-    
-    .menu-item-arrow {
-        color: #65676b;
-    }
-    
-    .menu-logout {
-        margin-top: 20px;
-        text-align: center;
-    }
-    
-    .menu-logout button {
-        padding: 12px 30px;
-        background-color: #e41e3f;
-        color: white;
-        border: none;
-        border-radius: 6px;
-        font-size: 16px;
-        font-weight: 600;
-        cursor: pointer;
-    }
-</style>
-{% endblock %}
+{% block title %}Menu{% endblock %}
 
 {% block content %}
-<div class="menu-container">
-    <div class="menu-header">
-        <h1 class="menu-title">Menu</h1>
-        
-        <div class="menu-user">
-            <img src="{{ url_for('get_profile_image', user_id=current_user.id) }}" alt="{{ current_user.username }}" class="menu-user-avatar">
-            
-            <div class="menu-user-info">
-                <div class="menu-user-name">{{ current_user.real_name or current_user.username }}</div>
-                <div class="menu-user-username">@{{ current_user.username }}</div>
-                
-                <div class="menu-user-stats">
-                    <div class="menu-user-stat">
-                        <div class="menu-user-stat-value">{{ current_user.posts.count() }}</div>
-                        <div class="menu-user-stat-label">Posts</div>
-                    </div>
-                    <div class="menu-user-stat">
-                        <div class="menu-user-stat-value">{{ current_user.followers.count() }}</div>
-                        <div class="menu-user-stat-label">Followers</div>
-                    </div>
-                    <div class="menu-user-stat">
-                        <div class="menu-user-stat-value">{{ current_user.following.count() }}</div>
-                        <div class="menu-user-stat-label">Following</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <div class="menu-sections">
+<style>
+    /* Custom styles for the Menu page */
+    body {
+        padding-top: 0;
+        padding-bottom: var(--navbar-height); /* Space for fixed bottom navbar */
+        overflow-x: hidden;
+    }
+
+    .menu-main-container {
+        max-width: 600px;
+        margin: 20px auto;
+        padding: 20px 15px;
+        background-color: var(--background-light);
+    }
+
+    .menu-card {
+        background-color: var(--card-background);
+        border-radius: 12px;
+        box-shadow: 0 4px 15px var(--shadow-medium);
+        padding: 25px;
+    }
+
+    .menu-card h2 {
+        text-align: center;
+        color: var(--primary-text);
+        margin-bottom: 30px;
+        font-weight: 700;
+        font-size: 2em;
+    }
+
+    .menu-section {
+        margin-bottom: 30px;
+    }
+
+    .menu-section h3 {
+        color: var(--primary-color);
+        font-weight: 600;
+        margin-bottom: 20px;
+        font-size: 1.4em;
+        border-bottom: 2px solid var(--primary-color-light);
+        padding-bottom: 10px;
+    }
+
+    .menu-list-group {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .menu-list-item {
+        margin-bottom: 10px;
+    }
+
+    .menu-list-item a {
+        display: flex;
+        align-items: center;
+        padding: 12px 15px;
+        background-color: var(--background-light);
+        border-radius: 10px;
+        text-decoration: none;
+        color: var(--primary-text);
+        font-weight: 500;
+        transition: background-color 0.2s ease, transform 0.2s ease;
+        box-shadow: 0 2px 5px var(--shadow-soft);
+    }
+
+    .menu-list-item a:hover {
+        background-color: var(--primary-color-light);
+        transform: translateX(5px);
+        color: var(--primary-text);
+    }
+    .dark-theme .menu-list-item a:hover {
+        background-color: #3a4750;
+    }
+
+    .menu-list-item a i {
+        font-size: 1.2em;
+        margin-right: 15px;
+        color: var(--secondary-text);
+    }
+
+    .logout-section {
+        margin-top: 40px;
+        text-align: center;
+    }
+
+    .btn-logout {
+        background-color: var(--danger-color);
+        color: white;
+        padding: 12px 30px;
+        border-radius: 25px;
+        font-size: 1.1em;
+        font-weight: 600;
+        transition: background-color 0.2s ease, transform 0.2s ease;
+    }
+    .btn-logout:hover {
+        background-color: darken(var(--danger-color), 10%);
+        transform: translateY(-2px);
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+        .menu-main-container {
+            margin: 15px auto;
+            padding: 15px 10px;
+        }
+        .menu-card {
+            padding: 20px;
+        }
+        .menu-card h2 {
+            font-size: 1.8em;
+            margin-bottom: 25px;
+        }
+        .menu-section h3 {
+            font-size: 1.2em;
+            margin-bottom: 15px;
+        }
+        .menu-list-item a {
+            padding: 10px 12px;
+            font-size: 0.95em;
+        }
+        .menu-list-item a i {
+            font-size: 1.1em;
+            margin-right: 10px;
+        }
+        .btn-logout {
+            padding: 10px 25px;
+            font-size: 1em;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .menu-card {
+            padding: 15px;
+        }
+        .menu-card h2 {
+            font-size: 1.5em;
+        }
+        .menu-section h3 {
+            font-size: 1.1em;
+        }
+        .menu-list-item a {
+            padding: 8px 10px;
+            font-size: 0.9em;
+        }
+        .menu-list-item a i {
+            font-size: 1em;
+            margin-right: 8px;
+        }
+        .btn-logout {
+            padding: 8px 20px;
+            font-size: 0.95em;
+        }
+    }
+</style>
+
+<div class="menu-main-container">
+    <div class="menu-card">
+        <h2>Menu</h2>
+
+        {# Help & Support Section #}
         <div class="menu-section">
-            <div class="menu-section-title">Help & Support</div>
-            
-            <div class="menu-item">
-                <div class="menu-item-icon">
-                    <i class="fas fa-info-circle"></i>
-                </div>
-                <div class="menu-item-content">
-                    <div class="menu-item-title">Account Status</div>
-                    <div class="menu-item-description">Check your account status and violations</div>
-                </div>
-                <div class="menu-item-arrow">
-                    <i class="fas fa-chevron-right"></i>
-                </div>
-            </div>
-            
-            <div class="menu-item">
-                <div class="menu-item-icon">
-                    <i class="fas fa-headset"></i>
-                </div>
-                <div class="menu-item-content">
-                    <div class="menu-item-title">Support Inbox</div>
-                    <div class="menu-item-description">Contact support for help</div>
-                </div>
-                <div class="menu-item-arrow">
-                    <i class="fas fa-chevron-right"></i>
-                </div>
-            </div>
-            
-            <div class="menu-item">
-                <div class="menu-item-icon">
-                    <i class="fas fa-file-alt"></i>
-                </div>
-                <div class="menu-item-content">
-                    <div class="menu-item-title">Terms and Policies</div>
-                    <div class="menu-item-description">Read our terms of service and policies</div>
-                </div>
-                <div class="menu-item-arrow">
-                    <i class="fas fa-chevron-right"></i>
-                </div>
-            </div>
+            <h3><i class="fas fa-question-circle me-2"></i> Help & Support</h3>
+            <ul class="menu-list-group">
+                <li class="menu-list-item">
+                    <a href="{{ url_for('account_status') }}">
+                        <i class="fas fa-shield-alt"></i> Account Status
+                    </a>
+                </li>
+                <li class="menu-list-item">
+                    <a href="{{ url_for('support_inbox') }}">
+                        <i class="fas fa-headset"></i> Support Inbox
+                    </a>
+                </li>
+                <li class="menu-list-item">
+                    <a href="{{ url_for('terms_and_policies') }}">
+                        <i class="fas fa-file-contract"></i> Terms & Policies
+                    </a>
+                </li>
+            </ul>
         </div>
-        
+
+        {# Settings & Privacy Section #}
         <div class="menu-section">
-            <div class="menu-section-title">Settings & Privacy</div>
-            
-            <a href="{{ url_for('settings') }}" class="menu-item">
-                <div class="menu-item-icon">
-                    <i class="fas fa-cog"></i>
-                </div>
-                <div class="menu-item-content">
-                    <div class="menu-item-title">Settings</div>
-                    <div class="menu-item-description">Manage your account settings</div>
-                </div>
-                <div class="menu-item-arrow">
-                    <i class="fas fa-chevron-right"></i>
-                </div>
-            </a>
-            
-            <a href="{{ url_for('settings') }}?tab=privacy" class="menu-item">
-                <div class="menu-item-icon">
-                    <i class="fas fa-lock"></i>
-                </div>
-                <div class="menu-item-content">
-                    <div class="menu-item-title">Privacy</div>
-                    <div class="menu-item-description">Manage your privacy settings</div>
-                </div>
-                <div class="menu-item-arrow">
-                    <i class="fas fa-chevron-right"></i>
-                </div>
-            </a>
-            
-            <a href="{{ url_for('settings') }}?tab=blocked" class="menu-item">
-                <div class="menu-item-icon">
-                    <i class="fas fa-ban"></i>
-                </div>
-                <div class="menu-item-content">
-                    <div class="menu-item-title">Blocking</div>
-                    <div class="menu-item-description">Manage blocked users</div>
-                </div>
-                <div class="menu-item-arrow">
-                    <i class="fas fa-chevron-right"></i>
-                </div>
-            </a>
-            
-            <a href="{{ url_for('settings') }}?tab=notifications" class="menu-item">
-                <div class="menu-item-icon">
-                    <i class="fas fa-bell"></i>
-                </div>
-                <div class="menu-item-content">
-                    <div class="menu-item-title">Notifications</div>
-                    <div class="menu-item-description">Manage your notification preferences</div>
-                </div>
-                <div class="menu-item-arrow">
-                    <i class="fas fa-chevron-right"></i>
-                </div>
-            </a>
-            
-            <a href="{{ url_for('settings') }}?tab=theme" class="menu-item">
-                <div class="menu-item-icon">
-                    <i class="fas fa-moon"></i>
-                </div>
-                <div class="menu-item-content">
-                    <div class="menu-item-title">Theme</div>
-                    <div class="menu-item-description">Change between light and dark mode</div>
-                </div>
-                <div class="menu-item-arrow">
-                    <i class="fas fa-chevron-right"></i>
-                </div>
-            </a>
-            
-            <a href="{{ url_for('settings') }}?tab=password" class="menu-item">
-                <div class="menu-item-icon">
-                    <i class="fas fa-key"></i>
-                </div>
-                <div class="menu-item-content">
-                    <div class="menu-item-title">Change Password</div>
-                    <div class="menu-item-description">Update your password</div>
-                </div>
-                <div class="menu-item-arrow">
-                    <i class="fas fa-chevron-right"></i>
-                </div>
+            <h3><i class="fas fa-cog me-2"></i> Settings & Privacy</h3>
+            <ul class="menu-list-group">
+                <li class="menu-list-item">
+                    <a href="{{ url_for('settings') }}">
+                        <i class="fas fa-sliders-h"></i> Settings
+                    </a>
+                </li>
+                <li class="menu-list-item">
+                    <a href="{{ url_for('change_password') }}">
+                        <i class="fas fa-key"></i> Change Password
+                    </a>
+                </li>
+            </ul>
+        </div>
+
+        {# Log Out Button #}
+        <div class="logout-section">
+            <a href="{{ url_for('logout') }}" class="btn btn-logout">
+                <i class="fas fa-sign-out-alt me-2"></i> Log Out
             </a>
         </div>
-    </div>
-    
-    <div class="menu-logout">
-        <button onclick="location.href='{{ url_for('logout') }}'">Log Out</button>
     </div>
 </div>
 {% endblock %}
