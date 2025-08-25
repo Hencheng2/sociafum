@@ -1,0 +1,106 @@
+{#
+This template renders a single post card.
+It expects a 'post' object with the following attributes:
+- post.id: Unique identifier for the post
+- post.profile_pic: URL to the poster's profile picture
+- post.real_name: Poster's real name
+- post.username: Poster's username
+- post.timestamp: Post creation timestamp (for moment.js)
+- post.media_url: URL to post media (image or video) - can be None
+- post.media_type: 'image' or 'video' - can be None
+- post.description: Post description text - can be None
+- post.likes_count: Number of likes
+- post.comments_count: Number of comments
+- post.views_count: Number of views
+- post.is_liked_by_current_user: Boolean, true if current user liked it
+- post.is_saved_by_current_user: Boolean, true if current user saved it
+- post.is_following_poster: Boolean, true if current user follows poster
+- post.poster_user_id: The user_id of the poster
+#}
+
+<div class="post-card" data-post-id="{{ post.id }}">
+    {# Post Header Section #}
+    <div class="post-header">
+        <a href="{{ url_for('profile', username=post.username) }}">
+            <img src="{{ post.profile_pic }}" alt="{{ post.username }} Profile" class="profile-pic">
+        </a>
+        <div class="user-info">
+            <a href="{{ url_for('profile', username=post.username) }}" class="text-decoration-none">
+                <p class="username">{{ post.real_name }} @{{ post.username }}</p>
+            </a>
+            <p class="post-time">{{ moment(post.timestamp).fromNow() }}</p>
+        </div>
+        
+        {# Post Options Dropdown #}
+        <div class="post-options-dropdown dropdown">
+            <button class="dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="fas fa-ellipsis-h"></i>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end">
+                {# Save Post #}
+                <li>
+                    <a class="dropdown-item save-post-btn" href="#" data-post-id="{{ post.id }}">
+                        <i class="fas fa-bookmark me-2"></i> 
+                        <span class="save-text">{% if post.is_saved_by_current_user %}Unsave Post{% else %}Save Post{% endif %}</span>
+                    </a>
+                </li>
+                {# Repost (if not already reposted by user) #}
+                {# <li><a class="dropdown-item repost-post-btn" href="#" data-post-id="{{ post.id }}"><i class="fas fa-retweet me-2"></i> Repost</a></li> #}
+                {# Turn on Notifications for Type #}
+                <li><a class="dropdown-item" href="#"><i class="fas fa-bell me-2"></i> Turn on notifications for this post</a></li>
+                {# Report Post #}
+                <li><a class="dropdown-item report-post-btn" href="#" data-post-id="{{ post.id }}"><i class="fas fa-flag me-2"></i> Report Post</a></li>
+                {# Hide Post #}
+                <li><a class="dropdown-item hide-post-btn" href="#" data-post-id="{{ post.id }}"><i class="fas fa-eye-slash me-2"></i> Hide Post</a></li>
+                {# Block User #}
+                <li><a class="dropdown-item block-user-btn" href="#" data-user-id="{{ post.poster_user_id }}"><i class="fas fa-ban me-2"></i> Block User</a></li>
+            </ul>
+        </div>
+    </div>
+
+    {# Post Content (Image/Video) #}
+    {% if post.media_url %}
+    <div class="post-content">
+        {% if post.media_type == 'image' %}
+            <img src="{{ post.media_url }}" alt="Post Image">
+        {% elif post.media_type == 'video' %}
+            <video src="{{ post.media_url }}" controls muted playsinline></video>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    {# Post Description #}
+    {% if post.description %}
+    <p class="post-description">{{ post.description }}</p>
+    {% endif %}
+
+    {# Post Actions #}
+    <div class="post-actions">
+        {# Like Button #}
+        <button class="post-action-btn like-btn {% if post.is_liked_by_current_user %}active{% endif %}" data-post-id="{{ post.id }}">
+            <i class="fas fa-heart"></i> <span class="count">{{ post.likes_count }}</span>
+        </button>
+        {# Comment Button #}
+        <button class="post-action-btn comment-btn" data-post-id="{{ post.id }}" data-bs-toggle="modal" data-bs-target="#postDetailModal">
+            <i class="fas fa-comment"></i> <span class="count">{{ post.comments_count }}</span>
+        </button>
+        {# Share Button #}
+        <button class="post-action-btn share-btn" data-post-id="{{ post.id }}">
+            <i class="fas fa-share"></i>
+        </button>
+        {# Repost Button (Doc mentions, but sometimes separate from general actions bar) #}
+        <button class="post-action-btn repost-btn" data-post-id="{{ post.id }}">
+            <i class="fas fa-retweet"></i>
+        </button>
+
+        {# Follow Button (if not following, not for own posts) #}
+        {% if current_user.id != post.poster_user_id and not post.is_following_poster %}
+        <button class="post-action-btn follow-btn ms-auto" data-user-id="{{ post.poster_user_id }}">
+            <i class="fas fa-user-plus me-1"></i> Follow
+        </button>
+        {% endif %}
+
+        {# Views Count #}
+        <span class="text-muted small ms-auto me-2">{{ post.views_count }} views</span>
+    </div>
+</div>
