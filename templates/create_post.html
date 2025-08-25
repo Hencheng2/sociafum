@@ -1,0 +1,400 @@
+{% extends 'base.html' %}
+
+{% block title %}Create New Post{% endblock %}
+
+{% block content %}
+<style>
+    /* Custom styles for the Create New Post page */
+    body {
+        padding-top: 0;
+        padding-bottom: var(--navbar-height); /* Space for fixed bottom navbar */
+        overflow-x: hidden;
+    }
+
+    .create-post-container {
+        max-width: 700px;
+        margin: 20px auto;
+        padding: 20px 15px;
+        background-color: var(--background-light);
+    }
+
+    .create-post-card {
+        background-color: var(--card-background);
+        border-radius: 12px;
+        box-shadow: 0 4px 15px var(--shadow-medium);
+        padding: 25px;
+    }
+
+    .create-post-card h2 {
+        text-align: center;
+        color: var(--primary-text);
+        margin-bottom: 30px;
+        font-weight: 700;
+    }
+
+    .media-upload-wrapper {
+        text-align: center;
+        margin-bottom: 30px;
+        border: 2px dashed var(--border-color-light);
+        border-radius: 12px;
+        padding: 20px;
+        background-color: var(--background-light);
+    }
+
+    .media-preview-area {
+        min-height: 150px;
+        max-height: 350px; /* Limit height for previews */
+        overflow: hidden;
+        margin-bottom: 15px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: rgba(0,0,0,0.05); /* Light grey background for empty state */
+        border-radius: 8px;
+    }
+
+    .media-preview {
+        max-width: 100%;
+        max-height: 100%;
+        object-fit: contain;
+        border-radius: 8px;
+        display: none; /* Hidden by default until media is loaded */
+    }
+    .media-preview.active {
+        display: block;
+    }
+
+
+    .upload-buttons {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 10px;
+    }
+
+    .btn-media-action {
+        background-color: var(--button-bg-secondary);
+        color: var(--button-text-secondary);
+        border: none;
+        padding: 10px 18px;
+        border-radius: 25px;
+        font-size: 0.9em;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        transition: background-color 0.2s ease, transform 0.2s ease;
+    }
+    .btn-media-action:hover {
+        background-color: darken(var(--button-bg-secondary), 5%);
+        transform: translateY(-1px);
+    }
+
+    .form-group {
+        margin-bottom: 20px;
+    }
+
+    .form-label {
+        font-weight: 600;
+        color: var(--primary-text);
+        margin-bottom: 8px;
+    }
+
+    .form-control, .form-select {
+        border-radius: 8px;
+        padding: 10px 15px;
+        background-color: var(--background-light);
+        color: var(--primary-text);
+        border: 1px solid var(--input-border-color);
+    }
+    .form-control:focus, .form-select:focus {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 0.2rem rgba(88, 129, 87, 0.25);
+    }
+
+    .btn-submit {
+        background-color: var(--primary-color);
+        color: white;
+        padding: 12px 25px;
+        border-radius: 25px;
+        font-size: 1.1em;
+        font-weight: 600;
+        transition: background-color 0.2s ease, transform 0.2s ease;
+    }
+    .btn-submit:hover {
+        background-color: darken(var(--primary-color), 10%);
+        transform: translateY(-2px);
+    }
+
+    .btn-cancel {
+        background-color: var(--secondary-color);
+        color: white;
+        padding: 12px 25px;
+        border-radius: 25px;
+        font-size: 1.1em;
+        font-weight: 600;
+    }
+    .btn-cancel:hover {
+        background-color: darken(var(--secondary-color), 10%);
+        transform: translateY(-2px);
+    }
+
+    /* Custom Checkbox/Radio Styling */
+    .form-check-input:checked {
+        background-color: var(--primary-color);
+        border-color: var(--primary-color);
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+        .create-post-container {
+            margin: 15px auto;
+            padding: 15px 10px;
+        }
+        .create-post-card {
+            padding: 20px;
+        }
+        .create-post-card h2 {
+            font-size: 1.8em;
+            margin-bottom: 25px;
+        }
+        .media-upload-wrapper {
+            padding: 15px;
+            margin-bottom: 25px;
+        }
+        .media-preview-area {
+            min-height: 120px;
+            max-height: 250px;
+        }
+        .upload-buttons {
+            flex-direction: column;
+            gap: 8px;
+        }
+        .btn-media-action {
+            width: 100%;
+            padding: 8px 15px;
+            font-size: 0.85em;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-label {
+            font-size: 0.9em;
+        }
+        .form-control, .form-select {
+            padding: 8px 12px;
+            font-size: 0.9em;
+        }
+        .btn-submit, .btn-cancel {
+            padding: 10px 20px;
+            font-size: 1em;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .create-post-card {
+            padding: 15px;
+        }
+        .create-post-card h2 {
+            font-size: 1.5em;
+        }
+        .media-preview-area {
+            min-height: 100px;
+            max-height: 200px;
+        }
+        .btn-media-action {
+            font-size: 0.8em;
+            padding: 7px 12px;
+        }
+        .form-label {
+            font-size: 0.85em;
+        }
+        .form-control, .form-select {
+            font-size: 0.85em;
+        }
+        .btn-submit, .btn-cancel {
+            font-size: 0.95em;
+        }
+    }
+</style>
+
+<div class="create-post-container">
+    <div class="create-post-card">
+        <h2>Create New Post</h2>
+
+        <form action="{{ url_for('create_post') }}" method="POST" enctype="multipart/form-data">
+            {# Media Upload Section #}
+            <div class="media-upload-wrapper">
+                <div class="media-preview-area">
+                    <img id="imagePreview" class="media-preview" alt="Image Preview" style="display: none;">
+                    <video id="videoPreview" class="media-preview" controls muted playsinline preload="metadata" style="display: none;"></video>
+                    <p id="noMediaText">Upload a photo or video</p>
+                </div>
+                <div class="upload-buttons">
+                    <label for="mediaFile" class="btn btn-media-action">
+                        <i class="fas fa-image me-2"></i> Select Photo/Video
+                    </label>
+                    <input type="file" class="form-control-file" id="mediaFile" name="mediaFile" style="display:none;" accept="image/*,video/*">
+                    <button type="button" class="btn btn-media-action" id="cameraCaptureBtn">
+                        <i class="fas fa-camera me-2"></i> Open Camera
+                    </button>
+                    {# Hidden input for camera data if implemented #}
+                    <input type="hidden" id="cameraMediaData" name="cameraMediaData">
+                    <input type="hidden" id="cameraMediaType" name="cameraMediaType">
+                </div>
+            </div>
+
+            {# Post Description #}
+            <div class="form-group">
+                <label for="description" class="form-label">Description</label>
+                <textarea class="form-control" id="description" name="description" rows="4" placeholder="What's on your mind?"></textarea>
+                <small class="form-text text-muted">You can tag other users using @username.</small>
+            </div>
+
+            {# Is this an Ad? Checkbox #}
+            <div class="form-group form-check">
+                <input type="checkbox" class="form-check-input" id="isAd" name="isAd">
+                <label class="form-check-label" for="isAd">Mark as an Ad</label>
+            </div>
+
+            {# Visibility Control #}
+            <div class="form-group">
+                <label for="visibility" class="form-label">Who can see this post?</label>
+                <select class="form-select" id="visibility" name="visibility">
+                    <option value="public">Everyone</option>
+                    <option value="friends">Friends Only</option>
+                    <option value="private">Only Me</option>
+                    {# Option for custom list of friends/members #}
+                    <option value="custom">Custom List</option>
+                </select>
+            </div>
+
+            {# Custom List Selector (Conditionally shown if visibility is 'custom') #}
+            <div class="form-group" id="customVisibilityList" style="display: none;">
+                <label for="selectedFriends" class="form-label">Select Friends</label>
+                <select class="form-control" id="selectedFriends" name="selectedFriends" multiple size="5">
+                    {# Options will be dynamically loaded via JS or Flask if available #}
+                    <option value="friend1">Friend One</option>
+                    <option value="friend2">Friend Two</option>
+                    <option value="friend3">Friend Three</option>
+                    <option value="friend4">Friend Four</option>
+                    <option value="friend5">Friend Five</option>
+                </select>
+                <small class="form-text text-muted">Hold Ctrl/Cmd to select multiple friends.</small>
+            </div>
+
+
+            <div class="d-grid gap-2 mt-5">
+                <button type="submit" class="btn btn-primary btn-submit">Create Post</button>
+                <a href="{{ url_for('add_to') }}" class="btn btn-secondary btn-cancel">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const mediaFile = document.getElementById('mediaFile');
+        const imagePreview = document.getElementById('imagePreview');
+        const videoPreview = document.getElementById('videoPreview');
+        const noMediaText = document.getElementById('noMediaText');
+        const visibilitySelect = document.getElementById('visibility');
+        const customVisibilityList = document.getElementById('customVisibilityList');
+        const cameraCaptureBtn = document.getElementById('cameraCaptureBtn');
+        const cameraMediaData = document.getElementById('cameraMediaData');
+        const cameraMediaType = document.getElementById('cameraMediaType');
+
+        // --- Media Preview Functionality ---
+        mediaFile.addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    noMediaText.style.display = 'none';
+                    if (file.type.startsWith('image/')) {
+                        imagePreview.src = e.target.result;
+                        imagePreview.classList.add('active');
+                        videoPreview.classList.remove('active');
+                        videoPreview.src = ''; // Clear video
+                    } else if (file.type.startsWith('video/')) {
+                        videoPreview.src = e.target.result;
+                        videoPreview.classList.add('active');
+                        imagePreview.classList.remove('active');
+                        imagePreview.src = ''; // Clear image
+                        videoPreview.play(); // Auto-play video preview
+                    }
+                };
+                reader.readAsDataURL(file);
+            } else {
+                imagePreview.classList.remove('active');
+                videoPreview.classList.remove('active');
+                imagePreview.src = '';
+                videoPreview.src = '';
+                noMediaText.style.display = 'block';
+            }
+        });
+
+        // --- Camera Capture (Placeholder) ---
+        cameraCaptureBtn.addEventListener('click', function() {
+            alert('Camera functionality is not yet implemented. Please use "Select Photo/Video" for now.');
+            // In a real application, this would open the device's camera.
+            // You'd capture the image/video, convert it to a data URL or blob,
+            // and then set cameraMediaData.value and cameraMediaType.value
+            // to be submitted with the form.
+            // Example for a simple image capture (conceptual):
+            /*
+            navigator.mediaDevices.getUserMedia({ video: true, audio: false })
+                .then(function(stream) {
+                    const video = document.createElement('video');
+                    video.srcObject = stream;
+                    video.play();
+                    // ... display video stream, add a capture button
+                    // On capture:
+                    const canvas = document.createElement('canvas');
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                    canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+                    const imageDataUrl = canvas.toDataURL('image/png');
+                    stream.getTracks().forEach(track => track.stop()); // Stop camera
+                    
+                    imagePreview.src = imageDataUrl;
+                    imagePreview.classList.add('active');
+                    videoPreview.classList.remove('active');
+                    videoPreview.src = '';
+                    noMediaText.style.display = 'none';
+
+                    cameraMediaData.value = imageDataUrl; // Store data URL
+                    cameraMediaType.value = 'image/png'; // Store mime type
+                    mediaFile.value = ''; // Clear file input if camera is used
+                })
+                .catch(function(err) {
+                    console.error("Error accessing camera: " + err);
+                    alert("Could not access camera. Please ensure permissions are granted.");
+                });
+            */
+        });
+
+
+        // --- Visibility Control ---
+        visibilitySelect.addEventListener('change', function() {
+            if (this.value === 'custom') {
+                customVisibilityList.style.display = 'block';
+                // TODO: Dynamically load friends into selectedFriends dropdown if needed
+                // Example: fetch('/api/get_friends').then(res => res.json()).then(data => { /* populate dropdown */ });
+            } else {
+                customVisibilityList.style.display = 'none';
+            }
+        });
+
+        // Initial check for visibility dropdown on page load
+        toggleCustomVisibility();
+        function toggleCustomVisibility() {
+             if (visibilitySelect.value === 'custom') {
+                customVisibilityList.style.display = 'block';
+             } else {
+                customVisibilityList.style.display = 'none';
+             }
+        }
+    });
+</script>
+{% endblock %}
