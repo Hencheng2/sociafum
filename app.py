@@ -472,27 +472,32 @@ def logout():
     return redirect(url_for('login'))
 
 
-@app.route('/forgot_password_verify', methods=['POST'])
-def forgot_password_verify():
-    username = request.json.get('username')
-    unique_key = request.json.get('unique_key')
+@app.route('/forgot_password', methods=['GET', 'POST']) # Updated to handle POST
+def forgot_password():
+    current_year = datetime.now(timezone.utc).year
+    form_data = request.form.to_dict() # Capture form data for repopulation
 
-    if not username or not unique_key:
-        return jsonify({'success': False, 'message': 'Username and unique key are required.'})
+    if request.method == 'POST':
+        username = request.form.get('username')
+        unique_key = request.form.get('unique_key')
 
-    db = get_db()
-    user_data = db.execute('SELECT id, unique_key FROM users WHERE username = ?', (username,)).fetchone()
+        if not username or not unique_key:
+            flash('Username and unique key are required.', 'danger')
+            return render_template('forgot_password.html', current_year=current_year, form_data=form_data)
 
-    if user_data and user_data['unique_key'] == unique_key:
-        # Set a session variable to indicate password reset is pending for this user
-        session['password_reset_user_id'] = user_data['id']
-        return jsonify({
-            'success': True,
-            'message': 'Unique key verified. You will be redirected to set a new password.',
-            'redirect_url': url_for('set_new_password', unique_id=user_data['id']) # Use user_id as unique_id for the next page
-        })
-    else:
-        return jsonify({'success': False, 'message': 'Invalid username or unique key.'})
+        db = get_db()
+        user_data = db.execute('SELECT id, unique_key FROM users WHERE username = ?', (username,)).fetchone()
+
+        if user_data and user_data['unique_key'] == unique_key:
+            # Set a session variable to indicate password reset is pending for this user
+            session['password_reset_user_id'] = user_data['id']
+            flash('Unique key verified. You can now set a new password.', 'success')
+            return redirect(url_for('set_new_password', unique_id=user_data['id']))
+        else:
+            flash('Invalid username or unique key.', 'danger')
+            return render_template('forgot_password.html', current_year=current_year, form_data=form_data)
+
+    return render_template('forgot_password.html', current_year=current_year, form_data=None) # GET request
 
 
 @app.route('/set_new_password/<int:unique_id>', methods=['GET', 'POST'])
@@ -510,6 +515,7 @@ def set_new_password(unique_id):
         return redirect(url_for('login'))
 
     username = user_data['username']
+    current_year = datetime.now(timezone.utc).year # Pass current year
 
     if request.method == 'POST':
         new_password = request.form['new_password']
@@ -517,16 +523,16 @@ def set_new_password(unique_id):
 
         if new_password != confirm_password:
             flash('New password and confirmation do not match.', 'danger')
-            return render_template('set_new_password.html', username=username, unique_id=unique_id)
+            return render_template('set_new_password.html', username=username, unique_id=unique_id, current_year=current_year)
 
         if len(new_password) < 6:
             flash('New password must be at least 6 characters long.', 'danger')
-            return render_template('set_new_password.html', username=username, unique_id=unique_id)
+            return render_template('set_new_password.html', username=username, unique_id=unique_id, current_year=current_year)
         if not (any(char.isdigit() for char in new_password) and
                 any(char.isalpha() for char in new_password) and
                 any(not char.isalnum() for char in new_password)):
             flash('New password must include at least one number, one letter, and one special character.', 'danger')
-            return render_template('set_new_password.html', username=username, unique_id=unique_id)
+            return render_template('set_new_password.html', username=username, unique_id=unique_id, current_year=current_year)
 
         hashed_password = generate_password_hash(new_password)
         db.execute('UPDATE users SET password_hash = ?, password_reset_pending = 0, reset_request_timestamp = NULL WHERE id = ?', (hashed_password, unique_id))
@@ -536,15 +542,7 @@ def set_new_password(unique_id):
         flash('Your password has been changed successfully! Please log in with your new password.', 'success')
         return redirect(url_for('login'))
 
-    return render_template('set_new_password.html', username=username, unique_id=unique_id)
-
-
-@app.route('/forgot_password')
-def forgot_password_redirect():
-    # Pass the current year to the template
-    current_year = datetime.now(timezone.utc).year
-    # This page now simply redirects to login as per the updated flow, rendering the provided template.
-    return render_template('forgot_password.html', current_year=current_year)
+    return render_template('set_new_password.html', username=username, unique_id=unique_id, current_year=current_year)
 
 
 @app.route('/change_password', methods=['GET', 'POST'])
