@@ -1,0 +1,150 @@
+{% extends 'base.html' %}
+
+{% block title %}Add New Content{% endblock %}
+
+{% block content %}
+<style>
+    /* Custom styles for the Add To page */
+    body {
+        padding-top: 0;
+        padding-bottom: var(--navbar-height); /* Space for fixed bottom navbar */
+        overflow-x: hidden;
+    }
+
+    .add-to-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: calc(100vh - var(--navbar-height)); /* Full height minus bottom nav */
+        background-color: var(--background-light);
+        padding: 20px 15px;
+    }
+
+    .add-to-container h2 {
+        color: var(--primary-text);
+        font-weight: 700;
+        margin-bottom: 40px;
+        text-align: center;
+    }
+
+    .content-options-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr); /* 3 columns for desktop */
+        gap: 30px;
+        max-width: 900px; /* Limit width of grid */
+        width: 100%;
+    }
+
+    .content-option-card {
+        background-color: var(--card-background);
+        border-radius: 15px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 30px 20px;
+        text-align: center;
+        text-decoration: none;
+        color: inherit;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        min-height: 200px; /* Ensure cards have some height */
+    }
+
+    .content-option-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+    }
+
+    .content-option-card .icon-wrapper {
+        font-size: 3.5em; /* Large icon size */
+        color: var(--primary-color);
+        margin-bottom: 15px;
+    }
+
+    .content-option-card h3 {
+        font-weight: 600;
+        color: var(--primary-text);
+        margin-bottom: 10px;
+        font-size: 1.3em;
+    }
+
+    .content-option-card p {
+        font-size: 0.9em;
+        color: var(--secondary-text);
+        line-height: 1.5;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 992px) {
+        .content-options-grid {
+            grid-template-columns: repeat(2, 1fr); /* 2 columns for tablet */
+            gap: 25px;
+        }
+        .add-to-container h2 {
+            font-size: 1.8em;
+            margin-bottom: 30px;
+        }
+    }
+
+    @media (max-width: 600px) {
+        .content-options-grid {
+            grid-template-columns: 1fr; /* Single column for mobile */
+            gap: 20px;
+            max-width: 350px; /* Limit width on mobile */
+        }
+        .add-to-container h2 {
+            font-size: 1.5em;
+            margin-bottom: 25px;
+        }
+        .content-option-card {
+            padding: 25px 15px;
+            min-height: 180px;
+        }
+        .content-option-card .icon-wrapper {
+            font-size: 3em;
+            margin-bottom: 10px;
+        }
+        .content-option-card h3 {
+            font-size: 1.2em;
+        }
+        .content-option-card p {
+            font-size: 0.85em;
+        }
+    }
+</style>
+
+<div class="add-to-container">
+    <h2>What would you like to create?</h2>
+
+    <div class="content-options-grid">
+        {# Post Option #}
+        <a href="{{ url_for('create_post') }}" class="content-option-card">
+            <div class="icon-wrapper">
+                <i class="fas fa-th-large"></i>
+            </div>
+            <h3>Post</h3>
+            <p>Share photos, videos, text, or ads with all users.</p>
+        </a>
+
+        {# Reel Option #}
+        <a href="{{ url_for('create_reel') }}" class="content-option-card">
+            <div class="icon-wrapper">
+                <i class="fas fa-video"></i>
+            </div>
+            <h3>Reel</h3>
+            <p>Create short, engaging videos or photo compilations with audio.</p>
+        </a>
+
+        {# Story Option #}
+        <a href="{{ url_for('create_story') }}" class="content-option-card">
+            <div class="icon-wrapper">
+                <i class="fas fa-history"></i>
+            </div>
+            <h3>Story</h3>
+            <p>Share short-lived photos, videos, or voice notes visible to friends only.</p>
+        </a>
+    </div>
+</div>
+{% endblock %}
