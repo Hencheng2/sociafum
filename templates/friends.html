@@ -43,11 +43,21 @@
         font-size: 1.1em;
     }
     
+    /* Styles for the new tabbed navigation */
     .friends-tabs-nav {
         background-color: var(--card-background);
         border-radius: 15px;
         margin-top: 15px;
         box-shadow: var(--shadow-light);
+        display: flex; /* Ensure flex for tab alignment */
+        flex-wrap: wrap; /* Allow tabs to wrap on smaller screens */
+        justify-content: space-around; /* Distribute tabs evenly */
+    }
+
+    .friends-tabs-nav .nav-item {
+        flex-grow: 1; /* Tabs take equal width */
+        text-align: center;
+        margin: 5px; /* Add some margin between tabs */
     }
 
     .friends-tabs-nav .nav-link {
@@ -56,6 +66,10 @@
         padding: 10px 15px;
         border-radius: 10px;
         transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 5px; /* Space between text and count */
     }
 
     .friends-tabs-nav .nav-link.active {
@@ -64,16 +78,21 @@
         font-weight: bold;
     }
 
-    .friends-tabs-nav .nav-link:hover {
+    .friends-tabs-nav .nav-link:hover:not(.active) {
         background-color: var(--primary-light-hover);
         color: var(--primary);
     }
 
-    .friends-tabs-nav .nav-item {
-        flex-grow: 1;
-        text-align: center;
+    .badge-count {
+        font-size: 0.7em;
+        background-color: var(--primary);
+        color: white;
+        padding: 3px 6px;
+        border-radius: 10px;
+        line-height: 1; /* Adjust line height for better vertical alignment */
     }
 
+    /* General list item styling */
     .user-list {
         padding: 0;
         list-style: none;
@@ -191,16 +210,16 @@
         background-color: var(--primary-light);
         color: var(--primary);
     }
-
-    .badge-count {
-        font-size: 0.7em;
-        background-color: var(--primary);
-        color: white;
-        padding: 3px 6px;
-        border-radius: 10px;
-        position: relative;
-        top: -5px;
-        left: 5px;
+    
+    /* Styling for empty list messages */
+    .empty-list-message {
+        text-align: center;
+        color: var(--secondary-text);
+        padding: 20px;
+        margin-top: 20px;
+        background-color: var(--card-background);
+        border-radius: 15px;
+        box-shadow: var(--shadow-soft);
     }
 
 </style>
@@ -215,8 +234,12 @@
         </div>
     </div>
 
-    <!-- Tabbed Navigation -->
-    <ul class="nav nav-pills friends-tabs-nav mt-3" role="tablist">
+    <!-- Tabbed Navigation (Red Circle in image) -->
+    <ul class="nav nav-pills friends-tabs-nav mt-3" id="friendsTabs" role="tablist">
+        <!-- Search tab is dynamic, only appears when searching -->
+        <li class="nav-item d-none" id="search-tab-item">
+            <a class="nav-link" id="search-tab" data-bs-toggle="tab" data-bs-target="#search-content" type="button" role="tab" aria-controls="search-content" aria-selected="false">Search Results</a>
+        </li>
         <li class="nav-item">
             <a class="nav-link active" id="followers-tab" data-bs-toggle="tab" data-bs-target="#followers-content" type="button" role="tab" aria-controls="followers-content" aria-selected="true">Followers <span class="badge-count">{{ followers_count }}</span></a>
         </li>
@@ -234,13 +257,16 @@
         </li>
     </ul>
 
-    <!-- Tab Content -->
+    <!-- Tab Content (Each tab will have its own distinct content, addressing the blue circle concern) -->
     <div class="tab-content mt-4">
-        <!-- Search List (Initially hidden) -->
+        <!-- Search Results Tab Content - Dynamically populated by JS -->
         <div class="tab-pane fade" id="search-content" role="tabpanel" aria-labelledby="search-tab">
             <ul class="user-list" id="search-results-list">
                 <!-- Search results will be rendered here by JavaScript -->
             </ul>
+            <div class="empty-list-message d-none" id="no-search-results">
+                <p>No users found matching your search.</p>
+            </div>
         </div>
 
         <!-- Followers Tab Content -->
@@ -248,20 +274,23 @@
             <ul class="user-list">
                 {% for follower in followers %}
                 <li class="user-list-item" data-user-id="{{ follower.id }}">
-                    <a href="{{ url_for('user_profile', username=follower.username) }}">
+                    <a href="{{ url_for('profile', username=follower.username) }}" class="d-flex align-items-center text-decoration-none">
                         <img src="{{ follower.profile_pic }}" alt="{{ follower.real_name }}" class="user-profile-pic">
+                        <div class="user-details me-auto">
+                            <span class="user-name">{{ follower.real_name }}</span>
+                            <small class="mutual-info">{{ follower.mutual_friends_count }} mutual connections</small>
+                        </div>
                     </a>
-                    <div class="user-details">
-                        <a href="{{ url_for('user_profile', username=follower.username) }}" class="user-name">{{ follower.real_name }}</a>
-                        <small class="mutual-info">{{ follower.mutual_friends_count }} mutual connections</small>
-                    </div>
                     <div class="list-item-buttons">
-                        <button class="btn btn-sm message-btn" data-bs-toggle="tooltip" title="Message"><i class="fas fa-comment-dots"></i></button>
+                        <a href="{{ url_for('message_member') }}?user_id={{ follower.id }}" class="btn btn-sm message-btn" data-bs-toggle="tooltip" title="Message"><i class="fas fa-comment-dots"></i></a>
                         <button class="btn btn-sm block-btn" data-bs-toggle="tooltip" title="Block" data-user-id="{{ follower.id }}"><i class="fas fa-ban"></i></button>
                     </div>
                 </li>
                 {% else %}
-                <p class="text-center text-muted">You don't have any followers yet.</p>
+                <div class="empty-list-message">
+                    <p>You don't have any followers yet.</p>
+                    <p>Share your profile with friends to get followers!</p>
+                </div>
                 {% endfor %}
             </ul>
         </div>
@@ -271,17 +300,17 @@
             <ul class="user-list">
                 {% for followed in following %}
                 <li class="user-list-item" data-user-id="{{ followed.id }}">
-                    <a href="{{ url_for('user_profile', username=followed.username) }}">
+                    <a href="{{ url_for('profile', username=followed.username) }}" class="d-flex align-items-center text-decoration-none">
                         <img src="{{ followed.profile_pic }}" alt="{{ followed.real_name }}" class="user-profile-pic">
+                        <div class="user-details me-auto">
+                            <span class="user-name">{{ followed.real_name }}</span>
+                            <small class="mutual-info">{{ followed.mutual_friends_count }} mutual connections</small>
+                        </div>
                     </a>
-                    <div class="user-details">
-                        <a href="{{ url_for('user_profile', username=followed.username) }}" class="user-name">{{ followed.real_name }}</a>
-                        <small class="mutual-info">{{ followed.mutual_friends_count }} mutual connections</small>
-                    </div>
                     <div class="list-item-buttons">
-                        <button class="btn btn-sm message-btn" data-bs-toggle="tooltip" title="Message"><i class="fas fa-comment-dots"></i></button>
+                        <a href="{{ url_for('message_member') }}?user_id={{ followed.id }}" class="btn btn-sm message-btn" data-bs-toggle="tooltip" title="Message"><i class="fas fa-comment-dots"></i></a>
                         <div class="dropdown">
-                            <button class="btn btn-sm dropdown-toggle dropdown-toggle-no-arrow" type="button" id="followingDropdown-{{ followed.id }}" data-bs-toggle="dropdown" aria-expanded="false">
+                            <button class="btn btn-sm dropdown-toggle dropdown-toggle-no-arrow" type="button" id="followingDropdown-{{ followed.id }}" data-bs-toggle="dropdown" aria-expanded="false" data-bs-toggle="tooltip" title="Options">
                                 <i class="fas fa-ellipsis-h"></i>
                             </button>
                             <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="followingDropdown-{{ followed.id }}">
@@ -292,7 +321,10 @@
                     </div>
                 </li>
                 {% else %}
-                <p class="text-center text-muted">You are not following anyone yet.</p>
+                <div class="empty-list-message">
+                    <p>You are not following anyone yet.</p>
+                    <p>Follow people you know to see their posts and updates here.</p>
+                </div>
                 {% endfor %}
             </ul>
         </div>
@@ -302,17 +334,17 @@
             <ul class="user-list">
                 {% for friend in friends %}
                 <li class="user-list-item" data-user-id="{{ friend.id }}">
-                    <a href="{{ url_for('user_profile', username=friend.username) }}">
+                    <a href="{{ url_for('profile', username=friend.username) }}" class="d-flex align-items-center text-decoration-none">
                         <img src="{{ friend.profile_pic }}" alt="{{ friend.real_name }}" class="user-profile-pic">
+                        <div class="user-details me-auto">
+                            <span class="user-name">{{ friend.real_name }}</span>
+                            <small class="mutual-info">{{ friend.mutual_friends_count }} mutual connections</small>
+                        </div>
                     </a>
-                    <div class="user-details">
-                        <a href="{{ url_for('user_profile', username=friend.username) }}" class="user-name">{{ friend.real_name }}</a>
-                        <small class="mutual-info">{{ friend.mutual_friends_count }} mutual connections</small>
-                    </div>
                     <div class="list-item-buttons">
-                        <button class="btn btn-sm message-btn" data-bs-toggle="tooltip" title="Message"><i class="fas fa-comment-dots"></i></button>
+                        <a href="{{ url_for('message_member') }}?user_id={{ friend.id }}" class="btn btn-sm message-btn" data-bs-toggle="tooltip" title="Message"><i class="fas fa-comment-dots"></i></a>
                         <div class="dropdown">
-                            <button class="btn btn-sm dropdown-toggle dropdown-toggle-no-arrow" type="button" id="friendsDropdown-{{ friend.id }}" data-bs-toggle="dropdown" aria-expanded="false">
+                            <button class="btn btn-sm dropdown-toggle dropdown-toggle-no-arrow" type="button" id="friendsDropdown-{{ friend.id }}" data-bs-toggle="dropdown" aria-expanded="false" data-bs-toggle="tooltip" title="Options">
                                 <i class="fas fa-ellipsis-h"></i>
                             </button>
                             <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="friendsDropdown-{{ friend.id }}">
@@ -323,7 +355,10 @@
                     </div>
                 </li>
                 {% else %}
-                <p class="text-center text-muted">You don't have any mutual friends yet.</p>
+                <div class="empty-list-message">
+                    <p>You don't have any mutual friends yet.</p>
+                    <p>Explore suggested users or use the search bar to find people.</p>
+                </div>
                 {% endfor %}
             </ul>
         </div>
@@ -333,13 +368,13 @@
             <ul class="user-list">
                 {% for req in requests %}
                 <li class="user-list-item" data-request-id="{{ req.request_id }}" data-user-id="{{ req.id }}">
-                    <a href="{{ url_for('user_profile', username=req.username) }}">
+                    <a href="{{ url_for('profile', username=req.username) }}" class="d-flex align-items-center text-decoration-none">
                         <img src="{{ req.profile_pic }}" alt="{{ req.real_name }}" class="user-profile-pic">
+                        <div class="user-details me-auto">
+                            <span class="user-name">{{ req.real_name }}</span>
+                            <small class="mutual-info">{{ req.mutual_friends_count }} mutual connections</small>
+                        </div>
                     </a>
-                    <div class="user-details">
-                        <a href="{{ url_for('user_profile', username=req.username) }}" class="user-name">{{ req.real_name }}</a>
-                        <small class="mutual-info">{{ req.mutual_friends_count }} mutual connections</small>
-                    </div>
                     <div class="list-item-buttons">
                         <button class="btn btn-sm accept-btn" data-bs-toggle="tooltip" title="Accept" data-request-id="{{ req.request_id }}"><i class="fas fa-check"></i></button>
                         <button class="btn btn-sm decline-btn" data-bs-toggle="tooltip" title="Decline" data-request-id="{{ req.request_id }}"><i class="fas fa-times"></i></button>
@@ -347,7 +382,10 @@
                     </div>
                 </li>
                 {% else %}
-                <p class="text-center text-muted">You don't have any pending friend requests.</p>
+                <div class="empty-list-message">
+                    <p>You don't have any pending friend requests.</p>
+                    <p>Come back later or send some of your own!</p>
+                </div>
                 {% endfor %}
             </ul>
         </div>
@@ -357,13 +395,13 @@
             <ul class="user-list">
                 {% for suggested_user in suggested %}
                 <li class="user-list-item" data-user-id="{{ suggested_user.id }}">
-                    <a href="{{ url_for('user_profile', username=suggested_user.username) }}">
+                    <a href="{{ url_for('profile', username=suggested_user.username) }}" class="d-flex align-items-center text-decoration-none">
                         <img src="{{ suggested_user.profile_pic }}" alt="{{ suggested_user.real_name }}" class="user-profile-pic">
+                        <div class="user-details me-auto">
+                            <span class="user-name">{{ suggested_user.real_name }}</span>
+                            <small class="mutual-info">{{ suggested_user.mutual_friends_count }} mutual connections</small>
+                        </div>
                     </a>
-                    <div class="user-details">
-                        <a href="{{ url_for('user_profile', username=suggested_user.username) }}" class="user-name">{{ suggested_user.real_name }}</a>
-                        <small class="mutual-info">{{ suggested_user.mutual_friends_count }} mutual connections</small>
-                    </div>
                     <div class="list-item-buttons">
                         <button class="btn btn-sm follow-btn" data-bs-toggle="tooltip" title="Follow" data-user-id="{{ suggested_user.id }}"><i class="fas fa-user-plus"></i></button>
                         <button class="btn btn-sm remove-btn" data-bs-toggle="tooltip" title="Remove" data-user-id="{{ suggested_user.id }}"><i class="fas fa-minus-circle"></i></button>
@@ -371,7 +409,10 @@
                     </div>
                 </li>
                 {% else %}
-                <p class="text-center text-muted">No suggestions for you right now.</p>
+                <div class="empty-list-message">
+                    <p>No suggestions for you right now.</p>
+                    <p>Check back later or search for people you may know.</p>
+                </div>
                 {% endfor %}
             </ul>
         </div>
@@ -381,28 +422,31 @@
 <script>
     // Data passed from Flask to JavaScript
     const allUsersForSearch = {{ all_users_for_search | tojson }};
-    const friendsRouteUrl = "{{ url_for('friends') }}";
 
     document.addEventListener('DOMContentLoaded', function() {
         const searchInput = document.getElementById('searchUserInput');
         const searchResultsList = document.getElementById('search-results-list');
         const searchContentTab = document.getElementById('search-content');
-        const tabButtons = document.querySelectorAll('.friends-tabs-nav .nav-link');
-        const tabPanes = document.querySelectorAll('.tab-pane');
+        const searchTabItem = document.getElementById('search-tab-item');
+        const friendsTabsNav = document.getElementById('friendsTabs');
 
-        // Function to render a single user item
+        // Store the initially active tab and its content for when search is cleared
+        let initialActiveTabButton = document.querySelector('.friends-tabs-nav .nav-link.active');
+        let initialActiveTabContent = document.querySelector('.tab-pane.show.active');
+
+        // Function to render a single user item for search results
         function renderUserItem(user) {
             return `
                 <li class="user-list-item" data-user-id="${user.id}">
-                    <a href="/profile/${user.username}">
+                    <a href="/profile/${user.username}" class="d-flex align-items-center text-decoration-none">
                         <img src="${user.profile_pic}" alt="${user.real_name}" class="user-profile-pic">
+                        <div class="user-details me-auto">
+                            <span class="user-name">${user.real_name}</span>
+                            <small class="mutual-info">${user.mutual_friends_count} mutual connections</small>
+                        </div>
                     </a>
-                    <div class="user-details">
-                        <a href="/profile/${user.username}" class="user-name">${user.real_name}</a>
-                        <small class="mutual-info">${user.mutual_friends_count} mutual connections</small>
-                    </div>
                     <div class="list-item-buttons">
-                        <button class="btn btn-sm message-btn" data-bs-toggle="tooltip" title="Message"><i class="fas fa-comment-dots"></i></button>
+                        <a href="/message_member?user_id=${user.id}" class="btn btn-sm message-btn" data-bs-toggle="tooltip" title="Message"><i class="fas fa-comment-dots"></i></a>
                         <button class="btn btn-sm follow-btn" data-bs-toggle="tooltip" title="Follow" data-user-id="${user.id}"><i class="fas fa-user-plus"></i></button>
                         <button class="btn btn-sm block-btn" data-bs-toggle="tooltip" title="Block" data-user-id="${user.id}"><i class="fas fa-ban"></i></button>
                     </div>
@@ -416,53 +460,86 @@
             searchResultsList.innerHTML = '';
             
             if (query.length === 0) {
-                // If search input is empty, revert to the active tab
-                const activeTabId = document.querySelector('.friends-tabs-nav .nav-link.active').dataset.bsTarget.substring(1);
-                tabPanes.forEach(pane => pane.classList.remove('show', 'active'));
-                document.getElementById(activeTabId).classList.add('show', 'active');
+                // Hide search tab item
+                searchTabItem.classList.add('d-none');
+                // Deactivate search tab if it was active
+                document.getElementById('search-tab').classList.remove('active');
+                searchContentTab.classList.remove('show', 'active');
+
+                // Revert to the initially active tab
+                if (initialActiveTabButton) initialActiveTabButton.classList.add('active');
+                if (initialActiveTabContent) initialActiveTabContent.classList.add('show', 'active');
                 return;
             }
 
-            // Show search tab
-            tabButtons.forEach(btn => btn.classList.remove('active'));
-            tabPanes.forEach(pane => pane.classList.remove('show', 'active'));
+            // If search has content, show and activate search tab
+            searchTabItem.classList.remove('d-none');
+            
+            // Deactivate all other tabs
+            document.querySelectorAll('.friends-tabs-nav .nav-link').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-pane').forEach(pane => pane.classList.remove('show', 'active'));
+            
+            // Activate search tab
+            document.getElementById('search-tab').classList.add('active');
             searchContentTab.classList.add('show', 'active');
-
+            
+            // Filter users based on query
             const filteredUsers = allUsersForSearch.filter(user => {
                 const startsWithRealName = user.real_name.toLowerCase().startsWith(query);
                 const startsWithUsername = user.username.toLowerCase().startsWith(query);
-                return startsWithRealName || startsWithUsername;
+                return startsWithRealName || startsWithUsername || user.real_name.toLowerCase().includes(query) || user.username.toLowerCase().includes(query);
             });
             
-            const realNameMatches = filteredUsers.filter(user => user.real_name.toLowerCase().startsWith(query));
-            const usernameMatches = filteredUsers.filter(user => user.username.toLowerCase().startsWith(query) && !user.real_name.toLowerCase().startsWith(query));
-            
-            // Sort by real name and then username
-            const sortedMatches = [...realNameMatches, ...usernameMatches];
+            // Sort: real name starts with, then username starts with, then real name contains, then username contains
+            const realNameStartsWith = filteredUsers.filter(user => user.real_name.toLowerCase().startsWith(query));
+            const usernameStartsWith = filteredUsers.filter(user => user.username.toLowerCase().startsWith(query) && !user.real_name.toLowerCase().startsWith(query));
+            const realNameContains = filteredUsers.filter(user => user.real_name.toLowerCase().includes(query) && !user.real_name.toLowerCase().startsWith(query) && !user.username.toLowerCase().startsWith(query));
+            const usernameContains = filteredUsers.filter(user => user.username.toLowerCase().includes(query) && !user.real_name.toLowerCase().startsWith(query) && !user.username.toLowerCase().startsWith(query) && !user.real_name.toLowerCase().includes(query));
+
+            const sortedMatches = [...realNameStartsWith, ...usernameStartsWith, ...realNameContains, ...usernameContains];
             
             if (sortedMatches.length > 0) {
                 const userHtml = sortedMatches.map(renderUserItem).join('');
                 searchResultsList.innerHTML = userHtml;
+                document.getElementById('no-search-results').classList.add('d-none');
             } else {
-                searchResultsList.innerHTML = '<p class="text-center text-muted">No users found.</p>';
+                searchResultsList.innerHTML = '';
+                document.getElementById('no-search-results').classList.remove('d-none');
             }
         }
         
         // Event listener for search input
         searchInput.addEventListener('input', filterUsers);
 
-        // API Callbacks for User Actions
+        // Store the initially active tab button and content
+        friendsTabsNav.addEventListener('click', function(event) {
+            const clickedTab = event.target.closest('.nav-link');
+            if (!clickedTab) return;
+
+            // Update initialActiveTab only if it's not the search tab
+            if (clickedTab.id !== 'search-tab') {
+                initialActiveTabButton = clickedTab;
+                initialActiveTabContent = document.querySelector(clickedTab.dataset.bsTarget);
+            }
+            // Clear search input when switching tabs manually
+            searchInput.value = '';
+            filterUsers(); // Re-run filter to hide search results if input is empty
+        });
+
+
+        // API Callbacks for User Actions (re-using the /api/ routes)
         function handleApiCall(url, method, successMessage, elementToRemove) {
             fetch(url, { method: method })
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
                         alert(successMessage);
-                        // Remove the list item from the DOM
                         if (elementToRemove) {
                             elementToRemove.remove();
-                            // Optional: Reload the page to get updated counts
-                            // window.location.href = friendsRouteUrl;
+                            // Optional: Reload the page or update counts for the badges
+                            // For a more robust solution, you'd update the counts dynamically here
+                            // Or, for simplicity and full data refresh, reload the page after a successful action
+                            window.location.reload(); 
                         }
                     } else {
                         alert(data.message || 'An error occurred.');
@@ -475,9 +552,9 @@
         }
 
         // Attach event listeners to the user list containers
-        document.querySelectorAll('.user-list').forEach(list => {
-            list.addEventListener('click', function(event) {
-                const target = event.target.closest('button, a');
+        document.querySelectorAll('.tab-content').forEach(tabContent => {
+            tabContent.addEventListener('click', function(event) {
+                const target = event.target.closest('button, a.dropdown-item');
                 if (!target) return;
 
                 const listItem = target.closest('.user-list-item');
@@ -487,24 +564,29 @@
                 const requestId = listItem.dataset.requestId;
 
                 if (target.classList.contains('follow-btn')) {
-                    handleApiCall(`/api/send-friend-request/${userId}`, 'POST', 'Follow request sent.', listItem);
-                } else if (target.classList.contains('unfollow-btn')) {
-                    handleApiCall(`/api/unfriend/${userId}`, 'POST', 'Successfully unfollowed.', listItem);
-                } else if (target.classList.contains('unfriend-btn')) {
-                    // Assuming 'unfriend' uses the same endpoint as 'unfollow'
-                    handleApiCall(`/api/unfriend/${userId}`, 'POST', 'Successfully unfriended.', listItem);
+                    handleApiCall(`/api/send_friend_request/${userId}`, 'POST', 'Follow request sent.', listItem);
+                } else if (target.classList.contains('unfollow-btn') || target.classList.contains('unfriend-btn')) {
+                    handleApiCall(`/api/unfriend/${userId}`, 'POST', 'Successfully unfollowed/unfriended.', listItem);
                 } else if (target.classList.contains('accept-btn')) {
-                    handleApiCall(`/api/accept-friend-request/${requestId}`, 'POST', 'Friend request accepted!', listItem);
+                    handleApiCall(`/api/accept_friend_request/${requestId}`, 'POST', 'Friend request accepted!', listItem);
                 } else if (target.classList.contains('decline-btn')) {
-                    handleApiCall(`/api/decline-friend-request/${requestId}`, 'POST', 'Friend request declined.', listItem);
+                    handleApiCall(`/api/decline_friend_request/${requestId}`, 'POST', 'Friend request declined.', listItem);
                 } else if (target.classList.contains('remove-btn')) {
                     if (confirm('Remove this suggestion?')) {
-                         handleApiCall(`/api/remove-suggestion/${userId}`, 'POST', 'Suggestion removed.', listItem);
+                         // Assuming a backend API for removing suggestions if needed to persist
+                         // For now, it's client-side removal
+                         listItem.remove();
+                         alert('Suggestion removed from list.');
+                         // handleApiCall(`/api/remove_suggestion/${userId}`, 'POST', 'Suggestion removed.', listItem);
                     }
                 } else if (target.classList.contains('block-btn')) {
                     if (confirm('Are you sure you want to block this user?')) {
-                        handleApiCall(`/api/block-user/${userId}`, 'POST', 'User blocked.', listItem);
+                        handleApiCall(`/api/block_user/${userId}`, 'POST', 'User blocked.', listItem);
                     }
+                }
+                // Stop propagation for dropdowns to prevent parent clicks
+                if (target.classList.contains('dropdown-item') || target.dataset.bsToggle === 'dropdown') {
+                    event.stopPropagation();
                 }
             });
         });
