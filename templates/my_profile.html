@@ -59,7 +59,8 @@
         transition: background-color 0.2s ease;
     }
     .change-photo-btn:hover {
-        background-color: darken(var(--primary-color), 10%); /* Needs JS/SCSS darken */
+        /* Placeholder for darken - in CSS, you'd use a specific color or Sass */
+        background-color: #3f3aae; /* A slightly darker indigo for hover */
     }
     .dark-theme .change-photo-btn {
         border: 2px solid var(--background-light);
@@ -700,6 +701,8 @@
     </div>
 </div>
 
+<!-- BOOTSTRAP JAVASCRIPT BUNDLE (ADD THIS LINE FOR my_profile.html ONLY) -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" xintegrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
@@ -906,8 +909,8 @@
                            allLikedItems.find(item => item.id == idToFetch && item.type == 'reel');
                 }
 
-                if (reel && reel.video_url) {
-                    reelViewerVideo.src = reel.video_url;
+                if (reel && reel.media_path) { /* Changed from reel.video_url to reel.media_path for consistency */
+                    reelViewerVideo.src = reel.media_path; /* Changed from reel.video_url to reel.media_path */
                     reelOwnerProfilePic.src = reel.owner_profile_pic || '{{ current_user_profile.profile_pic }}'; // Use reel owner's pic if available
                     reelOwnerUsername.textContent = '@' + (reel.owner_username || '{{ current_user.username }}'); // Use reel owner's username
                     reelViewerVideo.style.display = 'block';
