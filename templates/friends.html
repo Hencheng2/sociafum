@@ -445,9 +445,13 @@
 
         // Function to render a single user item for search results
         function renderUserItem(user) {
+            // Correctly build profile and message URLs using JavaScript
+            const profileUrl = `/profile/${user.username}`;
+            const messageUrl = `/message_member?user_id=${user.id}`;
+
             return `
                 <li class="user-list-item" data-user-id="${user.id}">
-                    <a href="{{ url_for('profile', username='${user.username}') }}" class="d-flex align-items-center text-decoration-none">
+                    <a href="${profileUrl}" class="d-flex align-items-center text-decoration-none">
                         <img src="${user.profile_pic}" alt="${user.real_name}" class="user-profile-pic">
                         <div class="user-details me-auto">
                             <span class="user-name">${user.real_name}</span>
@@ -455,7 +459,7 @@
                         </div>
                     </a>
                     <div class="list-item-buttons">
-                        <a href="{{ url_for('message_member') }}?user_id=${user.id}" class="btn btn-sm message-btn" data-bs-toggle="tooltip" title="Message"><i class="fas fa-comment-dots"></i></a>
+                        <a href="${messageUrl}" class="btn btn-sm message-btn" data-bs-toggle="tooltip" title="Message"><i class="fas fa-comment-dots"></i></a>
                         <button class="btn btn-sm follow-btn" data-bs-toggle="tooltip" title="Follow" data-user-id="${user.id}"><i class="fas fa-user-plus"></i></button>
                         <button class="btn btn-sm block-btn" data-bs-toggle="tooltip" title="Block" data-user-id="${user.id}"><i class="fas fa-ban"></i></button>
                     </div>
