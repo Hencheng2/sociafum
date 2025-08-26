@@ -102,12 +102,56 @@ def close_db(e=None):
     if db is not None:
         db.close()
 
+# --- Helper Function for Unique Keys ---
+def generate_unique_key():
+    """Generates a 4-character unique key (2 letters, 2 numbers)."""
+    letters = random.choices(string.ascii_uppercase, k=2)
+    numbers = random.choices(string.digits, k=2)
+    key_chars = letters + numbers
+    random.shuffle(key_chars)
+    return "".join(key_chars)
+
+
 def init_db():
     with app.app_context():
         db = get_db()
         with app.open_resource('schema.sql', mode='r') as f:
             db.executescript(f.read())
-        db.commit()
+        
+        # --- Create Admin User if not exists ---
+        cursor = db.cursor()
+        cursor.execute("SELECT id FROM users WHERE username = ?", (config.ADMIN_USERNAME,))
+        admin_exists = cursor.fetchone()
+
+        if not admin_exists:
+            # Generate a unique key for the admin
+            admin_unique_key = generate_unique_key() # Reusing the helper for consistency
+            
+            # Hash the admin password from config.py
+            hashed_admin_password = generate_password_hash(config.ADMIN_PASSWORD_RAW) # Corrected to config.ADMIN_PASSWORD_RAW
+
+            cursor.execute(
+                """
+                INSERT INTO users (username, originalName, password_hash, unique_key, is_admin)
+                VALUES (?, ?, ?, ?, ?)
+                """,
+                (config.ADMIN_USERNAME, "SociaFam Admin", hashed_admin_password, admin_unique_key, 1) # is_admin = 1
+            )
+            admin_user_id = cursor.lastrowid
+            
+            # Also create a member profile for the admin
+            cursor.execute(
+                """
+                INSERT INTO members (user_id, fullName, gender)
+                VALUES (?, ?, ?)
+                """,
+                (admin_user_id, "SociaFam Admin", "Prefer not to say") # Default gender for admin
+            )
+            app.logger.info(f"Admin user '{config.ADMIN_USERNAME}' created with unique key '{admin_unique_key}'.")
+        else:
+            app.logger.info(f"Admin user '{config.ADMIN_USERNAME}' already exists.")
+
+        db.commit() # Commit all changes after script and admin creation
     app.logger.info("Database initialized/updated from schema.sql.")
 
 # Register close_db with the app context
@@ -121,7 +165,14 @@ with app.app_context():
     cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='users';")
     if not cursor.fetchone():
         init_db()
+    else: # If tables exist, still ensure admin is present, useful for existing databases
+        # This handles cases where a database exists but the admin user might have been manually deleted
+        # or wasn't created in previous versions.
+        cursor.execute("SELECT id FROM users WHERE username = ?", (config.ADMIN_USERNAME,))
+        if not cursor.fetchone():
+            init_db() # Call init_db to create admin even if tables exist
     db.close()
+
 
 # --- User Model for Flask-Login ---
 class User(UserMixin):
@@ -197,13 +248,6 @@ def save_uploaded_file(file, upload_folder):
         return os.path.join('static', 'uploads', os.path.basename(upload_folder), unique_filename)
     return None
 
-def generate_unique_key():
-    """Generates a 4-character unique key (2 letters, 2 numbers)."""
-    letters = random.choices(string.ascii_uppercase, k=2)
-    numbers = random.choices(string.digits, k=2)
-    key_chars = letters + numbers
-    random.shuffle(key_chars)
-    return "".join(key_chars)
 
 def get_member_profile_pic(user_id):
     db = get_db()
@@ -2845,5 +2889,11 @@ if __name__ == '__main__':
         cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='users';")
         if not cursor.fetchone():
             init_db()
-        db.close()
+        else: # If tables exist, still ensure admin is present, useful for existing databases
+            # This handles cases where a database exists but the admin user might have been manually deleted
+            # or wasn't created in previous versions.
+            cursor.execute("SELECT id FROM users WHERE username = ?", (config.ADMIN_USERNAME,))
+            if not cursor.fetchone():
+                init_db() # Call init_db to create admin even if tables exist
+    db.close()
     app.run(debug=True) # Set debug=False in production
