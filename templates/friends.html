@@ -421,7 +421,8 @@
 
 <script>
     // Data passed from Flask to JavaScript
-    const allUsersForSearch = {{ all_users_for_search | tojson }};
+    // Changed to JSON.parse and | safe to prevent Jinja parsing issues
+    const allUsersForSearch = JSON.parse('{{ all_users_for_search | tojson | safe }}');
 
     document.addEventListener('DOMContentLoaded', function() {
         const searchInput = document.getElementById('searchUserInput');
