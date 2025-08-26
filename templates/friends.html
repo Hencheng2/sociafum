@@ -40,197 +40,188 @@
     }
 
     .friends-tabs-nav {
-        background-color: var(--background-light);
-        padding-top: 5px;
-        padding-bottom: 5px;
+        background-color: var(--card-background);
         border-bottom: 1px solid var(--border-color-light);
+        box-shadow: 0 1px 3px var(--shadow-soft);
+        display: flex; /* Ensure flex for tab alignment */
+        justify-content: space-around; /* Distribute tabs evenly */
+        padding: 0 10px; /* Horizontal padding for tabs */
     }
 
     .friends-tabs-nav .nav-link {
         color: var(--secondary-text);
-        font-weight: 500;
-        border: none;
-        padding: 10px 15px;
+        font-weight: 600;
+        padding: 12px 10px;
+        border-bottom: 3px solid transparent; /* Underline effect */
+        transition: color 0.2s ease, border-color 0.2s ease;
     }
 
     .friends-tabs-nav .nav-link.active {
-        color: var(--primary-color);
-        border-bottom: 2px solid var(--primary-color);
-        background-color: transparent;
-    }
-
-    .tab-pane {
-        display: none;
-    }
-
-    .tab-pane.active {
-        display: block;
+        color: var(--primary-text);
+        border-color: var(--primary-color);
     }
 
     .user-list-item {
         display: flex;
         align-items: center;
-        padding: 15px 0;
+        gap: 15px;
+        padding: 12px 15px;
+        background-color: var(--card-background);
         border-bottom: 1px solid var(--border-color-light);
-        transition: background-color 0.2s ease-in-out;
+        transition: background-color 0.2s ease;
     }
 
     .user-list-item:hover {
-        background-color: var(--hover-light);
+        background-color: var(--background-light);
     }
 
     .user-list-item:last-child {
         border-bottom: none;
     }
 
-    .user-profile-photo {
+    .user-profile-pic {
         width: 50px;
         height: 50px;
         border-radius: 50%;
         object-fit: cover;
-        margin-right: 15px;
+        border: 2px solid var(--primary-color);
+    }
+
+    .user-info {
+        flex-grow: 1;
+    }
+
+    .user-info .user-name {
+        font-weight: 600;
+        font-size: 1.1em;
+        color: var(--primary-text);
     }
 
     .user-info .username {
-        font-weight: bold;
-        color: var(--primary-text);
-        font-size: 1em;
-        margin-bottom: 2px;
-    }
-
-    .user-info .user-handle {
+        color: var(--secondary-text);
         font-size: 0.9em;
-        color: var(--secondary-text);
     }
 
-    .action-btn {
-        margin-left: auto;
-        padding: 6px 12px;
-        border-radius: 20px;
-        font-size: 0.8em;
+    .tab-content {
+        background-color: var(--card-background);
+        border-radius: 0 0 12px 12px;
+        box-shadow: 0 4px 15px var(--shadow-medium);
+        padding: 15px 0;
     }
 
-    .btn-primary-outline {
-        color: var(--primary-color);
-        background-color: transparent;
-        border: 1px solid var(--primary-color);
-    }
-
-    .btn-secondary {
-        color: #fff;
-        background-color: var(--secondary-color);
-        border-color: var(--secondary-color);
-    }
-
-    .no-content-message {
+    .empty-state {
         text-align: center;
-        padding: 40px;
         color: var(--secondary-text);
+        padding: 20px;
+        background-color: var(--background-light);
+        border-radius: 12px;
+        margin: 20px;
+    }
+    .empty-state .fas {
+        font-size: 3em;
+        margin-bottom: 10px;
     }
 </style>
 
-<div class="friends-header-sticky">
-    <div class="friends-search-bar position-relative">
-        <i class="fas fa-search search-icon"></i>
-        <input type="text" class="form-control" placeholder="Find people...">
+<div class="friends-container">
+    <div class="friends-header-sticky">
+        <h2 class="text-2xl font-bold mb-4 text-center text-gray-800 dark:text-gray-200">Friends</h2>
+        <div class="friends-search-bar relative mb-4">
+            <input type="text" class="form-control" placeholder="Search for people...">
+            <i class="fas fa-search search-icon"></i>
+        </div>
+        
+        <ul class="nav nav-tabs friends-tabs-nav" id="friendsTab" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="following-tab" data-bs-toggle="tab" data-bs-target="#following-tab-pane" type="button" role="tab" aria-controls="following-tab-pane" aria-selected="true">Following</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="followers-tab" data-bs-toggle="tab" data-bs-target="#followers-tab-pane" type="button" role="tab" aria-controls="followers-tab-pane" aria-selected="false">Followers</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="suggested-tab" data-bs-toggle="tab" data-bs-target="#suggested-tab-pane" type="button" role="tab" aria-controls="suggested-tab-pane" aria-selected="false">Suggested</button>
+            </li>
+        </ul>
     </div>
-    <ul class="nav nav-tabs friends-tabs-nav justify-content-around mt-3" id="friendsTab" role="tablist">
-        <li class="nav-item" role="presentation">
-            <button class="nav-link active" id="requests-tab" data-bs-toggle="tab" data-bs-target="#requests" type="button" role="tab" aria-controls="requests" aria-selected="true">Requests</button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link" id="following-tab" data-bs-toggle="tab" data-bs-target="#following" type="button" role="tab" aria-controls="following" aria-selected="false">Following</button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link" id="followers-tab" data-bs-toggle="tab" data-bs-target="#followers" type="button" role="tab" aria-controls="followers" aria-selected="false">Followers</button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link" id="suggested-tab" data-bs-toggle="tab" data-bs-target="#suggested" type="button" role="tab" aria-controls="suggested" aria-selected="false">Suggested</button>
-        </li>
-    </ul>
-</div>
 
-<div class="container mt-4">
     <div class="tab-content" id="friendsTabContent">
-        <div class="tab-pane fade show active" id="requests" role="tabpanel" aria-labelledby="requests-tab">
-            <div class="no-content-message">
-                No one has requested to follow you yet.
-            </div>
-            </div>
+        <div class="tab-pane fade show active" id="following-tab-pane" role="tabpanel" aria-labelledby="following-tab" tabindex="0">
+            {% if following %}
+                {% for user in following %}
+                <div class="user-list-item">
+                    <img src="{{ user.profilePhoto | get_member_profile_pic }}" alt="{{ user.username }}'s profile picture" class="user-profile-pic">
+                    <div class="user-info">
+                        <div class="user-name">{{ user.originalName }}</div>
+                        <div class="username">@{{ user.username }}</div>
+                    </div>
+                    <button class="btn btn-sm btn-primary">Unfollow</button>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="empty-state">
+                    <i class="fas fa-user-plus"></i>
+                    <p class="font-bold">You are not following anyone yet.</p>
+                    <p>Start following people to see their posts.</p>
+                </div>
+            {% endif %}
+        </div>
 
-        <div class="tab-pane fade" id="following" role="tabpanel" aria-labelledby="following-tab">
-            <div class="no-content-message">
-                You are not following anyone yet.
-            </div>
-            </div>
+        <div class="tab-pane fade" id="followers-tab-pane" role="tabpanel" aria-labelledby="followers-tab" tabindex="0">
+            {% if followers %}
+                {% for user in followers %}
+                <div class="user-list-item">
+                    <img src="{{ user.profilePhoto | get_member_profile_pic }}" alt="{{ user.username }}'s profile picture" class="user-profile-pic">
+                    <div class="user-info">
+                        <div class="user-name">{{ user.originalName }}</div>
+                        <div class="username">@{{ user.username }}</div>
+                    </div>
+                    <button class="btn btn-sm btn-outline-primary">Follow Back</button>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="empty-state">
+                    <i class="fas fa-users-slash"></i>
+                    <p class="font-bold">No one is following you yet.</p>
+                    <p>Share your profile to get followers.</p>
+                </div>
+            {% endif %}
+        </div>
 
-        <div class="tab-pane fade" id="followers" role="tabpanel" aria-labelledby="followers-tab">
-            <div class="no-content-message">
-                No one is following you yet.
-            </div>
-            </div>
-
-        <div class="tab-pane fade" id="suggested" role="tabpanel" aria-labelledby="suggested-tab">
-            <div class="no-content-message">
-                No suggestions for now.
-            </div>
-            </div>
+        <div class="tab-pane fade" id="suggested-tab-pane" role="tabpanel" aria-labelledby="suggested-tab" tabindex="0">
+            {% if suggested_users %}
+                {% for user in suggested_users %}
+                <div class="user-list-item">
+                    <img src="{{ user.profilePhoto | get_member_profile_pic }}" alt="{{ user.username }}'s profile picture" class="user-profile-pic">
+                    <div class="user-info">
+                        <div class="user-name">{{ user.originalName }}</div>
+                        <div class="username">@{{ user.username }}</div>
+                    </div>
+                    <button class="btn btn-sm btn-primary">Follow</button>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="empty-state">
+                    <i class="fas fa-search"></i>
+                    <p class="font-bold">No suggestions found.</p>
+                    <p>There are no new people to suggest right now.</p>
+                </div>
+            {% endif %}
+        </div>
     </div>
 </div>
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
+        // Find all follow/unfollow buttons inside the tab content
         const friendsTabContent = document.getElementById('friendsTabContent');
 
-        // Follow Button (Requests Tab - client-side logic)
-        friendsTabContent.querySelectorAll('.follow-btn').forEach(button => {
+        // Follow Button (Following & Suggested Tabs)
+        friendsTabContent.querySelectorAll('.btn-primary, .btn-outline-primary').forEach(button => {
             button.addEventListener('click', function(event) {
                 event.preventDefault();
                 event.stopPropagation();
                 const userId = this.dataset.userId;
-                fetch(`/accept-friend-request/${userId}`, { method: 'POST' })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            alert(data.message);
-                            window.location.reload();
-                        } else {
-                            alert('Failed to accept request: ' + data.message);
-                        }
-                    })
-                    .catch(error => console.error('Error accepting request:', error));
-            });
-        });
-
-        // Decline Button (Requests Tab - client-side logic)
-        friendsTabContent.querySelectorAll('.decline-btn').forEach(button => {
-            button.addEventListener('click', function(event) {
-                event.preventDefault();
-                event.stopPropagation();
-                const userId = this.dataset.userId;
-                if (confirm('Are you sure you want to decline this request?')) {
-                    fetch(`/decline-friend-request/${userId}`, { method: 'POST' })
-                        .then(response => response.json())
-                        .then(data => {
-                            if (data.success) {
-                                alert(data.message);
-                                window.location.reload();
-                            } else {
-                                alert('Failed to decline request: ' + data.message);
-                            }
-                        })
-                        .catch(error => console.error('Error declining request:', error));
-                }
-            });
-        });
-
-        // Add Button (Suggested Tab)
-        friendsTabContent.querySelectorAll('.add-btn').forEach(button => {
-            button.addEventListener('click', function(event) {
-                event.preventDefault();
-                event.stopPropagation();
-                const userId = this.dataset.userId;
-                fetch(`/send-friend-request/${userId}`, { method: 'POST' }) // Or /follow-user directly
+                fetch(`/send-friend-request/${userId}`, { method: 'POST' })
                     .then(response => response.json())
                     .then(data => {
                         if (data.success) {
