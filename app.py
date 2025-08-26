@@ -262,6 +262,45 @@ def get_member_profile_pic(user_id):
         return url_for('static', filename=member['profilePhoto'])
     return url_for('static', filename='img/default_profile.png')
 
+def get_mutual_connections_count(user_id1, user_id2):
+    """
+    Calculates the number of mutual 'accepted' connections between two users.
+    A connection is 'accepted' if there is a friendship entry where either user1_id or user2_id
+    is one of the users, and the status is 'accepted'.
+    """
+    db = get_db()
+    
+    # Get all users who are 'accepted' connections of user_id1
+    # This includes users who user_id1 follows AND users who follow user_id1
+    friends_of_user1_query = db.execute(
+        """
+        SELECT CASE WHEN user1_id = ? THEN user2_id ELSE user1_id END AS connected_user_id
+        FROM friendships
+        WHERE (user1_id = ? OR user2_id = ?) AND status = 'accepted'
+        """,
+        (user_id1, user_id1, user_id1)
+    )
+    friends_of_user1 = {row['connected_user_id'] for row in friends_of_user1_query}
+
+    # Get all users who are 'accepted' connections of user_id2
+    friends_of_user2_query = db.execute(
+        """
+        SELECT CASE WHEN user1_id = ? THEN user2_id ELSE user1_id END AS connected_user_id
+        FROM friendships
+        WHERE (user1_id = ? OR user2_id = ?) AND status = 'accepted'
+        """,
+        (user_id2, user_id2, user_id2)
+    )
+    friends_of_user2 = {row['connected_user_id'] for row in friends_of_user2_query}
+
+    # The intersection of these sets, excluding the users themselves, gives mutual connections
+    # We remove the users themselves in case of self-connections (which shouldn't happen with proper logic, but good for robustness)
+    mutual_connections = friends_of_user1.intersection(friends_of_user2)
+    mutual_connections.discard(user_id1)
+    mutual_connections.discard(user_id2)
+    
+    return len(mutual_connections)
+
 def get_member_from_user_id(user_id):
     db = get_db()
     member = db.execute('SELECT * FROM members WHERE user_id = ?', (user_id,)).fetchone()
