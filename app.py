@@ -681,6 +681,7 @@ def my_profile():
         'website_link': member['websiteLink'], # Assuming 'websiteLink' column exists or add it
         'relationship_status': member['maritalStatus'],
         'spouse_fiancee_name': member['spouseNames'] if member['maritalStatus'] in ['Married', 'Engaged'] else member['girlfriendNames'] if member['maritalStatus'] == 'Dating' else None,
+        'personal_relationship_description': member['personalRelationshipDescription'], # Added this line for the new field
         
         # Placeholder counts - Replace with actual database queries
         'friends_count': 0, 
@@ -694,7 +695,8 @@ def my_profile():
             member['dateOfBirth'], member['gender'], member['pronouns'], member['workInfo'],
             member['university'], member['secondary'], member['location'],
             member['contact'], member['email'], member['socialLink'], member['websiteLink'],
-            member['maritalStatus'], member['spouseNames'], member['girlfriendNames']
+            member['maritalStatus'], member['spouseNames'], member['girlfriendNames'],
+            member['personalRelationshipDescription'] # Added for consistency
         ])
     }
     
@@ -736,7 +738,23 @@ def edit_my_details():
     current_user_profile = {
         'profile_pic': get_member_profile_pic(current_user.id),
         'real_name': member['fullName'] if member else current_user.original_name,
-        # Add other fields as needed by edit_my_details.html
+        # Default empty strings for fields that might be None in the database,
+        # so Jinja doesn't throw errors when accessing them
+        'bio': member['bio'] if member else '',
+        'dob': member['dateOfBirth'] if member else '',
+        'gender': member['gender'] if member else '',
+        'pronouns': member['pronouns'] if member else '',
+        'work_info': member['workInfo'] if member else '',
+        'university': member['university'] if member else '',
+        'secondary': member['secondary'] if member else '',
+        'location': member['location'] if member else '',
+        'phone': member['contact'] if member else '',
+        'email': member['email'] if member else '',
+        'social_link': member['socialLink'] if member else '',
+        'website_link': member['websiteLink'] if member else '',
+        'relationship_status': member['maritalStatus'] if member else '',
+        'spouse_fiancee_name': member['spouseNames'] if member and member['maritalStatus'] in ['Married', 'Engaged'] else (member['girlfriendNames'] if member and member['maritalStatus'] == 'Dating' else ''),
+        'personal_relationship_description': member['personalRelationshipDescription'] if member else '', # Added
     }
 
     form_data = {}
@@ -744,9 +762,11 @@ def edit_my_details():
     if member:
         form_data = dict(member) # Pre-populate form with existing data
         # Ensure date format is YYYY-MM-DD for HTML input
+        # The database stores it as 'YYYY-MM-DD' directly from HTML input type="date"
+        # So, we just need to ensure it's a string. No complex parsing/reformatting is needed for display.
         if form_data.get('dateOfBirth'):
-            form_data['dateOfBirth'] = datetime.strptime(form_data['dateOfBirth'], '%Y-%m-%d %H:%M:%S.%f').strftime('%Y-%m-%d')
-
+            form_data['dateOfBirth'] = str(form_data['dateOfBirth']) # Ensure it's a string, already YYYY-MM-DD
+            
     # Pass the current year to the template
     current_year = datetime.now(timezone.utc).year
     if request.method == 'POST':
