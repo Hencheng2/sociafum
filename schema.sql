@@ -75,6 +75,14 @@ CREATE TABLE members (
     spouseNames TEXT,                       -- Names of spouses if applicable
     girlfriendNames TEXT,                   -- Names of partners if applicable (e.g., for 'Engaged' status)
     association TEXT,                       -- For family tree relationships (e.g., 'Mother', 'Brother')
+    -- ADDED COLUMNS
+    pronouns TEXT DEFAULT '',               -- User's preferred pronouns
+    workInfo TEXT DEFAULT '',               -- User's work/employment information
+    university TEXT DEFAULT '',             -- User's university information
+    secondary TEXT DEFAULT '',              -- User's secondary school information
+    location TEXT DEFAULT '',               -- User's current location
+    socialLink TEXT DEFAULT '',             -- Link to other social media profiles
+    websiteLink TEXT DEFAULT '',            -- Link to personal website/blog
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
