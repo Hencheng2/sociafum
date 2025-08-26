@@ -1081,151 +1081,157 @@ def api_unfriend(friend_id):
 @login_required
 def friends():
     db = get_db()
+    current_user_id = current_user.id
 
-    # --- Incoming Friend Requests ---
-    # These are requests sent TO the current user.
-    incoming_requests_data = db.execute(
-        """
-        SELECT f.id AS request_id, u.id AS sender_id, u.username, u.originalName, m.profilePhoto
-        FROM friendships f
-        JOIN users u ON f.user1_id = u.id
-        LEFT JOIN members m ON u.id = m.user_id
-        WHERE f.user2_id = ? AND f.status = 'pending'
-        """,
-        (current_user.id,)
-    ).fetchall()
-    requests_for_template = []
-    for req in incoming_requests_data:
-        req_dict = dict(req)
-        req_dict['id'] = req_dict['sender_id'] # Map sender_id to 'id' for consistent template access
-        req_dict['profile_pic'] = get_member_profile_pic(req_dict['sender_id'])
-        req_dict['real_name'] = req_dict['originalName']
-        req_dict['mutual_friends_count'] = 0 # Placeholder for now, can be calculated later
-        requests_for_template.append(req_dict)
+    # Helper function to format user data for consistency across lists
+    def format_user_for_template(user_row, other_user_id_for_mutual_count):
+        user_dict = dict(user_row)
+        user_dict['profile_pic'] = get_member_profile_pic(user_dict['id'])
+        user_dict['real_name'] = user_dict['originalName']
+        user_dict['mutual_friends_count'] = get_mutual_connections_count(current_user_id, other_user_id_for_mutual_count)
+        return user_dict
 
-
-    # --- Accepted Friends (Mutual Connections) ---
-    # These are users who have an 'accepted' friendship with current_user.
-    # The 'Friends' tab likely implies mutual connections.
-    accepted_friends_data = db.execute(
+    # --- 1. All Users for Search (for client-side filtering) ---
+    # Fetches all non-admin, non-current users. Includes all potential users for search, regardless of current relationship.
+    all_users_for_search_data = db.execute(
         """
         SELECT u.id, u.username, u.originalName, m.profilePhoto
-        FROM friendships f
-        JOIN users u ON CASE WHEN f.user1_id = ? THEN f.user2_id ELSE f.user1_id END = u.id
+        FROM users u
         LEFT JOIN members m ON u.id = m.user_id
-        WHERE (f.user1_id = ? OR f.user2_id = ?) AND f.status = 'accepted'
+        WHERE u.id != ? AND u.is_admin = 0
+        ORDER BY u.originalName ASC, u.username ASC
         """,
-        (current_user.id, current_user.id, current_user.id)
+        (current_user_id,)
     ).fetchall()
-    friends_for_template = []
-    for friend in accepted_friends_data:
-        friend_dict = dict(friend)
-        friend_dict['profile_pic'] = get_member_profile_pic(friend_dict['id'])
-        friend_dict['real_name'] = friend_dict['originalName']
-        friend_dict['mutual_friends_count'] = 0 # Placeholder
-        friends_for_template.append(friend_dict)
+    # Format each user with their mutual connections count with the current user
+    all_users_for_search = [format_user_for_template(user, user['id']) for user in all_users_for_search_data]
 
 
-    # --- Followers (Users who follow current_user) ---
+    # --- 2. Followers (Users who follow current_user) ---
     # These are users who sent a request to current_user AND it was accepted.
     followers_data = db.execute(
         """
-        SELECT u.id, u.username, u.originalName, m.profilePhoto
+        SELECT f.user1_id AS id, u.username, u.originalName, m.profilePhoto
         FROM friendships f
         JOIN users u ON f.user1_id = u.id
         LEFT JOIN members m ON u.id = m.user_id
         WHERE f.user2_id = ? AND f.status = 'accepted'
+        ORDER BY u.originalName ASC, u.username ASC
         """,
-        (current_user.id,)
+        (current_user_id,)
     ).fetchall()
-    followers_for_template = []
-    for follower in followers_data:
-        follower_dict = dict(follower)
-        follower_dict['profile_pic'] = get_member_profile_pic(follower_dict['id'])
-        follower_dict['real_name'] = follower_dict['originalName']
-        follower_dict['mutual_friends_count'] = 0 # Placeholder
-        followers_for_template.append(follower_dict)
+    followers_for_template = [format_user_for_template(follower, follower['id']) for follower in followers_data]
 
 
-    # --- Following (Users current_user follows) ---
+    # --- 3. Following (Users current_user follows) ---
     # These are users to whom current_user sent a request AND it was accepted.
     following_data = db.execute(
         """
-        SELECT u.id, u.username, u.originalName, m.profilePhoto
+        SELECT f.user2_id AS id, u.username, u.originalName, m.profilePhoto
         FROM friendships f
         JOIN users u ON f.user2_id = u.id
         LEFT JOIN members m ON u.id = m.user_id
         WHERE f.user1_id = ? AND f.status = 'accepted'
+        ORDER BY u.originalName ASC, u.username ASC
         """,
-        (current_user.id,)
+        (current_user_id,)
     ).fetchall()
-    following_for_template = []
-    for followed_user in following_data:
-        followed_user_dict = dict(followed_user)
-        followed_user_dict['profile_pic'] = get_member_profile_pic(followed_user_dict['id'])
-        followed_user_dict['real_name'] = followed_user_dict['originalName']
-        followed_user_dict['mutual_friends_count'] = 0 # Placeholder
-        following_for_template.append(followed_user_dict)
+    following_for_template = [format_user_for_template(followed_user, followed_user['id']) for followed_user in following_data]
 
 
-    # --- Suggested Users ---
-    # Users not currently in any friendship (pending or accepted) with current_user, and not current_user itself.
-    
-    # Get all users connected to current_user (including self)
-    connected_user_ids_raw = db.execute(
+    # --- 4. Friends (Mutual Following: current_user follows X AND X follows current_user) ---
+    # This means a user X is present in both the 'followers_for_template' and 'following_for_template' lists.
+    # We find the intersection of user IDs from these two lists to get mutual friends.
+    follower_ids = {f['id'] for f in followers_for_template}
+    following_ids = {f['id'] for f in following_for_template}
+    mutual_friend_ids = follower_ids.intersection(following_ids)
+
+    friends_for_template = []
+    if mutual_friend_ids:
+        # Convert the set of IDs to a tuple for use in an SQL IN clause.
+        # Handle single-item tuple carefully if needed, though SQL usually manages.
+        # Directly filtering the already formatted lists for simplicity.
+        friends_for_template = [user for user in followers_for_template if user['id'] in mutual_friend_ids]
+        # Or you could re-query:
+        # mutual_friend_ids_str = ','.join(map(str, mutual_friend_ids))
+        # mutual_friends_data = db.execute(
+        #     f"SELECT u.id, u.username, u.originalName, m.profilePhoto FROM users u LEFT JOIN members m ON u.id = m.user_id WHERE u.id IN ({mutual_friend_ids_str})"
+        # ).fetchall()
+        # friends_for_template = [format_user_for_template(friend, friend['id']) for friend in mutual_friends_data]
+
+
+    # --- 5. Friend Requests (Pending requests TO current_user) ---
+    friend_requests_data = db.execute(
         """
-        SELECT user1_id AS user_id FROM friendships WHERE user2_id = ?
-        UNION
-        SELECT user2_id AS user_id FROM friendships WHERE user1_id = ?
-        UNION
-        SELECT ? AS user_id -- Add current_user's ID to exclude
+        SELECT f.id AS request_id, u.id AS id, u.username, u.originalName, m.profilePhoto
+        FROM friendships f
+        JOIN users u ON f.user1_id = u.id
+        LEFT JOIN members m ON u.id = m.user_id
+        WHERE f.user2_id = ? AND f.status = 'pending'
+        ORDER BY u.originalName ASC, u.username ASC
         """,
-        (current_user.id, current_user.id, current_user.id)
+        (current_user_id,)
     ).fetchall()
-    connected_user_ids = {u['user_id'] for u in connected_user_ids_raw}
+    requests_for_template = []
+    for req in friend_requests_data:
+        # For requests, 'id' in the template refers to the sender's ID for actions
+        req_dict = dict(req)
+        req_dict['profile_pic'] = get_member_profile_pic(req_dict['id'])
+        req_dict['real_name'] = req_dict['originalName']
+        req_dict['mutual_friends_count'] = get_mutual_connections_count(current_user_id, req_dict['id'])
+        requests_for_template.append(req_dict)
 
 
-    # Construct the IN clause for the SQL query dynamically
+    # --- 6. Suggested Users ---
+    # Users who are not the current_user, not an admin, and not already involved in any friendship
+    # (pending or accepted) with the current_user.
+    
+    # Get all IDs of users current_user is already connected to or has a pending request with (including self)
+    connected_user_ids_query = db.execute(
+        """
+        SELECT user1_id AS id FROM friendships WHERE user2_id = ?
+        UNION
+        SELECT user2_id AS id FROM friendships WHERE user1_id = ?
+        UNION
+        SELECT ? AS id -- Add current_user's own ID to exclude
+        """,
+        (current_user_id, current_user_id, current_user_id)
+    ).fetchall()
+    connected_user_ids = {row['id'] for row in connected_user_ids_query}
+
+    # Build WHERE clause to exclude connected users and admins
     if connected_user_ids:
-        # Convert set of IDs to a comma-separated string for SQL IN clause
-        # Ensure that the IDs are cast to integers before joining to prevent SQL injection (though they come from DB here)
         exclude_ids_str = ','.join(map(str, connected_user_ids))
-        where_clause = f"WHERE u.id NOT IN ({exclude_ids_str})"
+        where_clause_exclude = f"AND u.id NOT IN ({exclude_ids_str})"
     else:
-        # If no connected users, still exclude current user and admins
-        where_clause = f"WHERE u.id != {current_user.id}" # Exclude current_user if no friendships exist
+        where_clause_exclude = "" # No existing connections to exclude
 
     suggested_users_data = db.execute(
         f"""
         SELECT u.id, u.username, u.originalName, m.profilePhoto
         FROM users u
         LEFT JOIN members m ON u.id = m.user_id
-        {where_clause} AND u.is_admin = 0
-        ORDER BY u.originalName
-        """
+        WHERE u.id != ? AND u.is_admin = 0 {where_clause_exclude}
+        ORDER BY u.originalName ASC, u.username ASC
+        """,
+        (current_user_id,)
     ).fetchall()
-    
-    suggested_for_template = []
-    for sug_user in suggested_users_data:
-        sug_user_dict = dict(sug_user)
-        sug_user_dict['profile_pic'] = get_member_profile_pic(sug_user_dict['id'])
-        sug_user_dict['real_name'] = sug_user_dict['originalName']
-        sug_user_dict['mutual_friends_count'] = 0 # Placeholder
-        suggested_for_template.append(sug_user_dict)
-
+    suggested_for_template = [format_user_for_template(sug_user, sug_user['id']) for sug_user in suggested_users_data]
 
     current_year = datetime.now(timezone.utc).year
     return render_template('friends.html',
-                           requests=requests_for_template, # Renamed to 'requests' to match template
-                           friends=friends_for_template, # Renamed to 'friends' to match template
+                           all_users_for_search=all_users_for_search, # For the search tab
                            followers=followers_for_template,
                            following=following_for_template,
+                           friends=friends_for_template, # Mutual friends
+                           requests=requests_for_template,
                            suggested=suggested_for_template,
-                           # Pass counts for badges
+                           # Pass counts for badges in the navbar
                            followers_count=len(followers_for_template),
                            following_count=len(following_for_template),
                            friends_count=len(friends_for_template),
                            requests_count=len(requests_for_template),
+                           suggested_count=len(suggested_for_template),
                            current_year=current_year)
 
 
