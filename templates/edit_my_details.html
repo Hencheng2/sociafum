@@ -200,8 +200,15 @@
             {# Username #}
             <div class="form-group">
                 <label for="username" class="form-label">Username</label>
-                <input type="text" class="form-control" id="username" name="username" value="{{ current_user.username }}" required readonly title="Username cannot be changed directly here.">
+                {# Username is read-only, its value comes from current_user.username #}
+                <input type="text" class="form-control" id="username" name="username_display" value="{{ current_user.username }}" required readonly title="Username cannot be changed directly here.">
                 <small class="form-text text-muted">Username is unique and currently cannot be changed directly.</small>
+            </div>
+
+            {# Full Name - Added for consistency with members.fullName in app.py #}
+            <div class="form-group">
+                <label for="fullName" class="form-label">Full Name</label>
+                <input type="text" class="form-control" id="fullName" name="fullName" value="{{ current_user_profile.real_name }}" placeholder="Your full name" required>
             </div>
 
             {# Biography #}
@@ -216,8 +223,8 @@
             <h3>Basic Info</h3>
             {# Date of Birth #}
             <div class="form-group">
-                <label for="dob" class="form-label">Date of Birth</label>
-                <input type="date" class="form-control" id="dob" name="dob" value="{{ current_user_profile.dob }}">
+                <label for="dateOfBirth" class="form-label">Date of Birth</label>
+                <input type="date" class="form-control" id="dateOfBirth" name="dateOfBirth" value="{{ current_user_profile.dob }}">
             </div>
 
             {# Gender #}
@@ -250,8 +257,8 @@
             <h3>Work & Education</h3>
             {# Work Info #}
             <div class="form-group">
-                <label for="work_info" class="form-label">Work Information</label>
-                <input type="text" class="form-control" id="work_info" name="work_info" value="{{ current_user_profile.work_info }}" placeholder="e.g., Software Engineer at Google">
+                <label for="workInfo" class="form-label">Work Information</label>
+                <input type="text" class="form-control" id="workInfo" name="workInfo" value="{{ current_user_profile.work_info }}" placeholder="e.g., Software Engineer at Google">
             </div>
 
             {# University #}
@@ -280,8 +287,8 @@
             <h3>Contact Information</h3>
             {# Phone Number #}
             <div class="form-group">
-                <label for="phone" class="form-label">Phone Number</label>
-                <input type="tel" class="form-control" id="phone" name="phone" value="{{ current_user_profile.phone }}" placeholder="e.g., +254712345678">
+                <label for="contact" class="form-label">Phone Number</label>
+                <input type="tel" class="form-control" id="contact" name="contact" value="{{ current_user_profile.phone }}" placeholder="e.g., +254712345678">
             </div>
 
             {# Email #}
@@ -292,19 +299,19 @@
 
             {# Social Link #}
             <div class="form-group">
-                <label for="social_link" class="form-label">Social Media Link</label>
+                <label for="socialLink" class="form-label">Social Media Link</label>
                 <div class="input-group">
                     <span class="input-group-text"><i class="fas fa-link"></i></span>
-                    <input type="url" class="form-control" id="social_link" name="social_link" value="{{ current_user_profile.social_link }}" placeholder="e.g., https://instagram.com/yourprofile">
+                    <input type="url" class="form-control" id="socialLink" name="socialLink" value="{{ current_user_profile.social_link }}" placeholder="e.g., https://instagram.com/yourprofile">
                 </div>
             </div>
 
             {# Website Link #}
             <div class="form-group">
-                <label for="website_link" class="form-label">Personal Website Link</label>
+                <label for="websiteLink" class="form-label">Personal Website Link</label>
                 <div class="input-group">
                     <span class="input-group-text"><i class="fas fa-globe"></i></span>
-                    <input type="url" class="form-control" id="website_link" name="website_link" value="{{ current_user_profile.website_link }}" placeholder="e.g., https://yourwebsite.com">
+                    <input type="url" class="form-control" id="websiteLink" name="websiteLink" value="{{ current_user_profile.website_link }}" placeholder="e.g., https://yourwebsite.com">
                 </div>
             </div>
 
@@ -313,8 +320,8 @@
             <h3>Relationship</h3>
             {# Relationship Status #}
             <div class="form-group">
-                <label for="relationship_status" class="form-label">Relationship Status</label>
-                <select class="form-select" id="relationship_status" name="relationship_status">
+                <label for="maritalStatus" class="form-label">Relationship Status</label>
+                <select class="form-select" id="maritalStatus" name="maritalStatus">
                     <option value="">Select Status</option>
                     <option value="Single" {% if current_user_profile.relationship_status == 'Single' %}selected{% endif %}>Single</option>
                     <option value="In a relationship" {% if current_user_profile.relationship_status == 'In a relationship' %}selected{% endif %}>In a relationship</option>
@@ -328,10 +335,18 @@
 
             {# Spouse/Fiancee Name (Conditional) #}
             <div class="form-group" id="spouseFianceeField" style="display:none;">
-                <label for="spouse_fiancee_name" class="form-label" id="spouseFianceeLabel">Spouse/Fiancée's Name</label>
-                <input type="text" class="form-control" id="spouse_fiancee_name" name="spouse_fiancee_name" value="{{ current_user_profile.spouse_fiancee_name }}" placeholder="Tag your partner using @username">
+                <label for="spouseNames" class="form-label" id="spouseFianceeLabel">Spouse/Fiancée's Name</label>
+                <input type="text" class="form-control" id="spouseNames" name="spouseNames" value="{{ current_user_profile.spouse_fiancee_name }}" placeholder="Tag your partner using @username">
                 <small class="form-text text-muted">You can tag your partner using their @username.</small>
             </div>
+            
+            {# Personal Relationship Description #}
+            <div class="form-group">
+                <label for="personalRelationshipDescription" class="form-label">Personal Relationship Description</label>
+                <textarea class="form-control" id="personalRelationshipDescription" name="personalRelationshipDescription" rows="3" placeholder="Describe your relationship...">{{ current_user_profile.personal_relationship_description }}</textarea>
+                <small class="form-text text-muted">Describe your relationship status in more detail.</small>
+            </div>
+
 
             <div class="d-grid gap-2 mt-5">
                 <button type="submit" class="btn btn-primary btn-submit">Save Changes</button>
@@ -364,18 +379,21 @@
         }
 
         // --- Conditional Spouse/Fiancee Field ---
-        const relationshipStatusSelect = document.getElementById('relationship_status');
+        const relationshipStatusSelect = document.getElementById('maritalStatus'); // Changed ID to match name
         const spouseFianceeField = document.getElementById('spouseFianceeField');
         const spouseFianceeLabel = document.getElementById('spouseFianceeLabel');
+        const spouseFianceeInput = document.getElementById('spouseNames'); // Changed ID to match name
 
         function toggleSpouseFianceeField() {
             const selectedStatus = relationshipStatusSelect.value;
             if (selectedStatus === 'Engaged' || selectedStatus === 'Married') {
                 spouseFianceeField.style.display = 'block';
                 spouseFianceeLabel.textContent = selectedStatus === 'Engaged' ? "Fiancée's Name" : "Spouse's Name";
+                // If it's "Dating", show a different input or just default to partner's name
+                // Your app.py also checks for 'girlfriendNames' for 'Dating' status, you might want to adjust this.
             } else {
                 spouseFianceeField.style.display = 'none';
-                document.getElementById('spouse_fiancee_name').value = ''; // Clear value when hidden
+                spouseFianceeInput.value = ''; // Clear value when hidden
             }
         }
 
