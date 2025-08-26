@@ -140,7 +140,7 @@ def init_db():
             admin_user_id = cursor.lastrowid
             
             # Also create a member profile for the admin
-            cursor.execute(
+            db.execute(
                 """
                 INSERT INTO members (user_id, fullName, gender)
                 VALUES (?, ?, ?)
@@ -352,7 +352,7 @@ def send_system_notification(receiver_id, message, link=None, type='system_messa
     try:
         db.execute(
             "INSERT INTO notifications (receiver_id, type, message, link, timestamp, is_read) VALUES (?, ?, ?, ?, ?, ?)",
-            (receiver_id, type, message, link, datetime.now(timezone.utc), 0)
+            (receiver_id, type, message, datetime.now(timezone.utc), 0) # Removed link, not explicitly in schema
         )
         db.commit()
         app.logger.info(f"System notification sent to user {receiver_id}: {message}")
@@ -371,6 +371,12 @@ def get_admin_user_id():
 @app.route('/')
 @app.route('/home')
 def home():
+    # Placeholder for posts and stories data
+    stories = [] # Fetch actual stories
+    for_you_posts = [] # Fetch actual 'for you' posts
+    following_posts = [] # Fetch actual 'following' posts
+    explore_posts = [] # Fetch actual 'explore' posts
+
     background_image = url_for('static', filename='img/default_background.jpg') # Default background
     member = None
     if current_user.is_authenticated:
@@ -378,10 +384,27 @@ def home():
         # You could also load a user-specific background here
         if current_user.chat_background_image_path:
             background_image = current_user.chat_background_image_path
+        
+        # Populate dummy data for now
+        # You'll replace these with actual database queries
+        # Example structure for stories
+        stories = [
+            {'id': 1, 'type': 'image', 'media_url': url_for('static', filename='img/post1.jpg'), 'profile_pic': url_for('static', filename='img/default_profile.png'), 'username': 'user1'},
+            {'id': 2, 'type': 'video', 'media_url': url_for('static', filename='videos/reel1.mp4'), 'profile_pic': url_for('static', filename='img/default_profile.png'), 'username': 'user2'},
+        ]
+        # Example structure for posts
+        for_you_posts = [
+            {'id': 1, 'profile_pic': url_for('static', filename='img/default_profile.png'), 'username': 'user3', 'real_name': 'User Three', 'timestamp': datetime.now(timezone.utc) - timedelta(hours=1), 'media_url': url_for('static', filename='img/post2.jpg'), 'description': 'Beautiful day out!', 'likes_count': 10, 'comments_count': 2, 'views_count': 50},
+            {'id': 2, 'profile_pic': url_for('static', filename='img/default_profile.png'), 'username': 'user4', 'real_name': 'User Four', 'timestamp': datetime.now(timezone.utc) - timedelta(hours=3), 'media_url': None, 'description': 'Just thinking about life...', 'likes_count': 5, 'comments_count': 1, 'views_count': 20},
+        ]
+        following_posts = for_you_posts # Same for now
+        explore_posts = for_you_posts # Same for now
+
     
     # Pass the current year to the template
     current_year = datetime.now(timezone.utc).year
-    return render_template('index.html', background_image=background_image, member=member, current_year=current_year)
+    return render_template('index.html', background_image=background_image, member=member, current_year=current_year,
+                           stories=stories, for_you_posts=for_you_posts, following_posts=following_posts, explore_posts=explore_posts)
 
 
 # --- Authentication Routes ---
@@ -631,21 +654,76 @@ def change_password():
 @app.route('/my_profile')
 @login_required
 def my_profile():
+    db = get_db()
     member = current_user.get_member_profile()
+    
     if not member:
         flash("Please complete your personal details first.", 'info')
         return redirect(url_for('edit_my_details'))
 
-    db = get_db()
+    # Prepare current_user_profile for the template
+    current_user_profile = {
+        'id': current_user.id,
+        'username': current_user.username,
+        'real_name': member['fullName'] or current_user.original_name,
+        'profile_pic': get_member_profile_pic(current_user.id),
+        'bio': member['bio'],
+        'dob': member['dateOfBirth'],
+        'gender': member['gender'],
+        'pronouns': member['pronouns'], # Assuming 'pronouns' column exists or add it
+        'work_info': member['workInfo'], # Assuming 'workInfo' column exists or add it
+        'university': member['university'], # Assuming 'university' column exists or add it
+        'secondary': member['secondary'], # Assuming 'secondary' column exists or add it
+        'location': member['location'], # Assuming 'location' column exists or add it
+        'phone': member['contact'],
+        'email': member['email'],
+        'social_link': member['socialLink'], # Assuming 'socialLink' column exists or add it
+        'website_link': member['websiteLink'], # Assuming 'websiteLink' column exists or add it
+        'relationship_status': member['maritalStatus'],
+        'spouse_fiancee_name': member['spouseNames'] if member['maritalStatus'] in ['Married', 'Engaged'] else member['girlfriendNames'] if member['maritalStatus'] == 'Dating' else None,
+        
+        # Placeholder counts - Replace with actual database queries
+        'friends_count': 0, 
+        'followers_count': 0,
+        'following_count': 0,
+        'likes_count': 0,
+        'posts_count': 0,
+
+        # Determine if any additional info exists for the template
+        'has_any_additional_info': any([
+            member['dateOfBirth'], member['gender'], member['pronouns'], member['workInfo'],
+            member['university'], member['secondary'], member['location'],
+            member['contact'], member['email'], member['socialLink'], member['websiteLink'],
+            member['maritalStatus'], member['spouseNames'], member['girlfriendNames']
+        ])
+    }
+    
     # Fetch user details associated with the member (e.g., unique_key)
     user_details = db.execute("SELECT unique_key FROM users WHERE id = ?", (current_user.id,)).fetchone()
 
-    # No 'statuses' table or 'story-viewer.html', so no specific rendering for temporary video status beyond general stories.
-    temp_video = None
+    # Placeholder for different content types on profile
+    my_posts = []
+    my_locked_posts = []
+    my_saved_items = []
+    my_reposts = []
+    my_liked_items = []
+    my_reels = []
 
     # Pass the current year to the template
     current_year = datetime.now(timezone.utc).year
-    return render_template('my_profile.html', member=member, unique_key=user_details['unique_key'] if user_details else None, current_year=current_year)
+    return render_template(
+        'my_profile.html',
+        member=member, # Still pass the raw member data for backward compatibility or direct use if needed
+        current_user_profile=current_user_profile, # The comprehensive profile dict
+        unique_key=user_details['unique_key'] if user_details else None, # Duplicated for clarity, can be removed if profile dict is used
+        current_year=current_year,
+        my_posts=my_posts,
+        my_locked_posts=my_locked_posts,
+        my_saved_items=my_saved_items,
+        my_reposts=my_reposts,
+        my_liked_items=my_liked_items,
+        my_reels=my_reels
+    )
 
 
 @app.route('/edit_my_details', methods=['GET', 'POST'])
@@ -823,7 +901,7 @@ def api_send_friend_request(receiver_id):
             send_system_notification(
                 receiver_id,
                 message,
-                link=url_for('friends'), # Link to friends page to accept
+                # link=url_for('friends'), # Removed link, not explicitly in schema
                 type='friend_request'
             )
         return jsonify({'success': True, 'message': 'Friend request sent!'})
@@ -858,7 +936,7 @@ def api_accept_friend_request(request_id):
             send_system_notification(
                 friendship['user1_id'],
                 message,
-                link=url_for('profile', username=current_user.username),
+                # link=url_for('profile', username=current_user.username), # Removed link, not explicitly in schema
                 type='friend_accepted'
             )
         return jsonify({'success': True, 'message': 'Friend request accepted!'})
@@ -1295,7 +1373,7 @@ def api_send_chat_message(chat_room_id):
             send_system_notification(
                 member['user_id'],
                 message_text,
-                link=url_for('view_chat', chat_room_id=chat_room_id), # Changed to view_chat
+                # link=url_for('view_chat', chat_room_id=chat_room_id), # Removed link, not explicitly in schema
                 type='message_received'
             )
 
@@ -1388,7 +1466,7 @@ def create_group():
                     send_system_notification(
                         friend_id,
                         message,
-                        link=url_for('view_group_profile', group_id=group_id),
+                        # link=url_for('view_group_profile', group_id=group_id), # Removed link, not explicitly in schema
                         type='group_invite'
                     )
 
@@ -1644,7 +1722,7 @@ def reels():
     # For now, a placeholder, but this would query the 'reels' table
     all_reels_data = db.execute(
         """
-        SELECT r.*, u.username, m.profilePhoto
+        SELECT r.*, u.username, m.profilePhoto AS owner_profile_pic, u.originalName AS owner_original_name
         FROM reels r
         JOIN users u ON r.user_id = u.id
         LEFT JOIN members m ON u.id = m.user_id
@@ -1659,7 +1737,7 @@ def reels():
     reels_to_display = []
     for reel_item in all_reels_data:
         reel_dict = dict(reel_item)
-        reel_dict['profilePhoto'] = get_member_profile_pic(reel_dict['user_id'])
+        reel_dict['owner_profile_pic'] = get_member_profile_pic(reel_dict['user_id'])
         reels_to_display.append(reel_dict)
 
     # Pass the current year to the template
@@ -1903,9 +1981,9 @@ def account_status():
     
     temporary_ban = None
     permanent_ban = None
-    if user_data['ban_status'] == 'temporary' and user_data['ban_ends_at'] and datetime.fromisoformat(user_data['ban_ends_at']) > datetime.now(timezone.utc):
+    if user_data and user_data['ban_status'] == 'temporary' and user_data['ban_ends_at'] and datetime.fromisoformat(user_data['ban_ends_at']) > datetime.now(timezone.utc):
         temporary_ban = {'ends_at': user_data['ban_ends_at'], 'reason': user_data['ban_reason']}
-    elif user_data['ban_status'] == 'permanent':
+    elif user_data and user_data['ban_status'] == 'permanent':
         permanent_ban = {'reason': user_data['ban_reason']}
 
     # Determine overall account health
@@ -2026,7 +2104,7 @@ def api_send_support_message_user(chat_id):
             send_system_notification(
                 admin_user_id,
                 message_text,
-                link=url_for('admin_support_chat', chat_id=chat_id),
+                # link=url_for('admin_support_chat', chat_id=chat_id), # Removed link, not explicitly in schema
                 type='message_received'
             )
 
@@ -2372,68 +2450,6 @@ def admin_dashboard():
     )
 
 
-@app.route('/admin_support_chat/<int:chat_id>', methods=['GET'])
-@admin_required
-def admin_support_chat(chat_id):
-    db = get_db()
-    admin_user_id = get_admin_user_id()
-    if not admin_user_id:
-        flash('Support system not fully configured (admin user not found).', 'danger')
-        return redirect(url_for('admin_dashboard'))
-
-    # Verify this chat is a 1-on-1 chat with admin, and find the other user
-    chat_room_members = db.execute(
-        "SELECT user_id FROM chat_room_members WHERE chat_room_id = ?", (chat_id,)
-    ).fetchall()
-
-    if len(chat_room_members) != 2: # Must be a 1-on-1 chat
-        flash('Invalid chat room for support.', 'danger')
-        return redirect(url_for('admin_dashboard'))
-
-    other_user_id = None
-    for member in chat_room_members:
-        if member['user_id'] != admin_user_id:
-            other_user_id = member['user_id']
-            break
-
-    if not other_user_id:
-        flash('Error identifying user in support chat.', 'danger')
-        return redirect(url_for('admin_dashboard'))
-
-    user_for_chat = load_user(other_user_id)
-    if not user_for_chat:
-        flash('User in chat not found.', 'danger')
-        return redirect(url_for('admin_dashboard'))
-
-    user_for_chat_member = get_member_from_user_id(user_for_chat.id)
-    user_for_chat.profile_pic = get_member_profile_pic(user_for_chat.id)
-    user_for_chat.real_name = user_for_chat_member['fullName'] if user_for_chat_member else user_for_chat.username
-
-    # Fetch messages
-    messages = db.execute(
-        """
-        SELECT cm.*, u.username, m.profilePhoto
-        FROM chat_messages cm
-        JOIN users u ON cm.sender_id = u.id
-        LEFT JOIN members m ON u.id = m.user_id
-        WHERE cm.chat_room_id = ?
-        ORDER BY cm.timestamp
-        """,
-        (chat_id,)
-    ).fetchall()
-
-    # Mark messages as read for admin
-    db.execute(
-        "UPDATE chat_room_members SET last_read_message_timestamp = ? WHERE chat_room_id = ? AND user_id = ?",
-        (datetime.now(timezone.utc), chat_id, admin_user_id)
-    )
-    db.commit()
-
-    # Pass the current year to the template
-    current_year = datetime.now(timezone.utc).year
-    return render_template('admin_support_chat.html', chat_messages=messages, user_for_chat=user_for_chat, admin_user_id=admin_user_id, chat_id=chat_id, current_year=current_year)
-
-
 @app.route('/api/admin/send_support_message/<int:chat_id>', methods=['POST'])
 @admin_required
 def api_admin_send_support_message(chat_id):
@@ -2479,7 +2495,7 @@ def api_admin_send_support_message(chat_id):
             send_system_notification(
                 other_user_id,
                 message_text,
-                link=url_for('support_inbox'), # Link to user's support inbox
+                # link=url_for('support_inbox'), # Removed link, not explicitly in schema
                 type='message_received' # Re-using type, could be 'admin_response'
             )
 
@@ -2513,7 +2529,7 @@ def api_admin_warn_user(user_id):
             send_system_notification(
                 user_id,
                 notification_message,
-                link=url_for('account_status'),
+                # link=url_for('account_status'), # Removed link, not explicitly in schema
                 type='warning'
             )
         return jsonify({'success': True, 'message': 'User warned successfully.'})
@@ -2560,7 +2576,7 @@ def api_admin_ban_user(user_id):
             send_system_notification(
                 user_id,
                 notification_message,
-                link=url_for('account_status'),
+                # link=url_for('account_status'), # Removed link, not explicitly in schema
                 type='danger' # Or 'ban_notification'
             )
         return jsonify({'success': True, 'message': 'User banned successfully.'})
@@ -2587,7 +2603,7 @@ def api_admin_unban_user(user_id):
             send_system_notification(
                 user_id,
                 notification_message,
-                link=url_for('home'),
+                # link=url_for('home'), # Removed link, not explicitly in schema
                 type='info' # Or 'unban_notification'
             )
         return jsonify({'success': True, 'message': 'User unbanned successfully.'})
@@ -2651,7 +2667,7 @@ def api_admin_ban_group(group_id):
                 send_system_notification(
                     member['user_id'],
                     message,
-                    link=url_for('home'), # Link to home, as group profile might be inaccessible
+                    # link=url_for('home'), # Removed link, not explicitly in schema
                     type='danger'
                 )
         return jsonify({'success': True, 'message': 'Group banned successfully.'})
@@ -2680,7 +2696,7 @@ def api_admin_unban_group(group_id):
                 send_system_notification(
                     member['user_id'],
                     message,
-                    link=url_for('view_group_profile', group_id=group_id),
+                    # link=url_for('view_group_profile', group_id=group_id), # Removed link, not explicitly in schema
                     type='info'
                 )
         return jsonify({'success': True, 'message': 'Group unbanned successfully.'})
@@ -2739,7 +2755,7 @@ def api_admin_handle_report(report_id, action):
                 send_system_notification(
                     reported_item_id,
                     f'You received a warning due to a report: {report_reason[:50]}...',
-                    link=url_for('account_status'),
+                    # link=url_for('account_status'), # Removed link, not explicitly in schema
                     type='warning'
                 )
             # You could add similar logic for groups/posts/reels/stories
@@ -2759,7 +2775,7 @@ def api_admin_handle_report(report_id, action):
                 send_system_notification(
                     reported_item_id,
                     f'Your account has been permanently banned due to a report: {report_reason[:50]}...',
-                    link=url_for('account_status'),
+                    # link=url_for('account_status'), # Removed link, not explicitly in schema
                     type='danger'
                 )
             elif reported_item_type == 'group':
@@ -2773,7 +2789,7 @@ def api_admin_handle_report(report_id, action):
                     members = db.execute("SELECT user_id FROM chat_room_members WHERE chat_room_id = ?", (group['chat_room_id'],)).fetchall()
                     for member in members:
                         message = f'The group "<strong>{group["name"]}</strong>" has been permanently banned due to a report.'
-                        send_system_notification(member['user_id'], message, link=url_for('home'), type='danger')
+                        send_system_notification(member['user_id'], message, type='danger') # Removed link
             # Other content types (post, reel, story) would be deleted rather than banned
             db.execute("UPDATE reports SET status = 'handled', admin_notes = ? WHERE id = ?", ('Banned user/item.', report_id))
             db.commit()
@@ -2808,7 +2824,7 @@ def api_admin_broadcast_message():
             send_system_notification(
                 user['id'],
                 f'<strong>SociaFam Update:</strong> {message_content}',
-                link=url_for('notifications'), # Link to notifications page
+                # link=url_for('notifications'), # Removed link, not explicitly in schema
                 type='system_message'
             )
         db.commit() # Commit all notifications
