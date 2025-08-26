@@ -1,0 +1,530 @@
+{% extends 'base.html' %}
+
+{% block title %}Friends{% endblock %}
+
+{% block content %}
+<style>
+    /* Custom styles for the Friends page */
+    body {
+        padding-top: 0;
+        padding-bottom: var(--navbar-height); /* Space for fixed bottom navbar */
+        overflow-x: hidden; /* Prevent horizontal scroll */
+    }
+
+    .friends-header-sticky {
+        position: sticky;
+        top: 0;
+        z-index: 1000; /* Ensure it stays on top of scrollable content */
+        background-color: var(--background-light);
+        padding: 15px;
+        border-bottom: 1px solid var(--border-color-light);
+        box-shadow: 0 2px 5px var(--shadow-soft);
+        margin-bottom: 0; /* No margin below if directly followed by tab-nav */
+    }
+
+    .friends-search-bar .form-control {
+        width: 100%;
+        border-radius: 25px; /* More rounded search bar */
+        padding-left: 40px; /* Space for search icon */
+        background-color: var(--card-background);
+        border: 1px solid var(--input-border-color);
+    }
+
+    .friends-search-bar .search-icon {
+        position: absolute;
+        left: 25px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--secondary-text);
+        font-size: 1.1em;
+    }
+
+    .friends-tabs-nav {
+        background-color: var(--card-background);
+        border-bottom: 1px solid var(--border-color-light);
+        box-shadow: 0 1px 3px var(--shadow-soft);
+        display: flex; /* Ensure flex for tab alignment */
+        justify-content: space-around; /* Distribute tabs evenly */
+        padding: 0 10px; /* Horizontal padding for tabs */
+    }
+
+    .friends-tabs-nav .nav-link {
+        color: var(--secondary-text);
+        font-weight: 600;
+        padding: 12px 10px;
+        border-bottom: 3px solid transparent; /* Underline effect */
+        transition: color 0.2s ease, border-color 0.2s ease;
+        flex-grow: 1; /* Tabs take equal width */
+        text-align: center;
+        white-space: nowrap; /* Prevent tab text from wrapping */
+        overflow: hidden;
+        text-overflow: ellipsis;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 5px; /* Space between text and count */
+    }
+
+    .friends-tabs-nav .nav-link.active {
+        color: var(--primary-color);
+        border-bottom-color: var(--primary-color);
+    }
+
+    .friends-tabs-nav .nav-link:hover:not(.active) {
+        color: var(--primary-text);
+    }
+
+    .friends-tabs-nav .badge {
+        background-color: var(--danger-color);
+        color: white;
+        font-size: 0.7em;
+        padding: .3em .6em;
+        border-radius: 50%;
+        margin-left: 5px;
+        line-height: 1; /* Adjust line height for better vertical alignment */
+    }
+
+    .friends-content-container {
+        padding: 15px;
+        background-color: var(--background-light);
+    }
+
+    /* List item styling for users */
+    .user-list-item {
+        display: flex;
+        align-items: center;
+        padding: 12px 15px;
+        margin-bottom: 10px;
+        background-color: var(--card-background);
+        border-radius: 10px;
+        box-shadow: 0 2px 8px var(--shadow-soft);
+        transition: transform 0.2s ease;
+        text-decoration: none; /* Remove underline for entire item */
+        color: inherit; /* Inherit text color */
+    }
+
+    .user-list-item:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 4px 12px var(--shadow-medium);
+    }
+
+    .user-list-item .profile-pic {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        object-fit: cover;
+        margin-right: 15px;
+        border: 2px solid var(--primary-color);
+        flex-shrink: 0;
+    }
+
+    .user-list-item .user-details {
+        flex-grow: 1;
+        overflow: hidden; /* For text ellipsis */
+    }
+
+    .user-list-item .user-details .real-name {
+        font-weight: 600;
+        color: var(--primary-text);
+        margin-bottom: 2px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .user-list-item .user-details .mutual-info {
+        font-size: 0.8em;
+        color: var(--secondary-text);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .user-list-item .action-buttons {
+        display: flex;
+        gap: 8px; /* Space between buttons */
+        flex-shrink: 0;
+    }
+
+    .user-list-item .btn-action {
+        background-color: var(--button-bg-primary);
+        color: var(--button-text-primary);
+        border: none;
+        border-radius: 8px;
+        padding: 8px 12px;
+        font-size: 0.9em;
+        font-weight: 500;
+        transition: background-color 0.2s ease;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+    
+    .user-list-item .btn-action i {
+        font-size: 1em;
+    }
+
+    .user-list-item .btn-action.message {
+        background-color: var(--info-color);
+    }
+
+    .user-list-item .btn-action.message:hover {
+        background-color: darken(var(--info-color), 10%);
+    }
+
+    .user-list-item .btn-action.block {
+        background-color: var(--danger-color);
+    }
+
+    .user-list-item .btn-action.block:hover {
+        background-color: darken(var(--danger-color), 10%);
+    }
+
+    .user-list-item .btn-action.accept {
+        background-color: var(--success-color);
+    }
+
+    .user-list-item .btn-action.accept:hover {
+        background-color: darken(var(--success-color), 10%);
+    }
+
+    .user-list-item .btn-action.decline {
+        background-color: var(--secondary-color);
+    }
+
+    .user-list-item .btn-action.decline:hover {
+        background-color: darken(var(--secondary-color), 10%);
+    }
+
+    .user-list-item .btn-action.follow {
+        background-color: var(--primary-color);
+    }
+
+    .user-list-item .btn-action.follow:hover {
+        background-color: darken(var(--primary-color), 10%);
+    }
+
+    /* Dropdown for Following/Friends list items */
+    .user-list-item .dropdown-toggle {
+        background: none;
+        border: none;
+        color: var(--secondary-text);
+        font-size: 1.2em;
+        padding: 5px;
+        border-radius: 5px;
+        transition: background-color 0.2s ease;
+    }
+    .user-list-item .dropdown-toggle:hover {
+        background-color: var(--background-light);
+    }
+    .user-list-item .dropdown-menu {
+        background-color: var(--card-background);
+        border: 1px solid var(--border-color-light);
+        border-radius: 8px;
+        box-shadow: 0 4px 10px var(--shadow-soft);
+        z-index: 1100; /* Ensure dropdown is on top */
+    }
+    .user-list-item .dropdown-item {
+        color: var(--primary-text);
+        padding: 8px 15px;
+        transition: background-color 0.2s ease;
+    }
+    .user-list-item .dropdown-item:hover {
+        background-color: var(--background-light);
+    }
+
+    /* Message for empty lists */
+    .empty-list-message {
+        text-align: center;
+        color: var(--secondary-text);
+        padding: 20px;
+        margin-top: 20px;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+        .friends-header-sticky {
+            padding: 10px;
+        }
+        .friends-search-bar .search-icon {
+            left: 20px;
+        }
+        .friends-tabs-nav .nav-link {
+            padding: 10px 5px;
+            font-size: 0.9em;
+        }
+        .user-list-item {
+            padding: 10px;
+            margin-bottom: 8px;
+        }
+        .user-list-item .profile-pic {
+            width: 45px;
+            height: 45px;
+            margin-right: 10px;
+        }
+        .user-list-item .user-details .real-name {
+            font-size: 0.95em;
+        }
+        .user-list-item .user-details .mutual-info {
+            font-size: 0.75em;
+        }
+        .user-list-item .btn-action {
+            padding: 6px 10px;
+            font-size: 0.85em;
+            gap: 3px;
+        }
+    }
+    
+</style>
+
+<div class="friends-header-sticky">
+    <div class="friends-search-bar position-relative">
+        <i class="fas fa-search search-icon"></i>
+        <input type="text" class="form-control" placeholder="Search friends...">
+    </div>
+    <div class="friends-tabs-nav mt-3" id="friendsTabs">
+        <a class="nav-link active" data-target="#all-friends">All Friends</a>
+        <a class="nav-link" data-target="#following">Following</a>
+        <a class="nav-link" data-target="#followers">Followers</a>
+        <a class="nav-link" data-target="#requests">Requests <span class="badge rounded-pill text-bg-danger" id="requestsCount">0</span></a>
+        <a class="nav-link" data-target="#suggested">Suggested</a>
+    </div>
+</div>
+
+<div class="friends-content-container">
+    <div class="tab-pane show active" id="all-friends">
+        {% if all_friends %}
+            {% for friend in all_friends %}
+            <a href="{{ url_for('view_profile', username=friend.username) }}" class="user-list-item">
+                <img src="{{ url_for('static', filename=friend.profile_pic) }}" alt="{{ friend.realName }}" class="profile-pic">
+                <div class="user-details">
+                    <span class="real-name">{{ friend.realName }}</span>
+                    <span class="mutual-info">@{{ friend.username }}</span>
+                </div>
+            </a>
+            {% endfor %}
+        {% else %}
+            <div class="empty-list-message">
+                <p>You have no friends yet.</p>
+                <p>Explore suggested users or use the search bar to find people.</p>
+            </div>
+        {% endif %}
+    </div>
+
+    <div class="tab-pane" id="following">
+        {% if following %}
+            {% for user in following %}
+            <a href="{{ url_for('view_profile', username=user.username) }}" class="user-list-item">
+                <img src="{{ url_for('static', filename=user.profile_pic) }}" alt="{{ user.realName }}" class="profile-pic">
+                <div class="user-details">
+                    <span class="real-name">{{ user.realName }}</span>
+                    <span class="mutual-info">@{{ user.username }}</span>
+                </div>
+            </a>
+            {% endfor %}
+        {% else %}
+            <div class="empty-list-message">
+                <p>No one is following you yet.</p>
+                <p>Follow people you know to see their posts and updates here.</p>
+            </div>
+        {% endif %}
+    </div>
+
+    <div class="tab-pane" id="followers">
+        {% if followers %}
+            {% for user in followers %}
+            <a href="{{ url_for('view_profile', username=user.username) }}" class="user-list-item">
+                <img src="{{ url_for('static', filename=user.profile_pic) }}" alt="{{ user.realName }}" class="profile-pic">
+                <div class="user-details">
+                    <span class="real-name">{{ user.realName }}</span>
+                    <span class="mutual-info">@{{ user.username }}</span>
+                </div>
+            </a>
+            {% endfor %}
+        {% else %}
+            <div class="empty-list-message">
+                <p>No one is following you yet.</p>
+                <p>Share your profile with friends to get followers!</p>
+            </div>
+        {% endif %}
+    </div>
+    
+    <div class="tab-pane" id="requests">
+        {% if friend_requests %}
+            {% for request in friend_requests %}
+            <div class="user-list-item">
+                <img src="{{ url_for('static', filename=request.sender_profile_pic) }}" alt="{{ request.sender_realName }}" class="profile-pic">
+                <div class="user-details">
+                    <span class="real-name">{{ request.sender_realName }}</span>
+                    <span class="mutual-info">@{{ request.sender_username }}</span>
+                </div>
+                <div class="action-buttons">
+                    <button class="btn btn-sm btn-action accept-request-btn" data-user-id="{{ request.sender_id }}">
+                        <i class="fas fa-check"></i>
+                        Accept
+                    </button>
+                    <button class="btn btn-sm btn-action decline-request-btn" data-user-id="{{ request.sender_id }}">
+                        <i class="fas fa-times"></i>
+                        Decline
+                    </button>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="empty-list-message">
+                <p>You have no new friend requests.</p>
+                <p>Come back later or send some of your own!</p>
+            </div>
+        {% endif %}
+    </div>
+
+    <div class="tab-pane" id="suggested">
+        {% if suggested_users %}
+            {% for user in suggested_users %}
+            <div class="user-list-item">
+                <img src="{{ url_for('static', filename=user.profile_pic) }}" alt="{{ user.realName }}" class="profile-pic">
+                <div class="user-details">
+                    <span class="real-name">{{ user.realName }}</span>
+                    <span class="mutual-info">@{{ user.username }}</span>
+                </div>
+                <div class="action-buttons">
+                    <button class="btn btn-sm btn-action follow-btn" data-user-id="{{ user.id }}">
+                        <i class="fas fa-user-plus"></i>
+                        Follow
+                    </button>
+                    <button class="btn btn-sm btn-action remove-btn" data-user-id="{{ user.id }}">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="empty-list-message">
+                <p>No suggested users for now.</p>
+                <p>Check back later or search for people you may know.</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Correct tab switching logic
+        const tabsContainer = document.getElementById('friendsTabs');
+        tabsContainer.addEventListener('click', function(event) {
+            const clickedTab = event.target.closest('.nav-link');
+            if (!clickedTab) return; // Exit if a non-tab element was clicked
+
+            // Prevent default link behavior if it's a link
+            if (clickedTab.tagName === 'A') {
+                event.preventDefault();
+            }
+
+            // Remove 'active' class from all tabs and content panes
+            document.querySelectorAll('.friends-tabs-nav .nav-link').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.tab-pane').forEach(pane => {
+                pane.classList.remove('active');
+            });
+
+            // Add 'active' class to the clicked tab
+            clickedTab.classList.add('active');
+
+            // Get the target content pane ID from the data-target attribute
+            const targetId = clickedTab.dataset.target;
+            const targetPane = document.querySelector(targetId);
+
+            if (targetPane) {
+                // Add 'active' and 'show' classes to the target pane
+                targetPane.classList.add('active');
+                targetPane.classList.add('show');
+            }
+        });
+        
+        // --- Existing Button Logic (Friend Requests, Follow, Remove) ---
+        
+        // Accept Request Button
+        const requestsTabContent = document.getElementById('requests');
+        if (requestsTabContent) {
+            requestsTabContent.querySelectorAll('.accept-request-btn').forEach(button => {
+                button.addEventListener('click', function(event) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    const userId = this.dataset.userId;
+                    fetch(`/accept-friend-request/${userId}`, { method: 'POST' })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                alert('Friend request accepted!');
+                                this.closest('.user-list-item').remove();
+                                // Optional: Update friend/follower counts
+                            } else {
+                                alert('Failed to accept friend request: ' + data.message);
+                            }
+                        })
+                        .catch(error => console.error('Error accepting request:', error));
+                });
+            });
+
+            // Decline Request Button
+            requestsTabContent.querySelectorAll('.decline-request-btn').forEach(button => {
+                button.addEventListener('click', function(event) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    const userId = this.dataset.userId;
+                    fetch(`/decline-friend-request/${userId}`, { method: 'POST' })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                alert('Friend request declined.');
+                                this.closest('.user-list-item').remove();
+                            } else {
+                                alert('Failed to decline friend request: ' + data.message);
+                            }
+                        })
+                        .catch(error => console.error('Error declining request:', error));
+                });
+            });
+        }
+
+        // Follow Button (Suggested Tab)
+        const suggestedTabContent = document.getElementById('suggested');
+        if (suggestedTabContent) {
+            suggestedTabContent.querySelectorAll('.follow-btn').forEach(button => {
+                button.addEventListener('click', function(event) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    const userId = this.dataset.userId;
+                    fetch(`/send-friend-request/${userId}`, { method: 'POST' })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                alert(data.message);
+                                this.closest('.user-list-item').remove();
+                            } else {
+                                alert('Failed to send follow/friend request: ' + data.message);
+                            }
+                        })
+                        .catch(error => console.error('Error sending request:', error));
+                });
+            });
+
+            // Remove Button (Suggested Tab - client-side hide)
+            suggestedTabContent.querySelectorAll('.remove-btn').forEach(button => {
+                button.addEventListener('click', function(event) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    const userId = this.dataset.userId;
+                    if (confirm('Remove this suggestion?')) {
+                        this.closest('.user-list-item').remove();
+                        // If you want to persist this removal, an AJAX call would be needed:
+                        // fetch(`/remove-suggestion/${userId}`, { method: 'POST' });
+                        // alert('Suggestion removed.');
+                    }
+                });
+            });
+        }
+    });
+</script>
+{% endblock %}
