@@ -1189,6 +1189,47 @@ def friends():
                            requests_count=len(requests_for_template),
                            current_year=current_year)
 
+@app.route('/friends')
+@login_required
+def friends():
+    db = get_db()
+    
+    # 1. Get the list of users the current user is following
+    following_users = db.execute('''
+        SELECT u.id, m.profilePhoto, u.username, u.originalName
+        FROM friendships f
+        JOIN users u ON f.following_id = u.id
+        JOIN members m ON u.id = m.user_id
+        WHERE f.follower_id = ?
+    ''', (current_user.id,)).fetchall()
+
+    # 2. Get the list of users who are following the current user
+    follower_users = db.execute('''
+        SELECT u.id, m.profilePhoto, u.username, u.originalName
+        FROM friendships f
+        JOIN users u ON f.follower_id = u.id
+        JOIN members m ON u.id = m.user_id
+        WHERE f.following_id = ?
+    ''', (current_user.id,)).fetchall()
+    
+    # 3. Get suggested users to follow (a simple random selection for now)
+    # Exclude current user, users already followed, and users who are following the current user
+    suggested_users = db.execute('''
+        SELECT u.id, u.username, u.originalName, m.profilePhoto
+        FROM users u
+        JOIN members m ON u.id = m.user_id
+        WHERE u.id != ?
+          AND u.id NOT IN (SELECT following_id FROM friendships WHERE follower_id = ?)
+          AND u.id NOT IN (SELECT follower_id FROM friendships WHERE following_id = ?)
+        ORDER BY RANDOM()
+        LIMIT 10
+    ''', (current_user.id, current_user.id, current_user.id,)).fetchall()
+    
+    return render_template('friends.html', 
+                           title="Friends", 
+                           following=following_users, 
+                           followers=follower_users, 
+                           suggested_users=suggested_users)
 
 # --- Messaging & Chat Rooms ---
 
