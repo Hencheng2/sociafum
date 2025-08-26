@@ -14,7 +14,7 @@ from firebase_admin import credentials, firestore, initialize_app # initialize_a
 
 from flask import Flask, render_template, Blueprint, request, redirect, url_for, g, flash, session, abort, jsonify, send_from_directory
 from werkzeug.utils import secure_filename
-from werkzeug.security import generate_password_hash, check_password_hash
+from werkwerkzeug.security import generate_password_hash, check_password_hash
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from flask_moment import Moment
 from functools import wraps # For admin_required decorator
@@ -352,7 +352,7 @@ def send_system_notification(receiver_id, message, link=None, type='system_messa
     try:
         db.execute(
             "INSERT INTO notifications (receiver_id, type, message, link, timestamp, is_read) VALUES (?, ?, ?, ?, ?, ?)",
-            (receiver_id, type, message, datetime.now(timezone.utc), 0) # Removed link, not explicitly in schema
+            (receiver_id, type, message, datetime.now(timezone.utc), link, 0)
         )
         db.commit()
         app.logger.info(f"System notification sent to user {receiver_id}: {message}")
@@ -731,6 +731,14 @@ def my_profile():
 def edit_my_details():
     db = get_db()
     member = current_user.get_member_profile()
+    
+    # Prepare current_user_profile for the template, especially for profile_pic
+    current_user_profile = {
+        'profile_pic': get_member_profile_pic(current_user.id),
+        'real_name': member['fullName'] if member else current_user.original_name,
+        # Add other fields as needed by edit_my_details.html
+    }
+
     form_data = {}
 
     if member:
@@ -752,8 +760,18 @@ def edit_my_details():
         maritalStatus = request.form['maritalStatus']
         spouseNames = request.form.get('spouseNames', '').strip()
         girlfriendNames = request.form.get('girlfriendNames', '').strip() # For Engaged
+        
+        # New fields from schema for edit_my_details
+        pronouns = request.form.get('pronouns', '').strip()
+        workInfo = request.form.get('workInfo', '').strip()
+        university = request.form.get('university', '').strip()
+        secondary = request.form.get('secondary', '').strip()
+        location = request.form.get('location', '').strip()
+        socialLink = request.form.get('socialLink', '').strip()
+        websiteLink = request.form.get('websiteLink', '').strip()
 
-        profile_photo_file = request.files.get('profilePhoto')
+
+        profile_photo_file = request.files.get('profilePhotoFile') # Changed to profilePhotoFile for clarity in HTML
         profilePhoto_path = member['profilePhoto'] if member else None
 
         if profile_photo_file and profile_photo_file.filename != '':
@@ -761,18 +779,20 @@ def edit_my_details():
             if not profilePhoto_path:
                 flash('Invalid profile photo file type.', 'danger')
                 form_data = request.form.to_dict()
-                return render_template('edit_my_details.html', form_data=form_data, member=member, current_year=current_year)
+                return render_template('edit_my_details.html', form_data=form_data, member=member, current_user_profile=current_user_profile, current_year=current_year)
 
         try:
             if member:
                 db.execute(
                     """
                     UPDATE members SET fullName=?, dateOfBirth=?, gender=?, contact=?, email=?, bio=?,
-                    personalRelationshipDescription=?, maritalStatus=?, spouseNames=?, girlfriendNames=?, profilePhoto=?
+                    personalRelationshipDescription=?, maritalStatus=?, spouseNames=?, girlfriendNames=?, profilePhoto=?,
+                    pronouns=?, workInfo=?, university=?, secondary=?, location=?, socialLink=?, websiteLink=?
                     WHERE user_id=?
                     """,
                     (fullName, dateOfBirth, gender, contact, email, bio,
                      personalRelationshipDescription, maritalStatus, spouseNames, girlfriendNames, profilePhoto_path,
+                     pronouns, workInfo, university, secondary, location, socialLink, websiteLink,
                      current_user.id)
                 )
                 flash('Your details have been updated successfully!', 'success')
@@ -780,11 +800,13 @@ def edit_my_details():
                 db.execute(
                     """
                     INSERT INTO members (user_id, fullName, dateOfBirth, gender, contact, email, bio,
-                    personalRelationshipDescription, maritalStatus, spouseNames, girlfriendNames, profilePhoto)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    personalRelationshipDescription, maritalStatus, spouseNames, girlfriendNames, profilePhoto,
+                    pronouns, workInfo, university, secondary, location, socialLink, websiteLink)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """,
                     (current_user.id, fullName, dateOfBirth, gender, contact, email, bio,
-                     personalRelationshipDescription, maritalStatus, spouseNames, girlfriendNames, profilePhoto_path)
+                     personalRelationshipDescription, maritalStatus, spouseNames, girlfriendNames, profilePhoto_path,
+                     pronouns, workInfo, university, secondary, location, socialLink, websiteLink)
                 )
                 flash('Your personal details have been added successfully!', 'success')
             db.commit()
@@ -793,9 +815,9 @@ def edit_my_details():
             flash(f'An error occurred while saving your details: {e}', 'danger')
             db.rollback()
             form_data = request.form.to_dict()
-            return render_template('edit_my_details.html', form_data=form_data, member=member, current_year=current_year)
+            return render_template('edit_my_details.html', form_data=form_data, member=member, current_user_profile=current_user_profile, current_year=current_year)
 
-    return render_template('edit_my_details.html', form_data=form_data, member=member, current_year=current_year)
+    return render_template('edit_my_details.html', form_data=form_data, member=member, current_user_profile=current_user_profile, current_year=current_year)
 
 
 @app.route('/profile/<username>')
@@ -901,7 +923,7 @@ def api_send_friend_request(receiver_id):
             send_system_notification(
                 receiver_id,
                 message,
-                # link=url_for('friends'), # Removed link, not explicitly in schema
+                link=url_for('friends'),
                 type='friend_request'
             )
         return jsonify({'success': True, 'message': 'Friend request sent!'})
@@ -936,7 +958,7 @@ def api_accept_friend_request(request_id):
             send_system_notification(
                 friendship['user1_id'],
                 message,
-                # link=url_for('profile', username=current_user.username), # Removed link, not explicitly in schema
+                link=url_for('profile', username=current_user.username),
                 type='friend_accepted'
             )
         return jsonify({'success': True, 'message': 'Friend request accepted!'})
@@ -1373,7 +1395,7 @@ def api_send_chat_message(chat_room_id):
             send_system_notification(
                 member['user_id'],
                 message_text,
-                # link=url_for('view_chat', chat_room_id=chat_room_id), # Removed link, not explicitly in schema
+                link=url_for('view_chat', chat_room_id=chat_room_id),
                 type='message_received'
             )
 
@@ -1466,7 +1488,7 @@ def create_group():
                     send_system_notification(
                         friend_id,
                         message,
-                        # link=url_for('view_group_profile', group_id=group_id), # Removed link, not explicitly in schema
+                        link=url_for('view_group_profile', group_id=group_id),
                         type='group_invite'
                     )
 
@@ -2104,7 +2126,7 @@ def api_send_support_message_user(chat_id):
             send_system_notification(
                 admin_user_id,
                 message_text,
-                # link=url_for('admin_support_chat', chat_id=chat_id), # Removed link, not explicitly in schema
+                link=url_for('admin_support_chat', chat_id=chat_id),
                 type='message_received'
             )
 
@@ -2495,7 +2517,7 @@ def api_admin_send_support_message(chat_id):
             send_system_notification(
                 other_user_id,
                 message_text,
-                # link=url_for('support_inbox'), # Removed link, not explicitly in schema
+                link=url_for('support_inbox'),
                 type='message_received' # Re-using type, could be 'admin_response'
             )
 
@@ -2529,7 +2551,7 @@ def api_admin_warn_user(user_id):
             send_system_notification(
                 user_id,
                 notification_message,
-                # link=url_for('account_status'), # Removed link, not explicitly in schema
+                link=url_for('account_status'),
                 type='warning'
             )
         return jsonify({'success': True, 'message': 'User warned successfully.'})
@@ -2576,7 +2598,7 @@ def api_admin_ban_user(user_id):
             send_system_notification(
                 user_id,
                 notification_message,
-                # link=url_for('account_status'), # Removed link, not explicitly in schema
+                link=url_for('account_status'),
                 type='danger' # Or 'ban_notification'
             )
         return jsonify({'success': True, 'message': 'User banned successfully.'})
@@ -2603,7 +2625,7 @@ def api_admin_unban_user(user_id):
             send_system_notification(
                 user_id,
                 notification_message,
-                # link=url_for('home'), # Removed link, not explicitly in schema
+                link=url_for('home'),
                 type='info' # Or 'unban_notification'
             )
         return jsonify({'success': True, 'message': 'User unbanned successfully.'})
@@ -2667,7 +2689,7 @@ def api_admin_ban_group(group_id):
                 send_system_notification(
                     member['user_id'],
                     message,
-                    # link=url_for('home'), # Removed link, not explicitly in schema
+                    link=url_for('home'),
                     type='danger'
                 )
         return jsonify({'success': True, 'message': 'Group banned successfully.'})
@@ -2696,7 +2718,7 @@ def api_admin_unban_group(group_id):
                 send_system_notification(
                     member['user_id'],
                     message,
-                    # link=url_for('view_group_profile', group_id=group_id), # Removed link, not explicitly in schema
+                    link=url_for('view_group_profile', group_id=group_id),
                     type='info'
                 )
         return jsonify({'success': True, 'message': 'Group unbanned successfully.'})
@@ -2755,7 +2777,7 @@ def api_admin_handle_report(report_id, action):
                 send_system_notification(
                     reported_item_id,
                     f'You received a warning due to a report: {report_reason[:50]}...',
-                    # link=url_for('account_status'), # Removed link, not explicitly in schema
+                    link=url_for('account_status'),
                     type='warning'
                 )
             # You could add similar logic for groups/posts/reels/stories
@@ -2775,7 +2797,7 @@ def api_admin_handle_report(report_id, action):
                 send_system_notification(
                     reported_item_id,
                     f'Your account has been permanently banned due to a report: {report_reason[:50]}...',
-                    # link=url_for('account_status'), # Removed link, not explicitly in schema
+                    link=url_for('account_status'),
                     type='danger'
                 )
             elif reported_item_type == 'group':
@@ -2789,7 +2811,7 @@ def api_admin_handle_report(report_id, action):
                     members = db.execute("SELECT user_id FROM chat_room_members WHERE chat_room_id = ?", (group['chat_room_id'],)).fetchall()
                     for member in members:
                         message = f'The group "<strong>{group["name"]}</strong>" has been permanently banned due to a report.'
-                        send_system_notification(member['user_id'], message, type='danger') # Removed link
+                        send_system_notification(member['user_id'], message, link=url_for('home'), type='danger')
             # Other content types (post, reel, story) would be deleted rather than banned
             db.execute("UPDATE reports SET status = 'handled', admin_notes = ? WHERE id = ?", ('Banned user/item.', report_id))
             db.commit()
@@ -2824,7 +2846,7 @@ def api_admin_broadcast_message():
             send_system_notification(
                 user['id'],
                 f'<strong>SociaFam Update:</strong> {message_content}',
-                # link=url_for('notifications'), # Removed link, not explicitly in schema
+                link=url_for('notifications'),
                 type='system_message'
             )
         db.commit() # Commit all notifications
