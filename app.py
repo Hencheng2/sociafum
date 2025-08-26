@@ -351,7 +351,7 @@ def send_system_notification(receiver_id, message, link=None, type='system_messa
     db = get_db()
     try:
         db.execute(
-            "INSERT INTO notifications (receiver_id, type, message, link, timestamp, is_read) VALUES (?, ?, ?, ?, ?, ?)",
+            "INSERT INTO notifications (receiver_id, type, message, timestamp, link, is_read) VALUES (?, ?, ?, ?, ?, ?)",
             (receiver_id, type, message, datetime.now(timezone.utc), link, 0)
         )
         db.commit()
@@ -1043,8 +1043,9 @@ def api_unfriend(friend_id):
 def friends():
     db = get_db()
 
-    # Incoming friend requests
-    incoming_requests = db.execute(
+    # --- Incoming Friend Requests ---
+    # These are requests sent TO the current user.
+    incoming_requests_data = db.execute(
         """
         SELECT f.id AS request_id, u.id AS sender_id, u.username, u.originalName, m.profilePhoto
         FROM friendships f
@@ -1054,8 +1055,19 @@ def friends():
         """,
         (current_user.id,)
     ).fetchall()
+    requests_for_template = []
+    for req in incoming_requests_data:
+        req_dict = dict(req)
+        req_dict['id'] = req_dict['sender_id'] # Map sender_id to 'id' for consistent template access
+        req_dict['profile_pic'] = get_member_profile_pic(req_dict['sender_id'])
+        req_dict['real_name'] = req_dict['originalName']
+        req_dict['mutual_friends_count'] = 0 # Placeholder for now, can be calculated later
+        requests_for_template.append(req_dict)
 
-    # Accepted friends
+
+    # --- Accepted Friends (Mutual Connections) ---
+    # These are users who have an 'accepted' friendship with current_user.
+    # The 'Friends' tab likely implies mutual connections.
     accepted_friends_data = db.execute(
         """
         SELECT u.id, u.username, u.originalName, m.profilePhoto
@@ -1066,16 +1078,116 @@ def friends():
         """,
         (current_user.id, current_user.id, current_user.id)
     ).fetchall()
-
-    accepted_friends = []
+    friends_for_template = []
     for friend in accepted_friends_data:
         friend_dict = dict(friend)
-        friend_dict['profilePhoto'] = get_member_profile_pic(friend_dict['id']) # Ensure correct URL
-        accepted_friends.append(friend_dict)
+        friend_dict['profile_pic'] = get_member_profile_pic(friend_dict['id'])
+        friend_dict['real_name'] = friend_dict['originalName']
+        friend_dict['mutual_friends_count'] = 0 # Placeholder
+        friends_for_template.append(friend_dict)
 
-    # Pass the current year to the template
+
+    # --- Followers (Users who follow current_user) ---
+    # These are users who sent a request to current_user AND it was accepted.
+    followers_data = db.execute(
+        """
+        SELECT u.id, u.username, u.originalName, m.profilePhoto
+        FROM friendships f
+        JOIN users u ON f.user1_id = u.id
+        LEFT JOIN members m ON u.id = m.user_id
+        WHERE f.user2_id = ? AND f.status = 'accepted'
+        """,
+        (current_user.id,)
+    ).fetchall()
+    followers_for_template = []
+    for follower in followers_data:
+        follower_dict = dict(follower)
+        follower_dict['profile_pic'] = get_member_profile_pic(follower_dict['id'])
+        follower_dict['real_name'] = follower_dict['originalName']
+        follower_dict['mutual_friends_count'] = 0 # Placeholder
+        followers_for_template.append(follower_dict)
+
+
+    # --- Following (Users current_user follows) ---
+    # These are users to whom current_user sent a request AND it was accepted.
+    following_data = db.execute(
+        """
+        SELECT u.id, u.username, u.originalName, m.profilePhoto
+        FROM friendships f
+        JOIN users u ON f.user2_id = u.id
+        LEFT JOIN members m ON u.id = m.user_id
+        WHERE f.user1_id = ? AND f.status = 'accepted'
+        """,
+        (current_user.id,)
+    ).fetchall()
+    following_for_template = []
+    for followed_user in following_data:
+        followed_user_dict = dict(followed_user)
+        followed_user_dict['profile_pic'] = get_member_profile_pic(followed_user_dict['id'])
+        followed_user_dict['real_name'] = followed_user_dict['originalName']
+        followed_user_dict['mutual_friends_count'] = 0 # Placeholder
+        following_for_template.append(followed_user_dict)
+
+
+    # --- Suggested Users ---
+    # Users not currently in any friendship (pending or accepted) with current_user, and not current_user itself.
+    
+    # Get all users connected to current_user (including self)
+    connected_user_ids_raw = db.execute(
+        """
+        SELECT user1_id AS user_id FROM friendships WHERE user2_id = ?
+        UNION
+        SELECT user2_id AS user_id FROM friendships WHERE user1_id = ?
+        UNION
+        SELECT ? AS user_id -- Add current_user's ID to exclude
+        """,
+        (current_user.id, current_user.id, current_user.id)
+    ).fetchall()
+    connected_user_ids = {u['user_id'] for u in connected_user_ids_raw}
+
+
+    # Construct the IN clause for the SQL query dynamically
+    if connected_user_ids:
+        # Convert set of IDs to a comma-separated string for SQL IN clause
+        # Ensure that the IDs are cast to integers before joining to prevent SQL injection (though they come from DB here)
+        exclude_ids_str = ','.join(map(str, connected_user_ids))
+        where_clause = f"WHERE u.id NOT IN ({exclude_ids_str})"
+    else:
+        # If no connected users, still exclude current user and admins
+        where_clause = f"WHERE u.id != {current_user.id}" # Exclude current_user if no friendships exist
+
+    suggested_users_data = db.execute(
+        f"""
+        SELECT u.id, u.username, u.originalName, m.profilePhoto
+        FROM users u
+        LEFT JOIN members m ON u.id = m.user_id
+        {where_clause} AND u.is_admin = 0
+        ORDER BY u.originalName
+        """
+    ).fetchall()
+    
+    suggested_for_template = []
+    for sug_user in suggested_users_data:
+        sug_user_dict = dict(sug_user)
+        sug_user_dict['profile_pic'] = get_member_profile_pic(sug_user_dict['id'])
+        sug_user_dict['real_name'] = sug_user_dict['originalName']
+        sug_user_dict['mutual_friends_count'] = 0 # Placeholder
+        suggested_for_template.append(sug_user_dict)
+
+
     current_year = datetime.now(timezone.utc).year
-    return render_template('friends.html', incoming_requests=incoming_requests, accepted_friends=accepted_friends, current_year=current_year)
+    return render_template('friends.html',
+                           requests=requests_for_template, # Renamed to 'requests' to match template
+                           friends=friends_for_template, # Renamed to 'friends' to match template
+                           followers=followers_for_template,
+                           following=following_for_template,
+                           suggested=suggested_for_template,
+                           # Pass counts for badges
+                           followers_count=len(followers_for_template),
+                           following_count=len(following_for_template),
+                           friends_count=len(friends_for_template),
+                           requests_count=len(requests_for_template),
+                           current_year=current_year)
 
 
 # --- Messaging & Chat Rooms ---
@@ -2218,67 +2330,6 @@ def settings():
         current_chat_background=current_chat_background,
         current_year=current_year
     )
-
-
-@app.route('/api/settings/update', methods=['POST'])
-@login_required
-def api_update_settings():
-    db = get_db()
-    settings_data = request.json
-
-    try:
-        # Update user's general settings
-        db.execute(
-            """
-            UPDATE users SET
-                language = ?,
-                theme_preference = ?,
-                profile_locking = ?,
-                posts_visibility = ?,
-                allow_post_sharing = ?,
-                allow_post_comments = ?,
-                reels_visibility = ?,
-                allow_reel_sharing = ?,
-                allow_reel_comments = ?,
-                notify_friend_requests = ?,
-                notify_friend_acceptance = ?,
-                notify_post_likes = ?,
-                notify_new_messages = ?,
-                notify_group_invites = ?,
-                notify_comments = ?,
-                notify_tags = ?
-            WHERE id = ?
-            """,
-            (
-                settings_data.get('language', 'en'),
-                settings_data.get('theme', 'light'),
-                int(settings_data.get('profileLocking', False)), # Convert bool to int
-                settings_data.get('postsVisibility', 'public'),
-                int(settings_data.get('allowPostSharing', True)),
-                int(settings_data.get('allowPostComments', True)),
-                settings_data.get('reelsVisibility', 'public'),
-                int(settings_data.get('allowReelSharing', True)),
-                int(settings_data.get('allowReelComments', True)),
-                int(settings_data.get('notifyFriendRequests', True)),
-                int(settings_data.get('notifyFriendAcceptance', True)),
-                int(settings_data.get('notifyPostLikes', True)),
-                int(settings_data.get('notifyNewMessages', True)),
-                int(settings_data.get('notifyGroupInvites', True)),
-                int(settings_data.get('notifyComments', True)),
-                int(settings_data.get('notifyTags', True)),
-                current_user.id
-            )
-        )
-        db.commit()
-
-        # Update current_user object in session (important for theme_preference to update immediately)
-        current_user.theme_preference = settings_data.get('theme', 'light')
-
-        return jsonify({'success': True, 'message': 'Settings updated successfully!'})
-    except Exception as e:
-        db.rollback()
-        app.logger.error(f"Error updating settings: {e}")
-        return jsonify({'success': False, 'message': 'Failed to update settings.'}), 500
 
 
 @app.route('/blocked_users')
