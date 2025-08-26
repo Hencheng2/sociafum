@@ -225,6 +225,9 @@
 </style>
 
 <div class="container mt-4 mb-5">
+    <!-- Hidden div to store all_users_for_search JSON data -->
+    <div id="all-users-data" data-users="{{ all_users_for_search | tojson | safe }}" class="d-none"></div>
+
     <!-- Header with Search Bar -->
     <div class="friends-header-sticky">
         <h2 class="text-center text-primary mb-3">Friends & Connections</h2>
@@ -282,7 +285,7 @@
                         </div>
                     </a>
                     <div class="list-item-buttons">
-                        <a href="{{ url_for('message_member') }}?user_id={{ follower.id }}" class="btn btn-sm message-btn" data-bs-toggle="tooltip" title="Message"><i class="fas fa-comment-dots"></i></a>
+                        <a href="{{ url_for('message_member', user_id=follower.id) }}" class="btn btn-sm message-btn" data-bs-toggle="tooltip" title="Message"><i class="fas fa-comment-dots"></i></a>
                         <button class="btn btn-sm block-btn" data-bs-toggle="tooltip" title="Block" data-user-id="{{ follower.id }}"><i class="fas fa-ban"></i></button>
                     </div>
                 </li>
@@ -308,7 +311,7 @@
                         </div>
                     </a>
                     <div class="list-item-buttons">
-                        <a href="{{ url_for('message_member') }}?user_id={{ followed.id }}" class="btn btn-sm message-btn" data-bs-toggle="tooltip" title="Message"><i class="fas fa-comment-dots"></i></a>
+                        <a href="{{ url_for('message_member', user_id=followed.id) }}" class="btn btn-sm message-btn" data-bs-toggle="tooltip" title="Message"><i class="fas fa-comment-dots"></i></a>
                         <div class="dropdown">
                             <button class="btn btn-sm dropdown-toggle dropdown-toggle-no-arrow" type="button" id="followingDropdown-{{ followed.id }}" data-bs-toggle="dropdown" aria-expanded="false" data-bs-toggle="tooltip" title="Options">
                                 <i class="fas fa-ellipsis-h"></i>
@@ -342,7 +345,7 @@
                         </div>
                     </a>
                     <div class="list-item-buttons">
-                        <a href="{{ url_for('message_member') }}?user_id={{ friend.id }}" class="btn btn-sm message-btn" data-bs-toggle="tooltip" title="Message"><i class="fas fa-comment-dots"></i></a>
+                        <a href="{{ url_for('message_member', user_id=friend.id) }}" class="btn btn-sm message-btn" data-bs-toggle="tooltip" title="Message"><i class="fas fa-comment-dots"></i></a>
                         <div class="dropdown">
                             <button class="btn btn-sm dropdown-toggle dropdown-toggle-no-arrow" type="button" id="friendsDropdown-{{ friend.id }}" data-bs-toggle="dropdown" aria-expanded="false" data-bs-toggle="tooltip" title="Options">
                                 <i class="fas fa-ellipsis-h"></i>
@@ -420,9 +423,19 @@
 </div>
 
 <script>
-    // Data passed from Flask to JavaScript
-    // Changed to JSON.parse and | safe to prevent Jinja parsing issues
-    const allUsersForSearch = JSON.parse('{{ all_users_for_search | tojson | safe }}');
+    // Data passed from Flask to JavaScript via a data-attribute
+    const allUsersForSearch = JSON.parse(document.getElementById('all-users-data').dataset.users);
+
+    // Flask route URLs for API calls
+    const API_ENDPOINTS = {
+        sendFriendRequest: "{{ url_for('api_send_friend_request', receiver_id='USER_ID_PLACEHOLDER') }}",
+        unfriend: "{{ url_for('api_unfriend', friend_id='USER_ID_PLACEHOLDER') }}",
+        acceptFriendRequest: "{{ url_for('api_accept_friend_request', request_id='REQUEST_ID_PLACEHOLDER') }}",
+        declineFriendRequest: "{{ url_for('api_decline_friend_request', request_id='REQUEST_ID_PLACEHOLDER') }}",
+        blockUser: "{{ url_for('api_block_user', user_id='USER_ID_PLACEHOLDER') }}",
+        // If you need a backend endpoint for remove suggestion, add it here:
+        // removeSuggestion: "{{ url_for('api_remove_suggestion', user_id='USER_ID_PLACEHOLDER') }}"
+    };
 
     document.addEventListener('DOMContentLoaded', function() {
         const searchInput = document.getElementById('searchUserInput');
@@ -555,7 +568,21 @@
 
 
         // API Callbacks for User Actions (re-using the /api/ routes)
-        function handleApiCall(url, method, successMessage, elementToRemove) {
+        function handleApiCall(endpointKey, id, method, successMessage, elementToRemove) {
+            let url = API_ENDPOINTS[endpointKey];
+            if (!url) {
+                alert('API endpoint not defined.');
+                console.error(`API endpoint for key '${endpointKey}' is not defined.`);
+                return;
+            }
+
+            // Replace placeholder with actual ID
+            if (endpointKey === 'sendFriendRequest' || endpointKey === 'unfriend' || endpointKey === 'blockUser' || endpointKey === 'removeSuggestion') {
+                url = url.replace('USER_ID_PLACEHOLDER', id);
+            } else if (endpointKey === 'acceptFriendRequest' || endpointKey === 'declineFriendRequest') {
+                url = url.replace('REQUEST_ID_PLACEHOLDER', id);
+            }
+            
             fetch(url, { method: method })
                 .then(response => response.json())
                 .then(data => {
@@ -586,27 +613,28 @@
                 if (!listItem) return;
 
                 const userId = listItem.dataset.userId;
-                const requestId = listItem.dataset.requestId;
+                const requestId = listItem.dataset.requestId; // Only present for request items
 
                 if (target.classList.contains('follow-btn')) {
-                    handleApiCall(`/api/send_friend_request/${userId}`, 'POST', 'Follow request sent.', listItem);
+                    handleApiCall('sendFriendRequest', userId, 'POST', 'Follow request sent.', listItem);
                 } else if (target.classList.contains('unfollow-btn') || target.classList.contains('unfriend-btn')) {
-                    handleApiCall(`/api/unfriend/${userId}`, 'POST', 'Successfully unfollowed/unfriended.', listItem);
+                    handleApiCall('unfriend', userId, 'POST', 'Successfully unfollowed/unfriended.', listItem);
                 } else if (target.classList.contains('accept-btn')) {
-                    handleApiCall(`/api/accept_friend_request/${requestId}`, 'POST', 'Friend request accepted!', listItem);
+                    handleApiCall('acceptFriendRequest', requestId, 'POST', 'Friend request accepted!', listItem);
                 } else if (target.classList.contains('decline-btn')) {
-                    handleApiCall(`/api/decline_friend_request/${requestId}`, 'POST', 'Friend request declined.', listItem);
+                    handleApiCall('declineFriendRequest', requestId, 'POST', 'Friend request declined.', listItem);
                 } else if (target.classList.contains('remove-btn')) {
                     if (confirm('Remove this suggestion?')) {
-                         // Assuming a backend API for removing suggestions if needed to persist
-                         // For now, it's client-side removal and a reload to clear from data.
+                         // If you have a backend API for this, uncomment and use it
+                         // handleApiCall('removeSuggestion', userId, 'POST', 'Suggestion removed.', listItem);
+                         // For now, client-side removal and reload
                          listItem.remove();
                          alert('Suggestion removed from list.');
                          window.location.reload();
                     }
                 } else if (target.classList.contains('block-btn')) {
                     if (confirm('Are you sure you want to block this user?')) {
-                        handleApiCall(`/api/block_user/${userId}`, 'POST', 'User blocked.', listItem);
+                        handleApiCall('blockUser', userId, 'POST', 'User blocked.', listItem);
                     }
                 }
                 // Stop propagation for dropdowns to prevent parent clicks
