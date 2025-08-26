@@ -3,1224 +3,714 @@
 {% block title %}Admin Dashboard{% endblock %}
 
 {% block content %}
-<style>
-    /* Admin Dashboard Specific Styles */
-    body {
-        --background-light: #2c2c2c; /* Darker background for admin */
-        --card-background: #3a3a3a; /* Darker cards */
-        --primary-text: #e0e0e0; /* Light text */
-        --secondary-text: #aaaaaa; /* Lighter secondary text */
-        --header-footer-bg: #1e1e1e; /* Even darker for fixed elements */
-        --primary-color: #6200ea; /* Admin accent color (e.g., a deep purple) */
-        --primary-color-light: #bb86fc; /* Lighter accent */
-        --primary-color-dark: #3700b3; /* Darker accent */
-        --success-color: #03dac6; /* Teal for success */
-        --warning-color: #ffcc00; /* Amber for warning */
-        --danger-color: #cf6679; /* Red for danger */
-        --input-border-color: #555555;
-        --border-color-light: #444444;
-        --button-bg-secondary: #555555;
-        --button-text-secondary: #e0e0e0;
+<div class="container mx-auto p-4 sm:p-6 lg:p-8">
+    <h1 class="text-4xl font-extrabold text-gray-900 dark:text-gray-100 mb-8 text-center">Admin Dashboard</h1>
 
-        background-color: var(--background-light) !important;
-        color: var(--primary-text) !important;
-        padding-top: 0 !important; /* Override base.html padding */
-        padding-bottom: 0 !important; /* Override base.html padding */
-        overflow-x: hidden;
-    }
-
-    /* Override base navbar/footer for admin dashboard */
-    .main-navbar, .main-footer {
-        display: none !important;
-    }
-
-    .admin-dashboard-container {
-        display: flex;
-        flex-direction: column;
-        min-height: 100vh; /* Full height */
-        background-color: var(--background-light);
-        color: var(--primary-text);
-    }
-
-    .admin-header {
-        background-color: var(--header-footer-bg);
-        color: white;
-        padding: 15px 20px;
-        text-align: center;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-        flex-shrink: 0;
-    }
-    .admin-header h1 {
-        margin: 0;
-        font-size: 2.2em;
-        color: var(--primary-color-light);
-    }
-
-    .admin-content-wrapper {
-        flex-grow: 1; /* Take all available space */
-        overflow-y: auto; /* Make content scrollable */
-        padding: 25px;
-    }
-
-    .admin-section {
-        background-color: var(--card-background);
-        border-radius: 12px;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-        padding: 25px;
-        margin-bottom: 30px;
-    }
-
-    .admin-section h2 {
-        color: var(--primary-color-light);
-        font-weight: 700;
-        margin-bottom: 25px;
-        font-size: 1.8em;
-        border-bottom: 2px solid var(--border-color-light);
-        padding-bottom: 10px;
-    }
-
-    /* Overview Grid */
-    .overview-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-        gap: 20px;
-        margin-bottom: 30px;
-    }
-    .overview-card {
-        background-color: var(--button-bg-secondary);
-        border-radius: 10px;
-        padding: 15px;
-        text-align: center;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-        transition: transform 0.2s ease;
-    }
-    .overview-card:hover {
-        transform: translateY(-5px);
-    }
-    .overview-card .icon {
-        font-size: 2.5em;
-        color: var(--primary-color-light);
-        margin-bottom: 10px;
-    }
-    .overview-card .count {
-        font-size: 1.8em;
-        font-weight: 700;
-        color: var(--success-color);
-        margin-bottom: 5px;
-    }
-    .overview-card .label {
-        font-size: 0.9em;
-        color: var(--secondary-text);
-    }
-
-    /* Filter and Search Bar */
-    .filter-bar {
-        display: flex;
-        gap: 10px;
-        margin-bottom: 20px;
-        flex-wrap: wrap;
-    }
-    .filter-bar .form-control, .filter-bar .form-select {
-        background-color: var(--background-light);
-        color: var(--primary-text);
-        border: 1px solid var(--input-border-color);
-        border-radius: 8px;
-        padding: 8px 12px;
-    }
-    .filter-bar .form-control {
-        flex-grow: 1;
-    }
-    .filter-bar .btn {
-        background-color: var(--primary-color);
-        color: white;
-        border-radius: 8px;
-        padding: 8px 15px;
-    }
-
-    /* Table Styling */
-    .admin-table-responsive {
-        overflow-x: auto;
-    }
-    .admin-table {
-        width: 100%;
-        border-collapse: collapse;
-        margin-top: 15px;
-    }
-    .admin-table th, .admin-table td {
-        padding: 12px 15px;
-        text-align: left;
-        border-bottom: 1px solid var(--border-color-light);
-        color: var(--primary-text);
-    }
-    .admin-table th {
-        background-color: var(--header-footer-bg);
-        font-weight: 600;
-        color: var(--primary-color-light);
-        white-space: nowrap;
-    }
-    .admin-table tbody tr:hover {
-        background-color: rgba(var(--primary-color-light-rgb), 0.1); /* Slight hover effect */
-    }
-
-    .admin-table .profile-pic {
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
-        object-fit: cover;
-        border: 1px solid var(--border-color-light);
-    }
-    .admin-table .btn-action {
-        background: none;
-        border: 1px solid var(--button-bg-secondary);
-        color: var(--secondary-text);
-        padding: 5px 10px;
-        border-radius: 5px;
-        font-size: 0.85em;
-        margin-right: 5px;
-        transition: background-color 0.2s ease, color 0.2s ease;
-    }
-    .admin-table .btn-action:hover {
-        background-color: var(--primary-color);
-        color: white;
-    }
-    .admin-table .btn-danger {
-        color: var(--danger-color);
-        border-color: var(--danger-color);
-    }
-    .admin-table .btn-danger:hover {
-        background-color: var(--danger-color);
-        color: white;
-    }
-
-    /* Admin Support Inbox Specifics */
-    .support-chat-list-item {
-        display: flex;
-        align-items: center;
-        padding: 12px 15px;
-        margin-bottom: 10px;
-        background-color: var(--button-bg-secondary);
-        border-radius: 10px;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-        text-decoration: none;
-        color: inherit;
-        transition: background-color 0.2s ease;
-    }
-    .support-chat-list-item:hover {
-        background-color: var(--primary-color-dark);
-    }
-    .support-chat-list-item .user-pic {
-        width: 45px;
-        height: 45px;
-        border-radius: 50%;
-        object-fit: cover;
-        margin-right: 15px;
-        border: 2px solid var(--primary-color);
-    }
-    .support-chat-list-item .chat-details {
-        flex-grow: 1;
-        overflow: hidden;
-    }
-    .support-chat-list-item .chat-details .user-name {
-        font-weight: 600;
-        color: var(--primary-text);
-        margin-bottom: 3px;
-    }
-    .support-chat-list-item .chat-details .last-message {
-        font-size: 0.9em;
-        color: var(--secondary-text);
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-    .support-chat-list-item .unread-badge {
-        background-color: var(--danger-color);
-        color: white;
-        font-size: 0.8em;
-        padding: 4px 8px;
-        border-radius: 12px;
-        margin-left: 10px;
-        flex-shrink: 0;
-    }
-
-    /* Broadcast Message Section */
-    .broadcast-form .form-control {
-        background-color: var(--background-light);
-        color: var(--primary-text);
-        border: 1px solid var(--input-border-color);
-        border-radius: 8px;
-        padding: 10px 15px;
-        margin-bottom: 15px;
-        resize: vertical;
-    }
-    .broadcast-form .btn-primary {
-        background-color: var(--primary-color);
-        color: white;
-        border: none;
-        padding: 10px 20px;
-        border-radius: 8px;
-        font-weight: 600;
-        transition: background-color 0.2s ease;
-    }
-    .broadcast-form .btn-primary:hover {
-        background-color: darken(var(--primary-color), 10%);
-    }
-
-    /* Admin Story Post Section */
-    .admin-story-form .form-control-file {
-        display: block;
-        margin-bottom: 15px;
-        background-color: var(--background-light);
-        color: var(--primary-text);
-        border: 1px solid var(--input-border-color);
-        border-radius: 8px;
-        padding: 10px;
-    }
-    .admin-story-form .btn-primary {
-        background-color: var(--primary-color);
-        color: white;
-        border: none;
-        padding: 10px 20px;
-        border-radius: 8px;
-        font-weight: 600;
-        transition: background-color 0.2s ease;
-    }
-    .admin-story-form .btn-primary:hover {
-        background-color: darken(var(--primary-color), 10%);
-    }
-
-    /* Modal Styling */
-    .modal-content {
-        background-color: var(--card-background);
-        color: var(--primary-text);
-        border-radius: 12px;
-    }
-    .modal-header {
-        background-color: var(--header-footer-bg);
-        border-bottom: 1px solid var(--border-color-light);
-        color: var(--primary-color-light);
-        border-top-left-radius: 12px;
-        border-top-right-radius: 12px;
-    }
-    .modal-header .btn-close {
-        filter: invert(1); /* White close button for dark header */
-    }
-    .modal-body {
-        color: var(--primary-text);
-    }
-    .modal-footer {
-        border-top: 1px solid var(--border-color-light);
-        background-color: var(--header-footer-bg);
-        border-bottom-left-radius: 12px;
-        border-bottom-right-radius: 12px;
-    }
-    .modal-footer .btn-secondary {
-        background-color: var(--button-bg-secondary);
-        color: var(--button-text-secondary);
-    }
-    .modal-footer .btn-danger {
-        background-color: var(--danger-color);
-        color: white;
-    }
-    .modal-footer .btn-primary {
-        background-color: var(--primary-color);
-        color: white;
-    }
-
-    /* Responsive adjustments */
-    @media (max-width: 992px) {
-        .admin-content-wrapper {
-            padding: 20px;
-        }
-        .overview-grid {
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 15px;
-        }
-        .admin-table th, .admin-table td {
-            padding: 10px 12px;
-            font-size: 0.9em;
-        }
-        .admin-table .profile-pic {
-            width: 35px;
-            height: 35px;
-        }
-        .admin-table .btn-action {
-            padding: 4px 8px;
-            font-size: 0.8em;
-        }
-    }
-
-    @media (max-width: 768px) {
-        .admin-header h1 {
-            font-size: 1.8em;
-        }
-        .admin-content-wrapper {
-            padding: 15px;
-        }
-        .admin-section h2 {
-            font-size: 1.5em;
-            margin-bottom: 20px;
-        }
-        .overview-grid {
-            grid-template-columns: repeat(2, 1fr);
-            gap: 10px;
-        }
-        .overview-card .icon {
-            font-size: 2em;
-        }
-        .overview-card .count {
-            font-size: 1.5em;
-        }
-        .overview-card .label {
-            font-size: 0.85em;
-        }
-        .filter-bar {
-            flex-direction: column;
-        }
-        .filter-bar .form-control, .filter-bar .form-select, .filter-bar .btn {
-            width: 100%;
-        }
-        .admin-table th, .admin-table td {
-            padding: 8px 10px;
-            font-size: 0.8em;
-        }
-        .admin-table .profile-pic {
-            width: 30px;
-            height: 30px;
-        }
-        .support-chat-list-item .user-pic {
-            width: 40px;
-            height: 40px;
-        }
-        .support-chat-list-item .chat-details .user-name {
-            font-size: 1em;
-        }
-        .support-chat-list-item .chat-details .last-message {
-            font-size: 0.8em;
-        }
-        .support-chat-list-item .unread-badge {
-            font-size: 0.7em;
-            padding: 3px 6px;
-        }
-    }
-
-    @media (max-width: 480px) {
-        .admin-header h1 {
-            font-size: 1.5em;
-        }
-        .admin-content-wrapper {
-            padding: 10px;
-        }
-        .admin-section {
-            padding: 15px;
-            margin-bottom: 20px;
-        }
-        .admin-section h2 {
-            font-size: 1.3em;
-            margin-bottom: 15px;
-        }
-        .overview-grid {
-            grid-template-columns: 1fr;
-            gap: 8px;
-        }
-        .admin-table th, .admin-table td {
-            font-size: 0.75em;
-            padding: 6px 8px;
-        }
-    }
-</style>
-
-<div class="admin-dashboard-container">
-    <div class="admin-header">
-        <h1>SociaFam Admin Dashboard</h1>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
+        <!-- Overview Cards -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 border border-gray-200 dark:border-gray-700">
+            <h2 class="text-xl font-semibold text-indigo-700 dark:text-indigo-300 mb-2">Total Users</h2>
+            <p class="text-4xl font-bold text-gray-900 dark:text-gray-100">{{ counts.user_count }}</p>
+        </div>
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 border border-gray-200 dark:border-gray-700">
+            <h2 class="text-xl font-semibold text-indigo-700 dark:text-indigo-300 mb-2">Total Groups</h2>
+            <p class="text-4xl font-bold text-gray-900 dark:text-gray-100">{{ counts.group_count }}</p>
+        </div>
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 border border-gray-200 dark:border-gray-700">
+            <h2 class="text-xl font-semibold text-indigo-700 dark:text-indigo-300 mb-2">Total Posts</h2>
+            <p class="text-4xl font-bold text-gray-900 dark:text-gray-100">{{ counts.post_count }}</p>
+        </div>
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 border border-gray-200 dark:border-gray-700">
+            <h2 class="text-xl font-semibold text-indigo-700 dark:text-indigo-300 mb-2">Total Reels</h2>
+            <p class="text-4xl font-bold text-gray-900 dark:text-gray-100">{{ counts.reel_count }}</p>
+        </div>
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 border border-gray-200 dark:border-gray-700">
+            <h2 class="text-xl font-semibold text-indigo-700 dark:text-indigo-300 mb-2">Total Stories</h2>
+            <p class="text-4xl font-bold text-gray-900 dark:text-gray-100">{{ counts.story_count }}</p>
+        </div>
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 border border-gray-200 dark:border-gray-700">
+            <h2 class="text-xl font-semibold text-indigo-700 dark:text-indigo-300 mb-2">Pending Reports</h2>
+            <p class="text-4xl font-bold text-gray-900 dark:text-gray-100">{{ counts.pending_reports_count }}</p>
+        </div>
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 border border-gray-200 dark:border-gray-700">
+            <h2 class="text-xl font-semibold text-indigo-700 dark:text-indigo-300 mb-2">Active Warnings</h2>
+            <p class="text-4xl font-bold text-gray-900 dark:text-gray-100">{{ counts.active_warnings_count }}</p>
+        </div>
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 border border-gray-200 dark:border-gray-700">
+            <h2 class="text-xl font-semibold text-indigo-700 dark:text-indigo-300 mb-2">Active Bans</h2>
+            <p class="text-4xl font-bold text-gray-900 dark:text-gray-100">{{ counts.active_bans_count }}</p>
+        </div>
     </div>
 
-    <div class="admin-content-wrapper">
+    <hr class="my-10 border-gray-300 dark:border-gray-600">
 
-        {# Overall Metrics #}
-        <div class="admin-section">
-            <h2><i class="fas fa-chart-line me-2"></i> Overview</h2>
-            <div class="overview-grid">
-                <div class="overview-card">
-                    <div class="icon"><i class="fas fa-users"></i></div>
-                    <div class="count">{{ counts.user_count }}</div>
-                    <div class="label">Total Users</div>
-                </div>
-                <div class="overview-card">
-                    <div class="icon"><i class="fas fa-user-friends"></i></div>
-                    <div class="count">{{ counts.group_count }}</div>
-                    <div class="label">Total Groups</div>
-                </div>
-                <div class="overview-card">
-                    <div class="icon"><i class="fas fa-images"></i></div>
-                    <div class="count">{{ counts.post_count }}</div>
-                    <div class="label">Total Posts</div>
-                </div>
-                <div class="overview-card">
-                    <div class="icon"><i class="fas fa-video"></i></div>
-                    <div class="count">{{ counts.reel_count }}</div>
-                    <div class="label">Total Reels</div>
-                </div>
-                <div class="overview-card">
-                    <div class="icon"><i class="fas fa-history"></i></div>
-                    <div class="count">{{ counts.story_count }}</div>
-                    <div class="label">Total Stories</div>
-                </div>
-                <div class="overview-card">
-                    <div class="icon"><i class="fas fa-flag"></i></div>
-                    <div class="count">{{ counts.pending_reports_count }}</div>
-                    <div class="label">Pending Reports</div>
-                </div>
-                <div class="overview-card">
-                    <div class="icon"><i class="fas fa-exclamation-triangle"></i></div>
-                    <div class="count">{{ counts.active_warnings_count }}</div>
-                    <div class="label">Active Warnings</div>
-                </div>
-                <div class="overview-card">
-                    <div class="icon"><i class="fas fa-user-slash"></i></div>
-                    <div class="count">{{ counts.active_bans_count }}</div>
-                    <div class="label">Active Bans</div>
-                </div>
+    <!-- Admin Actions Section -->
+    <h2 class="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-6 text-center">Admin Actions</h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 border border-gray-200 dark:border-gray-700 flex flex-col justify-between">
+            <div>
+                <h3 class="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">Post SociaFam Story</h3>
+                <p class="text-gray-700 dark:text-gray-300 text-sm mb-4">Create a public story visible to all users.</p>
             </div>
+            <a href="{{ url_for('create_story') }}" class="mt-4 inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition duration-150 ease-in-out">
+                Post Story
+            </a>
         </div>
-
-        {# User Management #}
-        <div class="admin-section">
-            <h2><i class="fas fa-user-shield me-2"></i> User Management</h2>
-            <div class="filter-bar">
-                <input type="text" id="userSearchInput" class="form-control" placeholder="Search users by username or name">
-                <select id="userFilterStatus" class="form-select">
-                    <option value="all">All Statuses</option>
-                    <option value="active">Active</option>
-                    <option value="warned">Warned</option>
-                    <option value="banned">Banned</option>
-                </select>
-                <button type="button" class="btn" id="userFilterBtn"><i class="fas fa-filter"></i> Filter</button>
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 border border-gray-200 dark:border-gray-700 flex flex-col justify-between">
+            <div>
+                <h3 class="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">Broadcast Message</h3>
+                <p class="text-gray-700 dark:text-gray-300 text-sm mb-4">Send a system notification to all non-admin users.</p>
             </div>
-            <div class="admin-table-responsive">
-                <table class="admin-table">
-                    <thead>
-                        <tr>
-                            <th>Photo</th>
-                            <th>Username</th>
-                            <th>Real Name</th>
-                            <th>Status</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="userTableBody">
-                        {% for user in all_users %}
-                        <tr data-user-id="{{ user.id }}" data-username="{{ user.username | lower }}" data-realname="{{ user.real_name | lower }}">
-                            <td><img src="{{ user.profile_pic }}" alt="Profile" class="profile-pic"></td>
-                            <td><a href="{{ url_for('profile', username=user.username) }}" class="text-white text-decoration-none">@{{ user.username }}</a></td>
-                            <td>{{ user.real_name }}</td>
-                            <td>
-                                {% if user.is_banned %}
-                                    <span class="badge bg-danger">Banned</span>
-                                {% elif user.warnings_count > 0 %}
-                                    <span class="badge bg-warning">Warned ({{ user.warnings_count }})</span>
-                                {% else %}
-                                    <span class="badge bg-success">Active</span>
-                                {% endif %}
-                            </td>
-                            <td>
-                                <button class="btn-action view-user-btn" data-user-id="{{ user.id }}"><i class="fas fa-eye"></i> View</button>
-                                <button class="btn-action warn-user-btn" data-user-id="{{ user.id }}"><i class="fas fa-exclamation-circle"></i> Warn</button>
-                                {% if user.is_banned %}
-                                    <button class="btn-action unban-user-btn" data-user-id="{{ user.id }}"><i class="fas fa-check-circle"></i> Unban</button>
-                                {% else %}
-                                    <button class="btn-action ban-user-btn" data-user-id="{{ user.id }}"><i class="fas fa-user-slash"></i> Ban</button>
-                                {% endif %}
-                                <button class="btn-action btn-danger delete-user-btn" data-user-id="{{ user.id }}"><i class="fas fa-trash-alt"></i> Delete</button>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
+            <button onclick="openBroadcastModal()" class="mt-4 inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-150 ease-in-out">
+                Send Broadcast
+            </button>
         </div>
-
-        {# Group Management #}
-        <div class="admin-section">
-            <h2><i class="fas fa-users-cog me-2"></i> Group Management</h2>
-            <div class="filter-bar">
-                <input type="text" id="groupSearchInput" class="form-control" placeholder="Search groups by name">
-                <select id="groupFilterStatus" class="form-select">
-                    <option value="all">All Statuses</option>
-                    <option value="active">Active</option>
-                    <option value="reported">Reported</option>
-                    <option value="banned">Banned</option>
-                </select>
-                <button type="button" class="btn" id="groupFilterBtn"><i class="fas fa-filter"></i> Filter</button>
-            </div>
-            <div class="admin-table-responsive">
-                <table class="admin-table">
-                    <thead>
-                        <tr>
-                            <th>Photo</th>
-                            <th>Group Name</th>
-                            <th>Members</th>
-                            <th>Status</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="groupTableBody">
-                        {% for group in all_groups %}
-                        <tr data-group-id="{{ group.id }}" data-groupname="{{ group.name | lower }}">
-                            <td><img src="{{ group.profile_pic }}" alt="Group" class="profile-pic"></td>
-                            <td><a href="{{ url_for('view_group_profile', group_id=group.id) }}" class="text-white text-decoration-none"><strong>{{ group.name }}</strong></a></td>
-                            <td>{{ group.member_count }}</td>
-                            <td>
-                                {% if group.is_banned %}
-                                    <span class="badge bg-danger">Banned</span>
-                                {% elif group.reports_count > 0 %}
-                                    <span class="badge bg-warning">Reported ({{ group.reports_count }})</span>
-                                {% else %}
-                                    <span class="badge bg-success">Active</span>
-                                {% endif %}
-                            </td>
-                            <td>
-                                <button class="btn-action view-group-btn" data-group-id="{{ group.id }}"><i class="fas fa-eye"></i> View</button>
-                                {% if group.is_banned %}
-                                    <button class="btn-action unban-group-btn" data-group-id="{{ group.id }}"><i class="fas fa-check-circle"></i> Unban</button>
-                                {% else %}
-                                    <button class="btn-action ban-group-btn" data-group-id="{{ group.id }}"><i class="fas fa-user-slash"></i> Ban</button>
-                                {% endif %}
-                                <button class="btn-action btn-danger delete-group-btn" data-group-id="{{ group.id }}"><i class="fas fa-trash-alt"></i> Delete</button>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        {# Pending Reports #}
-        <div class="admin-section">
-            <h2><i class="fas fa-flag me-2"></i> Pending Reports</h2>
-            <div class="admin-table-responsive">
-                <table class="admin-table">
-                    <thead>
-                        <tr>
-                            <th>Reported Item</th>
-                            <th>Type</th>
-                            <th>Reason</th>
-                            <th>Reported By</th>
-                            <th>Timestamp</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="reportTableBody">
-                        {% for report in pending_reports %}
-                        <tr data-report-id="{{ report.id }}" data-reported-item-id="{{ report.reported_item_id }}" data-reported-item-type="{{ report.type }}">
-                            <td>
-                                {% if report.type == 'user' %}
-                                    User: <a href="{{ url_for('profile', username=report.reported_item_username) }}" class="text-white text-decoration-none">@{{ report.reported_item_username }}</a>
-                                {% elif report.type == 'group' %}
-                                    Group: <a href="{{ url_for('view_group_profile', group_id=report.reported_item_id) }}" class="text-white text-decoration-none">{{ report.reported_item_name }}</a>
-                                {% elif report.type == 'post' %}
-                                    Post (ID: {{ report.reported_item_id }})
-                                {% elif report.type == 'reel' %}
-                                    Reel (ID: {{ report.reported_item_id }})
-                                {% elif report.type == 'story' %}
-                                    Story (ID: {{ report.reported_item_id }})
-                                {% endif %}
-                            </td>
-                            <td><span class="badge bg-info">{{ report.type | capitalize }}</span></td>
-                            <td>{{ report.reason | truncate(50, True) }} <button class="btn-action btn-sm view-report-reason-btn" data-reason="{{ report.reason }}">View</button></td>
-                            <td><a href="{{ url_for('profile', username=report.reported_by_username) }}" class="text-white text-decoration-none">@{{ report.reported_by_username }}</a></td>
-                            <td>{{ moment(report.timestamp).fromNow() }}</td>
-                            <td>
-                                <button class="btn-action handle-report-warn-btn" data-report-id="{{ report.id }}" data-item-id="{{ report.reported_item_id }}" data-item-type="{{ report.type }}"><i class="fas fa-exclamation-circle"></i> Warn</button>
-                                <button class="btn-action handle-report-ban-btn" data-report-id="{{ report.id }}" data-item-id="{{ report.reported_item_id }}" data-item-type="{{ report.type }}"><i class="fas fa-user-slash"></i> Ban</button>
-                                <button class="btn-action handle-report-ignore-btn" data-report-id="{{ report.id }}"><i class="fas fa-check"></i> Ignore</button>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        {# Admin Support Inbox #}
-        <div class="admin-section">
-            <h2><i class="fas fa-headset me-2"></i> Support Inbox</h2>
-            <div id="adminSupportInboxList">
-                {% for chat in support_chats_overview %}
-                    <a href="{{ url_for('admin_support_chat', chat_id=chat.id) }}" class="support-chat-list-item" data-chat-id="{{ chat.id }}">
-                        <img src="{{ chat.user_profile_pic }}" alt="User Profile" class="user-pic">
-                        <div class="chat-details">
-                            <p class="user-name">{{ chat.user_real_name }} <span class="text-muted small">@{{ chat.user_username }}</span></p>
-                            <p class="last-message">{{ chat.last_message_snippet }}</p>
-                        </div>
-                        {% if chat.unread_admin_messages_count > 0 %}
-                            <span class="unread-badge">{{ chat.unread_admin_messages_count }}</span>
-                        {% endif %}
-                    </a>
-                {% endfor %}
-            </div>
-            {% if not support_chats_overview %}
-                <p class="text-center text-muted">No active support chats.</p>
-            {% endif %}
-        </div>
-
-        {# Broadcast Message to All Users #}
-        <div class="admin-section">
-            <h2><i class="fas fa-bullhorn me-2"></i> Broadcast Message</h2>
-            <form id="broadcastMessageForm" class="broadcast-form">
-                <textarea class="form-control" id="broadcastMessageContent" rows="4" placeholder="Type message to all users..."></textarea>
-                <button type="submit" class="btn btn-primary"><i class="fas fa-paper-plane me-2"></i> Send Broadcast</button>
-            </form>
-        </div>
-
-        {# Post Admin Story (SociaFam Story) #}
-        <div class="admin-section">
-            <h2><i class="fas fa-history me-2"></i> Post SociaFam Story</h2>
-            <form id="adminStoryForm" class="admin-story-form" enctype="multipart/form-data">
-                <label for="adminStoryMedia" class="form-label">Story Media (Photo/Video max 30s)</label>
-                <input type="file" class="form-control-file" id="adminStoryMedia" name="adminStoryMedia" accept="image/*,video/*">
-                <div class="media-preview-area mb-3">
-                    <img id="adminStoryImagePreview" class="media-preview" alt="Image Preview" style="display: none;">
-                    <video id="adminStoryVideoPreview" class="media-preview" controls muted playsinline preload="metadata" style="display: none;"></video>
-                    <p id="noAdminStoryMediaText">Select a photo or video for the SociaFam Story.</p>
-                </div>
-                <label for="adminStoryDescription" class="form-label">Description (Optional)</label>
-                <textarea class="form-control mb-3" id="adminStoryDescription" name="adminStoryDescription" rows="2" placeholder="Add a short description..."></textarea>
-                <button type="submit" class="btn btn-primary"><i class="fas fa-upload me-2"></i> Post Story</button>
-            </form>
-        </div>
-
     </div>
+
+    <hr class="my-10 border-gray-300 dark:border-gray-600">
+
+    <!-- All Users Section -->
+    <h2 class="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-6 text-center">Manage Users</h2>
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 border border-gray-200 dark:border-gray-700 mb-10">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                <thead class="bg-gray-50 dark:bg-gray-700">
+                    <tr>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Profile</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Username</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Full Name</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Warnings</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Status</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                    {% for user in all_users %}
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <img class="h-10 w-10 rounded-full" src="{{ user.profile_pic }}" alt="{{ user.username }} profile photo">
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">{{ user.username }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">{{ user.real_name }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {% if user.warnings_count > 0 %}bg-yellow-100 text-yellow-800 dark:bg-yellow-700 dark:text-yellow-100{% else %}bg-green-100 text-green-800 dark:bg-green-700 dark:text-green-100{% endif %}">
+                                {{ user.warnings_count }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {% if user.is_banned %}bg-red-100 text-red-800 dark:bg-red-700 dark:text-red-100{% else %}bg-green-100 text-green-800 dark:bg-green-700 dark:text-green-100{% endif %}">
+                                {% if user.is_banned %}Banned{% else %}Active{% endif %}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <a href="{{ url_for('profile', username=user.username) }}?admin_view=true" target="_blank" class="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-600 mr-3">View</a>
+                            {% if not user.is_banned %}
+                            <button onclick="openWarnUserModal({{ user.id }})" class="text-yellow-600 hover:text-yellow-900 dark:text-yellow-400 dark:hover:text-yellow-600 mr-3">Warn</button>
+                            <button onclick="openBanUserModal({{ user.id }})" class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-600 mr-3">Ban</button>
+                            {% else %}
+                            <button onclick="unbanUser({{ user.id }})" class="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-600 mr-3">Unban</button>
+                            {% endif %}
+                            <button onclick="deleteUser({{ user.id }})" class="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-600">Delete</button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <hr class="my-10 border-gray-300 dark:border-gray-600">
+
+    <!-- All Groups Section -->
+    <h2 class="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-6 text-center">Manage Groups</h2>
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 border border-gray-200 dark:border-gray-700 mb-10">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                <thead class="bg-gray-50 dark:bg-gray-700">
+                    <tr>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Profile</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Group Name</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Members</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Reports</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Status</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                    {% for group in all_groups %}
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <img class="h-10 w-10 rounded-full" src="{{ group.profile_pic }}" alt="{{ group.name }} profile photo">
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">{{ group.name }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">{{ group.member_count }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {% if group.reports_count > 0 %}bg-orange-100 text-orange-800 dark:bg-orange-700 dark:text-orange-100{% else %}bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-100{% endif %}">
+                                {{ group.reports_count }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {% if group.is_banned %}bg-red-100 text-red-800 dark:bg-red-700 dark:text-red-100{% else %}bg-green-100 text-green-800 dark:bg-green-700 dark:text-green-100{% endif %}">
+                                {% if group.is_banned %}Banned{% else %}Active{% endif %}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <a href="#" onclick="viewGroupProfile({{ group.id }})" class="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-600 mr-3">View</a>
+                            {% if not group.is_banned %}
+                            <button onclick="openBanGroupModal({{ group.id }})" class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-600 mr-3">Ban</button>
+                            {% else %}
+                            <button onclick="unbanGroup({{ group.id }})" class="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-600 mr-3">Unban</button>
+                            {% endif %}
+                            <button onclick="deleteGroup({{ group.id }})" class="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-600">Delete</button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <hr class="my-10 border-gray-300 dark:border-gray-600">
+
+    <!-- Pending Reports Section -->
+    <h2 class="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-6 text-center">Pending Reports</h2>
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 border border-gray-200 dark:border-gray-700 mb-10">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                <thead class="bg-gray-50 dark:bg-gray-700">
+                    <tr>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Reported By</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Item Type</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Reported Item</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Reason</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Timestamp</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                    {% for report in pending_reports %}
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">{{ report.reported_by_username }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">{{ report.reported_item_type | capitalize }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
+                            {% if report.reported_item_type == 'user' %}{{ report.reported_item_username }}
+                            {% elif report.reported_item_type == 'group' %}{{ report.reported_item_name }}
+                            {% else %}{{ report.reported_item_id }}
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">{{ report.reason }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">{{ moment(report.timestamp).format('YYYY-MM-DD HH:mm') }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <button onclick="handleReport({{ report.id }}, 'warn')" class="text-yellow-600 hover:text-yellow-900 dark:text-yellow-400 dark:hover:text-yellow-600 mr-3">Warn</button>
+                            <button onclick="handleReport({{ report.id }}, 'ban')" class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-600 mr-3">Ban</button>
+                            <button onclick="handleReport({{ report.id }}, 'ignore')" class="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-600">Ignore</button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <hr class="my-10 border-gray-300 dark:border-gray-600">
+
+    <!-- Support Chats Overview Section -->
+    <h2 class="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-6 text-center">Support Chats Overview</h2>
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 border border-gray-200 dark:border-gray-700 mb-10">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                <thead class="bg-gray-50 dark:bg-gray-700">
+                    <tr>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">User</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Last Message</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Unread (Admin)</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                    {% for chat in support_chats_overview %}
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <img class="h-10 w-10 rounded-full mr-3" src="{{ chat.user_profile_pic }}" alt="{{ chat.user_username }} profile photo">
+                                <div>
+                                    <div class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ chat.user_real_name }}</div>
+                                    <div class="text-xs text-gray-500 dark:text-gray-400">@{{ chat.user_username }}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">{{ chat.last_message_snippet }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
+                            {% if chat.unread_admin_messages_count > 0 %}
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800 dark:bg-red-700 dark:text-red-100">
+                                {{ chat.unread_admin_messages_count }}
+                            </span>
+                            {% else %}
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-100">
+                                0
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <a href="{{ url_for('admin_support_chat', chat_id=chat.chat_id) }}" class="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-600">View Chat</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
 </div>
 
+<!-- Modals for Admin Actions (Hidden by default) -->
 
-{# --- Modals for Admin Actions --- #}
-
-{# Warn User Modal #}
-<div class="modal fade" id="warnUserModal" tabindex="-1" aria-labelledby="warnUserModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="warnUserModalLabel">Issue Warning to User</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <p>Issuing warning to <strong id="warnUsernamePlaceholder"></strong>.</p>
-                <div class="mb-3">
-                    <label for="warningTitle" class="form-label">Warning Title</label>
-                    <input type="text" class="form-control" id="warningTitle" placeholder="e.g., Inappropriate Content">
-                </div>
-                <div class="mb-3">
-                    <label for="warningDescription" class="form-label">Description</label>
-                    <textarea class="form-control" id="warningDescription" rows="3" placeholder="Explain the violation..."></textarea>
-                </div>
-                <input type="hidden" id="warnUserId">
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary" id="confirmWarnUserBtn">Issue Warning</button>
-            </div>
+<!-- Broadcast Message Modal -->
+<div id="broadcastModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden flex items-center justify-center z-50">
+    <div class="relative p-5 border w-96 shadow-lg rounded-md bg-white dark:bg-gray-800">
+        <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100 mb-4">Send Broadcast Message</h3>
+        <textarea id="broadcastMessageContent" class="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 dark:text-gray-100 mb-4" rows="4" placeholder="Enter message..."></textarea>
+        <div class="flex justify-end space-x-2">
+            <button onclick="closeBroadcastModal()" class="px-4 py-2 bg-gray-300 dark:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-md hover:bg-gray-400 dark:hover:bg-gray-700">Cancel</button>
+            <button onclick="sendBroadcast()" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">Send</button>
         </div>
     </div>
 </div>
 
-{# Ban User Modal #}
-<div class="modal fade" id="banUserModal" tabindex="-1" aria-labelledby="banUserModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="banUserModalLabel">Ban User</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <p>Banning user: <strong id="banUsernamePlaceholder"></strong>.</p>
-                <div class="mb-3">
-                    <label for="banReason" class="form-label">Reason for Ban</label>
-                    <textarea class="form-control" id="banReason" rows="3" placeholder="Explain the ban reason..."></textarea>
-                </div>
-                <div class="mb-3">
-                    <label for="banDuration">Ban Duration</label>
-                    <select class="form-select" id="banDuration">
-                        <option value="temporary">Temporary (specify days)</option>
-                        <option value="permanent">Permanent</option>
-                    </select>
-                </div>
-                <div class="mb-3" id="banDaysField" style="display: block;">
-                    <label for="banDays" class="form-label">Number of Days</label>
-                    <input type="number" class="form-control" id="banDays" value="7" min="1">
-                </div>
-                <input type="hidden" id="banUserId">
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-danger" id="confirmBanUserBtn">Confirm Ban</button>
-            </div>
+<!-- Warn User Modal -->
+<div id="warnUserModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden flex items-center justify-center z-50">
+    <div class="relative p-5 border w-96 shadow-lg rounded-md bg-white dark:bg-gray-800">
+        <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100 mb-4">Warn User <span id="warnUsername" class="text-indigo-600 dark:text-indigo-400"></span></h3>
+        <input type="hidden" id="warnUserId">
+        <div class="mb-4">
+            <label for="warnTitle" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Warning Title:</label>
+            <input type="text" id="warnTitle" class="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 dark:text-gray-100" placeholder="e.g., Content Violation">
+        </div>
+        <div class="mb-4">
+            <label for="warnDescription" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description:</label>
+            <textarea id="warnDescription" class="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 dark:text-gray-100" rows="3" placeholder="Detailed reason for warning"></textarea>
+        </div>
+        <div class="flex justify-end space-x-2">
+            <button onclick="closeWarnUserModal()" class="px-4 py-2 bg-gray-300 dark:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-md hover:bg-gray-400 dark:hover:bg-gray-700">Cancel</button>
+            <button onclick="warnUser()" class="px-4 py-2 bg-yellow-600 text-white rounded-md hover:bg-yellow-700">Warn</button>
         </div>
     </div>
 </div>
 
-{# Delete User/Group/Content Confirmation Modal #}
-<div class="modal fade" id="deleteConfirmationModal" tabindex="-1" aria-labelledby="deleteConfirmationModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="deleteConfirmationModalLabel">Confirm Deletion</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <p>Are you sure you want to permanently delete <strong id="deleteItemNamePlaceholder"></strong> (<span id="deleteItemTypePlaceholder"></span>)? This action is irreversible and all associated data will be lost.</p>
-                <input type="hidden" id="deleteItemId">
-                <input type="hidden" id="deleteItemType">
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-danger" id="confirmDeleteBtn">Delete Permanently</button>
-            </div>
+<!-- Ban User Modal -->
+<div id="banUserModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden flex items-center justify-center z-50">
+    <div class="relative p-5 border w-96 shadow-lg rounded-md bg-white dark:bg-gray-800">
+        <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100 mb-4">Ban User <span id="banUsername" class="text-indigo-600 dark:text-indigo-400"></span></h3>
+        <input type="hidden" id="banUserId">
+        <div class="mb-4">
+            <label for="banReason" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Reason for Ban:</label>
+            <textarea id="banReason" class="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 dark:text-gray-100" rows="3" placeholder="e.g., Repeated community guideline violations"></textarea>
+        </div>
+        <div class="mb-4">
+            <label for="banDuration" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Ban Duration:</label>
+            <select id="banDuration" onchange="toggleBanDays()" class="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 dark:text-gray-100">
+                <option value="temporary">Temporary</option>
+                <option value="permanent">Permanent</option>
+            </select>
+        </div>
+        <div id="banDaysContainer" class="mb-4">
+            <label for="banDays" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Days (for temporary ban):</label>
+            <input type="number" id="banDays" value="7" min="1" class="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 dark:text-gray-100">
+        </div>
+        <div class="flex justify-end space-x-2">
+            <button onclick="closeBanUserModal()" class="px-4 py-2 bg-gray-300 dark:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-md hover:bg-gray-400 dark:hover:bg-gray-700">Cancel</button>
+            <button onclick="banUser()" class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700">Ban</button>
         </div>
     </div>
 </div>
 
-{# View Report Reason Modal #}
-<div class="modal fade" id="viewReportReasonModal" tabindex="-1" aria-labelledby="viewReportReasonModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="viewReportReasonModalLabel">Report Reason</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <p id="fullReportReasonContent"></p>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-            </div>
+<!-- Ban Group Modal -->
+<div id="banGroupModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden flex items-center justify-center z-50">
+    <div class="relative p-5 border w-96 shadow-lg rounded-md bg-white dark:bg-gray-800">
+        <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100 mb-4">Ban Group <span id="banGroupName" class="text-indigo-600 dark:text-indigo-400"></span></h3>
+        <input type="hidden" id="banGroupId">
+        <div class="mb-4">
+            <label for="banGroupReason" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Reason for Ban:</label>
+            <textarea id="banGroupReason" class="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 dark:text-gray-100" rows="3" placeholder="e.g., Inappropriate content, rule violation"></textarea>
+        </div>
+        <div class="mb-4">
+            <label for="banGroupDuration" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Ban Duration:</label>
+            <select id="banGroupDuration" onchange="toggleBanGroupDays()" class="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 dark:text-gray-100">
+                <option value="temporary">Temporary</option>
+                <option value="permanent">Permanent</option>
+            </select>
+        </div>
+        <div id="banGroupDaysContainer" class="mb-4">
+            <label for="banGroupDays" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Days (for temporary ban):</label>
+            <input type="number" id="banGroupDays" value="7" min="1" class="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 dark:text-gray-100">
+        </div>
+        <div class="flex justify-end space-x-2">
+            <button onclick="closeBanGroupModal()" class="px-4 py-2 bg-gray-300 dark:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-md hover:bg-gray-400 dark:hover:bg-gray-700">Cancel</button>
+            <button onclick="banGroup()" class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700">Ban</button>
         </div>
     </div>
 </div>
 
 
 <script>
-    // Define CSS variables for dark theme to ensure consistency
-    document.documentElement.style.setProperty('--background-color', '#2c2c2c');
-    document.documentElement.style.setProperty('--card-bg', '#3a3a3a');
-    document.documentElement.style.setProperty('--text-color', '#e0e0e0');
-    document.documentElement.style.setProperty('--secondary-text-color', '#aaaaaa');
-    document.documentElement.style.setProperty('--header-footer-bg', '#1e1e1e');
-    document.documentElement.style.setProperty('--primary-color', '#6200ea');
-    document.documentElement.style.setProperty('--primary-color-light', '#bb86fc');
-    document.documentElement.style.setProperty('--primary-color-dark', '#3700b3');
-    document.documentElement.style.setProperty('--success-color', '#03dac6');
-    document.documentElement.style.setProperty('--warning-color', '#ffcc00');
-    document.documentElement.style.setProperty('--danger-color', '#cf6679');
-    document.documentElement.style.setProperty('--input-border-color', '#555555');
-    document.documentElement.style.setProperty('--border-color-light', '#444444');
-    document.documentElement.style.setProperty('--button-bg-secondary', '#555555');
-    document.documentElement.style.setProperty('--button-text-secondary', '#e0e0e0');
-
-    document.addEventListener('DOMContentLoaded', function() {
-        const adminDashboardContainer = document.querySelector('.admin-dashboard-container');
-        if (adminDashboardContainer) {
-            // Ensure the dark theme class is applied globally if needed
-            document.body.classList.add('dark-theme');
+    function showFlashMessage(message, category) {
+        const flashContainer = document.getElementById('flash-messages');
+        if (!flashContainer) {
+            console.error('Flash message container not found.');
+            return;
         }
 
-        // --- Filtering Logic for Users Table ---
-        const userSearchInput = document.getElementById('userSearchInput');
-        const userFilterStatus = document.getElementById('userFilterStatus');
-        const userFilterBtn = document.getElementById('userFilterBtn');
-        const userTableBody = document.getElementById('userTableBody');
-        const allUsersRows = Array.from(userTableBody.querySelectorAll('tr')); // Capture all rows initially
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `p-3 rounded-md text-sm font-medium flex items-center justify-between shadow-md mb-2
+                              {% if category == 'success' %}bg-green-100 text-green-800 dark:bg-green-700 dark:text-green-100
+                              {% elif category == 'danger' %}bg-red-100 text-red-800 dark:bg-red-700 dark:text-red-100
+                              {% elif category == 'info' %}bg-blue-100 text-blue-800 dark:bg-blue-700 dark:text-blue-100
+                              {% else %}bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-100{% endif %}`;
+        alertDiv.innerHTML = `
+            <span>${message}</span>
+            <button class="ml-4 text-current hover:opacity-75" onclick="this.parentElement.remove()">
+                &times;
+            </button>
+        `;
+        flashContainer.appendChild(alertDiv);
 
-        function filterUsers() {
-            const searchTerm = userSearchInput.value.toLowerCase();
-            const filterStatus = userFilterStatus.value;
-
-            allUsersRows.forEach(row => {
-                const username = row.dataset.username;
-                const realname = row.dataset.realname;
-                const statusBadge = row.querySelector('.badge');
-                const userStatus = statusBadge ? statusBadge.textContent.toLowerCase().split(' ')[0] : 'active'; // e.g., "banned", "warned", "active"
-
-                const matchesSearch = username.includes(searchTerm) || realname.includes(searchTerm);
-                const matchesStatus = filterStatus === 'all' || userStatus === filterStatus;
-
-                if (matchesSearch && matchesStatus) {
-                    row.style.display = '';
-                } else {
-                    row.style.display = 'none';
-                }
-            });
-        }
-        userSearchInput.addEventListener('input', filterUsers);
-        userFilterStatus.addEventListener('change', filterUsers);
-        userFilterBtn.addEventListener('click', filterUsers);
+        setTimeout(() => {
+            alertDiv.remove();
+        }, 5000); // Messages disappear after 5 seconds
+    }
 
 
-        // --- Filtering Logic for Groups Table ---
-        const groupSearchInput = document.getElementById('groupSearchInput');
-        const groupFilterStatus = document.getElementById('groupFilterStatus');
-        const groupFilterBtn = document.getElementById('groupFilterBtn');
-        const groupTableBody = document.getElementById('groupTableBody');
-        const allGroupsRows = Array.from(groupTableBody.querySelectorAll('tr')); // Capture all rows initially
+    // --- Broadcast Message Modal ---
+    function openBroadcastModal() {
+        document.getElementById('broadcastModal').classList.remove('hidden');
+    }
 
-        function filterGroups() {
-            const searchTerm = groupSearchInput.value.toLowerCase();
-            const filterStatus = groupFilterStatus.value;
+    function closeBroadcastModal() {
+        document.getElementById('broadcastModal').classList.add('hidden');
+        document.getElementById('broadcastMessageContent').value = '';
+    }
 
-            allGroupsRows.forEach(row => {
-                const groupname = row.dataset.groupname;
-                const statusBadge = row.querySelector('.badge');
-                const groupStatus = statusBadge ? statusBadge.textContent.toLowerCase().split(' ')[0] : 'active'; // e.g., "banned", "reported", "active"
-
-                const matchesSearch = groupname.includes(searchTerm);
-                const matchesStatus = filterStatus === 'all' || groupStatus === filterStatus;
-
-                if (matchesSearch && matchesStatus) {
-                    row.style.display = '';
-                } else {
-                    row.style.display = 'none';
-                }
-            });
-        }
-        groupSearchInput.addEventListener('input', filterGroups);
-        groupFilterStatus.addEventListener('change', filterGroups);
-        groupFilterBtn.addEventListener('click', filterGroups);
-
-
-        // --- Admin Action Modals & Buttons ---
-        const warnUserModal = new bootstrap.Modal(document.getElementById('warnUserModal'));
-        const warnUsernamePlaceholder = document.getElementById('warnUsernamePlaceholder');
-        const warnUserIdInput = document.getElementById('warnUserId');
-        const warningTitleInput = document.getElementById('warningTitle');
-        const warningDescriptionInput = document.getElementById('warningDescription');
-        const confirmWarnUserBtn = document.getElementById('confirmWarnUserBtn');
-
-        const banUserModal = new bootstrap.Modal(document.getElementById('banUserModal'));
-        const banUsernamePlaceholder = document.getElementById('banUsernamePlaceholder');
-        const banUserIdInput = document.getElementById('banUserId');
-        const banReasonInput = document.getElementById('banReason');
-        const banDurationSelect = document.getElementById('banDuration');
-        const banDaysField = document.getElementById('banDaysField');
-        const banDaysInput = document.getElementById('banDays');
-        const confirmBanUserBtn = document.getElementById('confirmBanUserBtn');
-
-        const deleteConfirmationModal = new bootstrap.Modal(document.getElementById('deleteConfirmationModal'));
-        const deleteItemNamePlaceholder = document.getElementById('deleteItemNamePlaceholder');
-        const deleteItemTypePlaceholder = document.getElementById('deleteItemTypePlaceholder');
-        const deleteItemIdInput = document.getElementById('deleteItemId');
-        const deleteItemTypeInput = document.getElementById('deleteItemType');
-        const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
-
-        const viewReportReasonModal = new bootstrap.Modal(document.getElementById('viewReportReasonModal'));
-        const fullReportReasonContent = document.getElementById('fullReportReasonContent');
-
-        // Toggle ban duration field
-        banDurationSelect.addEventListener('change', function() {
-            if (this.value === 'temporary') {
-                banDaysField.style.display = 'block';
-            } else {
-                banDaysField.style.display = 'none';
-            }
-        });
-
-        // --- Event Delegation for User/Group/Report Actions ---
-        document.body.addEventListener('click', function(event) {
-            // Warn User
-            if (event.target.classList.contains('warn-user-btn')) {
-                const userId = event.target.dataset.userId;
-                const username = event.target.closest('tr').dataset.username;
-                warnUsernamePlaceholder.textContent = `@${username}`;
-                warnUserIdInput.value = userId;
-                warningTitleInput.value = '';
-                warningDescriptionInput.value = '';
-                warnUserModal.show();
-            }
-
-            // Ban User
-            if (event.target.classList.contains('ban-user-btn')) {
-                const userId = event.target.dataset.userId;
-                const username = event.target.closest('tr').dataset.username;
-                banUsernamePlaceholder.textContent = `@${username}`;
-                banUserIdInput.value = userId;
-                banReasonInput.value = '';
-                banDurationSelect.value = 'temporary';
-                banDaysInput.value = 7;
-                banDaysField.style.display = 'block';
-                banUserModal.show();
-            }
-
-            // Unban User
-            if (event.target.classList.contains('unban-user-btn')) {
-                const userId = event.target.dataset.userId;
-                const username = event.target.closest('tr').dataset.username;
-                if (confirm(`Are you sure you want to unban user @${username}?`)) {
-                    sendAdminAction(`/api/admin/unban_user/${userId}`, 'POST', {}, 'User unbanned successfully!');
-                }
-            }
-
-            // Delete User
-            if (event.target.classList.contains('delete-user-btn')) {
-                const userId = event.target.dataset.userId;
-                const username = event.target.closest('tr').dataset.username;
-                deleteItemNamePlaceholder.textContent = `@${username}`;
-                deleteItemTypePlaceholder.textContent = 'User Account';
-                deleteItemIdInput.value = userId;
-                deleteItemTypeInput.value = 'user';
-                deleteConfirmationModal.show();
-            }
-
-            // View Group
-            if (event.target.classList.contains('view-group-btn')) {
-                const groupId = event.target.dataset.groupId;
-                // Redirect to view_group_profile with a special admin flag
-                window.location.href = `{{ url_for('view_group_profile', group_id='') }}${groupId}?admin_view=true`;
-            }
-
-            // Ban Group
-            if (event.target.classList.contains('ban-group-btn')) {
-                const groupId = event.target.dataset.groupId;
-                const groupName = event.target.closest('tr').dataset.groupname;
-                // Similar ban logic, but use a generic modal or a dedicated one if complexity increases
-                if (confirm(`Are you sure you want to ban group "${groupName}"?`)) {
-                    sendAdminAction(`/api/admin/ban_group/${groupId}`, 'POST', {
-                        reason: 'Admin decided to ban.', // Simplistic reason for quick action
-                        duration: 'permanent'
-                    }, 'Group banned successfully!');
-                }
-            }
-
-            // Unban Group
-            if (event.target.classList.contains('unban-group-btn')) {
-                const groupId = event.target.dataset.groupId;
-                const groupName = event.target.closest('tr').dataset.groupname;
-                if (confirm(`Are you sure you want to unban group "${groupName}"?`)) {
-                    sendAdminAction(`/api/admin/unban_group/${groupId}`, 'POST', {}, 'Group unbanned successfully!');
-                }
-            }
-
-            // Delete Group
-            if (event.target.classList.contains('delete-group-btn')) {
-                const groupId = event.target.dataset.groupId;
-                const groupName = event.target.closest('tr').dataset.groupname;
-                deleteItemNamePlaceholder.textContent = `"${groupName}"`;
-                deleteItemTypePlaceholder.textContent = 'Group';
-                deleteItemIdInput.value = groupId;
-                deleteItemTypeInput.value = 'group';
-                deleteConfirmationModal.show();
-            }
-
-            // View Report Reason
-            if (event.target.classList.contains('view-report-reason-btn')) {
-                const reason = event.target.dataset.reason;
-                fullReportReasonContent.textContent = reason;
-                viewReportReasonModal.show();
-            }
-
-            // Handle Report - Warn
-            if (event.target.classList.contains('handle-report-warn-btn')) {
-                const reportId = event.target.dataset.reportId;
-                const itemId = event.target.dataset.itemId;
-                const itemType = event.target.dataset.itemType;
-                // Pre-fill warn modal based on report details
-                warnUserModal.show(); // Assuming it's a user or similar warn
-                // Logic to set warnUserIdInput, warningTitleInput, warningDescriptionInput
-                // based on itemId and itemType from the report
-            }
-
-            // Handle Report - Ban
-            if (event.target.classList.contains('handle-report-ban-btn')) {
-                const reportId = event.target.dataset.reportId;
-                const itemId = event.target.dataset.itemId;
-                const itemType = event.target.dataset.itemType;
-                banUserModal.show(); // Assuming it's a user or similar ban
-                // Logic to set banUserIdInput, banReasonInput etc.
-            }
-
-            // Handle Report - Ignore
-            if (event.target.classList.contains('handle-report-ignore-btn')) {
-                const reportId = event.target.dataset.reportId;
-                if (confirm('Are you sure you want to mark this report as handled/ignored?')) {
-                    sendAdminAction(`/api/admin/handle_report/${reportId}/ignore`, 'POST', {}, 'Report ignored.');
-                }
-            }
-        });
-
-
-        // --- Confirm Actions from Modals ---
-        confirmWarnUserBtn.addEventListener('click', function() {
-            const userId = warnUserIdInput.value;
-            const title = warningTitleInput.value.trim();
-            const description = warningDescriptionInput.value.trim();
-            if (!title || !description) {
-                alert('Please provide both title and description for the warning.');
-                return;
-            }
-            sendAdminAction(`/api/admin/warn_user/${userId}`, 'POST', { title, description }, 'Warning issued successfully!');
-            warnUserModal.hide();
-        });
-
-        confirmBanUserBtn.addEventListener('click', function() {
-            const userId = banUserIdInput.value;
-            const reason = banReasonInput.value.trim();
-            const duration = banDurationSelect.value;
-            const days = duration === 'temporary' ? parseInt(banDaysInput.value) : null;
-
-            if (!reason) {
-                alert('Please provide a reason for the ban.');
-                return;
-            }
-            if (duration === 'temporary' && (isNaN(days) || days < 1)) {
-                alert('Please provide a valid number of days for a temporary ban.');
-                return;
-            }
-
-            sendAdminAction(`/api/admin/ban_user/${userId}`, 'POST', { reason, duration, days }, 'User banned successfully!');
-            banUserModal.hide();
-        });
-
-        confirmDeleteBtn.addEventListener('click', function() {
-            const itemId = deleteItemIdInput.value;
-            const itemType = deleteItemTypeInput.value; // 'user', 'group', 'post', 'reel', 'story'
-            sendAdminAction(`/api/admin/delete_${itemType}/${itemId}`, 'POST', {}, `${itemType} deleted permanently!`);
-            deleteConfirmationModal.hide();
-        });
-
-
-        // --- Generic AJAX Function for Admin Actions ---
-        function sendAdminAction(url, method, body, successMessage) {
-            fetch(url, {
-                method: method,
-                headers: { 'Content-Type': 'application/json' },
-                body: body ? JSON.stringify(body) : null
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    alert(successMessage); // Replace with custom modal
-                    location.reload(); // Reload page to reflect changes
-                } else {
-                    alert('Action failed: ' + data.message); // Replace with custom modal
-                }
-            })
-            .catch(error => {
-                console.error('Admin action error:', error);
-                alert('An error occurred during the action.'); // Replace with custom modal
-            });
+    async function sendBroadcast() {
+        const message = document.getElementById('broadcastMessageContent').value;
+        if (!message) {
+            showFlashMessage('Broadcast message cannot be empty.', 'danger');
+            return;
         }
 
-        // --- Broadcast Message Form ---
-        const broadcastMessageForm = document.getElementById('broadcastMessageForm');
-        const broadcastMessageContent = document.getElementById('broadcastMessageContent');
-
-        broadcastMessageForm.addEventListener('submit', function(event) {
-            event.preventDefault();
-            const message = broadcastMessageContent.value.trim();
-            if (!message) {
-                alert('Please type a message to broadcast.');
-                return;
-            }
-
-            if (confirm('Are you sure you want to send this message to ALL users as a system notification?')) {
-                sendAdminAction('/api/admin/broadcast_message', 'POST', { message: message }, 'Broadcast message sent!');
-                broadcastMessageContent.value = ''; // Clear input
-            }
-        });
-
-        // --- Admin Story Post Form ---
-        const adminStoryForm = document.getElementById('adminStoryForm');
-        const adminStoryMedia = document.getElementById('adminStoryMedia');
-        const adminStoryImagePreview = document.getElementById('adminStoryImagePreview');
-        const adminStoryVideoPreview = document.getElementById('adminStoryVideoPreview');
-        const noAdminStoryMediaText = document.getElementById('noAdminStoryMediaText');
-        const adminStoryDescription = document.getElementById('adminStoryDescription');
-
-        // Media preview for admin story
-        adminStoryMedia.addEventListener('change', function(event) {
-            const file = event.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    noAdminStoryMediaText.style.display = 'none';
-                    if (file.type.startsWith('image/')) {
-                        adminStoryImagePreview.src = e.target.result;
-                        adminStoryImagePreview.style.display = 'block';
-                        adminStoryVideoPreview.style.display = 'none';
-                        adminStoryVideoPreview.src = '';
-                    } else if (file.type.startsWith('video/')) {
-                         const tempVideo = document.createElement('video');
-                            tempVideo.preload = 'metadata';
-                            tempVideo.onloadedmetadata = function() {
-                                window.URL.revokeObjectURL(tempVideo.src);
-                                if (tempVideo.duration > 30) { // Max 30 seconds for story
-                                    alert(`Video is too long (${Math.round(tempVideo.duration)}s). Max 30 seconds allowed.`);
-                                    adminStoryMedia.value = ''; // Clear input
-                                    noAdminStoryMediaText.style.display = 'block';
-                                    adminStoryImagePreview.style.display = 'none';
-                                    adminStoryVideoPreview.style.display = 'none';
-                                    adminStoryImagePreview.src = '';
-                                    adminStoryVideoPreview.src = '';
-                                    return;
-                                }
-                                adminStoryVideoPreview.src = e.target.result;
-                                adminStoryVideoPreview.style.display = 'block';
-                                adminStoryImagePreview.style.display = 'none';
-                                adminStoryImagePreview.src = '';
-                                adminStoryVideoPreview.play();
-                            };
-                            tempVideo.src = URL.createObjectURL(file);
-                    }
-                };
-                reader.readAsDataURL(file);
-            } else {
-                noAdminStoryMediaText.style.display = 'block';
-                adminStoryImagePreview.style.display = 'none';
-                adminStoryVideoPreview.style.display = 'none';
-                adminStoryImagePreview.src = '';
-                adminStoryVideoPreview.src = '';
-            }
-        });
-
-        // Admin Story submission
-        adminStoryForm.addEventListener('submit', function(event) {
-            event.preventDefault();
-            const mediaFile = adminStoryMedia.files[0];
-            const description = adminStoryDescription.value.trim();
-
-            if (!mediaFile) {
-                alert('Please select a photo or video for the story.');
-                return;
-            }
-
-            const formData = new FormData();
-            formData.append('mediaFile', mediaFile);
-            if (description) {
-                formData.append('description', description);
-            }
-
-            fetch('/api/admin/post_sociafam_story', {
+        try {
+            const response = await fetch('{{ url_for("api_admin_broadcast_message") }}', {
                 method: 'POST',
-                body: formData // No 'Content-Type' header needed for FormData
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    alert('SociaFam Story posted successfully!');
-                    adminStoryMedia.value = ''; // Clear file input
-                    adminStoryDescription.value = ''; // Clear description
-                    // Reset preview
-                    noAdminStoryMediaText.style.display = 'block';
-                    adminStoryImagePreview.style.display = 'none';
-                    adminStoryVideoPreview.style.display = 'none';
-                    adminStoryImagePreview.src = '';
-                    adminStoryVideoPreview.src = '';
-                } else {
-                    alert('Failed to post story: ' + data.message);
-                }
-            })
-            .catch(error => {
-                console.error('Error posting admin story:', error);
-                alert('An error occurred while posting the story.');
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ message: message })
             });
-        });
-    });
+            const data = await response.json();
+            if (data.success) {
+                showFlashMessage(data.message, 'success');
+                closeBroadcastModal();
+            } else {
+                showFlashMessage(data.message, 'danger');
+            }
+        } catch (error) {
+            console.error('Error sending broadcast:', error);
+            showFlashMessage('Failed to send broadcast message.', 'danger');
+        }
+    }
+
+    // --- Warn User Modal ---
+    function openWarnUserModal(userId) {
+        document.getElementById('warnUserId').value = userId;
+        const user = {{ all_users | tojson | safe }}.find(u => u.id === userId);
+        document.getElementById('warnUsername').textContent = user ? `@${user.username}` : '';
+        document.getElementById('warnUserModal').classList.remove('hidden');
+    }
+
+    function closeWarnUserModal() {
+        document.getElementById('warnUserModal').classList.add('hidden');
+        document.getElementById('warnUserId').value = '';
+        document.getElementById('warnTitle').value = '';
+        document.getElementById('warnDescription').value = '';
+    }
+
+    async function warnUser() {
+        const userId = document.getElementById('warnUserId').value;
+        const title = document.getElementById('warnTitle').value;
+        const description = document.getElementById('warnDescription').value;
+
+        if (!title || !description) {
+            showFlashMessage('Warning title and description are required.', 'danger');
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/admin/warn_user/${userId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ title, description })
+            });
+            const data = await response.json();
+            if (data.success) {
+                showFlashMessage(data.message, 'success');
+                closeWarnUserModal();
+                location.reload(); // Reload to update user status
+            } else {
+                showFlashMessage(data.message, 'danger');
+            }
+        } catch (error) {
+            console.error('Error warning user:', error);
+            showFlashMessage('Failed to warn user.', 'danger');
+        }
+    }
+
+    // --- Ban User Modal ---
+    function toggleBanDays() {
+        const duration = document.getElementById('banDuration').value;
+        document.getElementById('banDaysContainer').classList.toggle('hidden', duration === 'permanent');
+    }
+
+    function openBanUserModal(userId) {
+        document.getElementById('banUserId').value = userId;
+        const user = {{ all_users | tojson | safe }}.find(u => u.id === userId);
+        document.getElementById('banUsername').textContent = user ? `@${user.username}` : '';
+        document.getElementById('banDuration').value = 'temporary';
+        document.getElementById('banDays').value = '7';
+        toggleBanDays(); // Set initial state
+        document.getElementById('banUserModal').classList.remove('hidden');
+    }
+
+    function closeBanUserModal() {
+        document.getElementById('banUserModal').classList.add('hidden');
+        document.getElementById('banUserId').value = '';
+        document.getElementById('banReason').value = '';
+    }
+
+    async function banUser() {
+        const userId = document.getElementById('banUserId').value;
+        const reason = document.getElementById('banReason').value;
+        const duration = document.getElementById('banDuration').value;
+        const days = duration === 'temporary' ? parseInt(document.getElementById('banDays').value) : null;
+
+        if (!reason) {
+            showFlashMessage('Reason for ban is required.', 'danger');
+            return;
+        }
+        if (duration === 'temporary' && (isNaN(days) || days < 1)) {
+            showFlashMessage('Valid number of days is required for temporary ban.', 'danger');
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/admin/ban_user/${userId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ reason, duration, days })
+            });
+            const data = await response.json();
+            if (data.success) {
+                showFlashMessage(data.message, 'success');
+                closeBanUserModal();
+                location.reload(); // Reload to update user status
+            } else {
+                showFlashMessage(data.message, 'danger');
+            }
+        } catch (error) {
+            console.error('Error banning user:', error);
+            showFlashMessage('Failed to ban user.', 'danger');
+        }
+    }
+
+    async function unbanUser(userId) {
+        if (!confirm('Are you sure you want to unban this user?')) {
+            return;
+        }
+        try {
+            const response = await fetch(`/api/admin/unban_user/${userId}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            const data = await response.json();
+            if (data.success) {
+                showFlashMessage(data.message, 'success');
+                location.reload();
+            } else {
+                showFlashMessage(data.message, 'danger');
+            }
+        } catch (error) {
+            console.error('Error unbanning user:', error);
+            showFlashMessage('Failed to unban user.', 'danger');
+        }
+    }
+
+    async function deleteUser(userId) {
+        if (!confirm('Are you sure you want to permanently delete this user and all their data? This cannot be undone.')) {
+            return;
+        }
+        try {
+            const response = await fetch(`/api/admin/delete_user/${userId}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            const data = await response.json();
+            if (data.success) {
+                showFlashMessage(data.message, 'success');
+                location.reload();
+            } else {
+                showFlashMessage(data.message, 'danger');
+            }
+        } catch (error) {
+            console.error('Error deleting user:', error);
+            showFlashMessage('Failed to delete user.', 'danger');
+        }
+    }
+
+    // --- Group Management ---
+    function viewGroupProfile(groupId) {
+        // Corrected logic to ensure groupId is a valid integer
+        if (groupId && Number.isInteger(groupId)) {
+            window.location.href = `{{ url_for('view_group_profile', group_id=0) }}${groupId}?admin_view=true`.replace('/0?', '/');
+        } else {
+            showFlashMessage('Invalid group ID.', 'danger');
+        }
+    }
+
+    function toggleBanGroupDays() {
+        const duration = document.getElementById('banGroupDuration').value;
+        document.getElementById('banGroupDaysContainer').classList.toggle('hidden', duration === 'permanent');
+    }
+
+    function openBanGroupModal(groupId) {
+        document.getElementById('banGroupId').value = groupId;
+        const group = {{ all_groups | tojson | safe }}.find(g => g.id === groupId);
+        document.getElementById('banGroupName').textContent = group ? `"${group.name}"` : '';
+        document.getElementById('banGroupDuration').value = 'temporary';
+        document.getElementById('banGroupDays').value = '7';
+        toggleBanGroupDays(); // Set initial state
+        document.getElementById('banGroupModal').classList.remove('hidden');
+    }
+
+    function closeBanGroupModal() {
+        document.getElementById('banGroupModal').classList.add('hidden');
+        document.getElementById('banGroupId').value = '';
+        document.getElementById('banGroupReason').value = '';
+    }
+
+    async function banGroup() {
+        const groupId = document.getElementById('banGroupId').value;
+        const reason = document.getElementById('banGroupReason').value;
+        const duration = document.getElementById('banGroupDuration').value;
+        const days = duration === 'temporary' ? parseInt(document.getElementById('banGroupDays').value) : null;
+
+        if (!reason) {
+            showFlashMessage('Reason for ban is required.', 'danger');
+            return;
+        }
+        if (duration === 'temporary' && (isNaN(days) || days < 1)) {
+            showFlashMessage('Valid number of days is required for temporary ban.', 'danger');
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/admin/ban_group/${groupId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ reason, duration, days })
+            });
+            const data = await response.json();
+            if (data.success) {
+                showFlashMessage(data.message, 'success');
+                closeBanGroupModal();
+                location.reload(); // Reload to update group status
+            } else {
+                showFlashMessage(data.message, 'danger');
+            }
+        } catch (error) {
+            console.error('Error banning group:', error);
+            showFlashMessage('Failed to ban group.', 'danger');
+        }
+    }
+
+    async function unbanGroup(groupId) {
+        if (!confirm('Are you sure you want to unban this group?')) {
+            return;
+        }
+        try {
+            const response = await fetch(`/api/admin/unban_group/${groupId}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            const data = await response.json();
+            if (data.success) {
+                showFlashMessage(data.message, 'success');
+                location.reload();
+            } else {
+                showFlashMessage(data.message, 'danger');
+            }
+        } catch (error) {
+            console.error('Error unbanning group:', error);
+            showFlashMessage('Failed to unban group.', 'danger');
+        }
+    }
+
+    async function deleteGroup(groupId) {
+        if (!confirm('Are you sure you want to permanently delete this group and all its data? This cannot be undone.')) {
+            return;
+        }
+        try {
+            const response = await fetch(`/api/admin/delete_group/${groupId}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            const data = await response.json();
+            if (data.success) {
+                showFlashMessage(data.message, 'success');
+                location.reload();
+            } else {
+                showFlashMessage(data.message, 'danger');
+            }
+        } catch (error) {
+            console.error('Error deleting group:', error);
+            showFlashMessage('Failed to delete group.', 'danger');
+        }
+    }
+
+    // --- Report Handling ---
+    async function handleReport(reportId, action) {
+        let confirmationMessage = '';
+        if (action === 'warn') {
+            confirmationMessage = 'Are you sure you want to warn the reported item/user?';
+        } else if (action === 'ban') {
+            confirmationMessage = 'Are you sure you want to ban the reported item/user? This is a serious action.';
+        } else if (action === 'ignore') {
+            confirmationMessage = 'Are you sure you want to ignore this report?';
+        }
+
+        if (!confirm(confirmationMessage)) {
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/admin/handle_report/${reportId}/${action}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            const data = await response.json();
+            if (data.success) {
+                showFlashMessage(data.message, 'success');
+                location.reload(); // Reload to update report status
+            } else {
+                showFlashMessage(data.message, 'danger');
+            }
+        } catch (error) {
+            console.error(`Error handling report with action ${action}:`, error);
+            showFlashMessage('Failed to handle report.', 'danger');
+        }
+    }
 </script>
 {% endblock %}
