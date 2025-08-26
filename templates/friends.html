@@ -428,13 +428,15 @@
 
     // Flask route URLs for API calls
     const API_ENDPOINTS = {
-        sendFriendRequest: "{{ url_for('api_send_friend_request', receiver_id='USER_ID_PLACEHOLDER') }}",
-        unfriend: "{{ url_for('api_unfriend', friend_id='USER_ID_PLACEHOLDER') }}",
-        acceptFriendRequest: "{{ url_for('api_accept_friend_request', request_id='REQUEST_ID_PLACEHOLDER') }}",
-        declineFriendRequest: "{{ url_for('api_decline_friend_request', request_id='REQUEST_ID_PLACEHOLDER') }}",
-        blockUser: "{{ url_for('api_block_user', user_id='USER_ID_PLACEHOLDER') }}",
-        // If you need a backend endpoint for remove suggestion, add it here:
-        // removeSuggestion: "{{ url_for('api_remove_suggestion', user_id='USER_ID_PLACEHOLDER') }}"
+        // Renamed to match Flask function names for clarity
+        api_send_friend_request: "{{ url_for('api_send_friend_request', receiver_id='USER_ID_PLACEHOLDER') }}",
+        api_unfriend: "{{ url_for('api_unfriend', friend_id='USER_ID_PLACEHOLDER') }}",
+        api_accept_friend_request: "{{ url_for('api_accept_friend_request', request_id='REQUEST_ID_PLACEHOLDER') }}",
+        api_decline_friend_request: "{{ url_for('api_decline_friend_request', request_id='REQUEST_ID_PLACEHOLDER') }}",
+        api_block_user: "{{ url_for('api_block_user', user_id_to_block='USER_ID_PLACEHOLDER') }}",
+        // 'api_remove_suggestion' is not defined in app.py, so it's removed to prevent Jinja errors.
+        // If you add this route to app.py, uncomment and define it here:
+        // api_remove_suggestion: "{{ url_for('api_remove_suggestion', user_id='USER_ID_PLACEHOLDER') }}"
     };
 
     document.addEventListener('DOMContentLoaded', function() {
@@ -576,12 +578,17 @@
                 return;
             }
 
-            // Replace placeholder with actual ID
-            if (endpointKey === 'sendFriendRequest' || endpointKey === 'unfriend' || endpointKey === 'blockUser' || endpointKey === 'removeSuggestion') {
-                url = url.replace('USER_ID_PLACEHOLDER', id);
-            } else if (endpointKey === 'acceptFriendRequest' || endpointKey === 'declineFriendRequest') {
-                url = url.replace('REQUEST_ID_PLACEHOLDER', id);
+            // Replace placeholder with actual ID based on the specific endpoint's expected parameter
+            if (endpointKey === 'api_send_friend_request') {
+                url = url.replace('USER_ID_PLACEHOLDER', id); // receiver_id
+            } else if (endpointKey === 'api_unfriend') {
+                url = url.replace('USER_ID_PLACEHOLDER', id); // friend_id
+            } else if (endpointKey === 'api_accept_friend_request' || endpointKey === 'api_decline_friend_request') {
+                url = url.replace('REQUEST_ID_PLACEHOLDER', id); // request_id
+            } else if (endpointKey === 'api_block_user') {
+                url = url.replace('USER_ID_PLACEHOLDER', id); // user_id_to_block
             }
+            // If you add api_remove_suggestion, you'd add a similar conditional here.
             
             fetch(url, { method: method })
                 .then(response => response.json())
@@ -616,25 +623,25 @@
                 const requestId = listItem.dataset.requestId; // Only present for request items
 
                 if (target.classList.contains('follow-btn')) {
-                    handleApiCall('sendFriendRequest', userId, 'POST', 'Follow request sent.', listItem);
+                    handleApiCall('api_send_friend_request', userId, 'POST', 'Follow request sent.', listItem);
                 } else if (target.classList.contains('unfollow-btn') || target.classList.contains('unfriend-btn')) {
-                    handleApiCall('unfriend', userId, 'POST', 'Successfully unfollowed/unfriended.', listItem);
+                    handleApiCall('api_unfriend', userId, 'POST', 'Successfully unfollowed/unfriended.', listItem);
                 } else if (target.classList.contains('accept-btn')) {
-                    handleApiCall('acceptFriendRequest', requestId, 'POST', 'Friend request accepted!', listItem);
+                    handleApiCall('api_accept_friend_request', requestId, 'POST', 'Friend request accepted!', listItem);
                 } else if (target.classList.contains('decline-btn')) {
-                    handleApiCall('declineFriendRequest', requestId, 'POST', 'Friend request declined.', listItem);
+                    handleApiCall('api_decline_friend_request', requestId, 'POST', 'Friend request declined.', listItem);
                 } else if (target.classList.contains('remove-btn')) {
                     if (confirm('Remove this suggestion?')) {
-                         // If you have a backend API for this, uncomment and use it
-                         // handleApiCall('removeSuggestion', userId, 'POST', 'Suggestion removed.', listItem);
-                         // For now, client-side removal and reload
+                         // As 'api_remove_suggestion' is not in app.py, this is client-side only.
+                         // If you add it to app.py, uncomment the handleApiCall line below.
+                         // handleApiCall('api_remove_suggestion', userId, 'POST', 'Suggestion removed.', listItem);
                          listItem.remove();
                          alert('Suggestion removed from list.');
                          window.location.reload();
                     }
                 } else if (target.classList.contains('block-btn')) {
                     if (confirm('Are you sure you want to block this user?')) {
-                        handleApiCall('blockUser', userId, 'POST', 'User blocked.', listItem);
+                        handleApiCall('api_block_user', userId, 'POST', 'User blocked.', listItem);
                     }
                 }
                 // Stop propagation for dropdowns to prevent parent clicks
