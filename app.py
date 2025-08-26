@@ -14,7 +14,7 @@ from firebase_admin import credentials, firestore, initialize_app # initialize_a
 
 from flask import Flask, render_template, Blueprint, request, redirect, url_for, g, flash, session, abort, jsonify, send_from_directory
 from werkzeug.utils import secure_filename
-from werkwerkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.security import generate_password_hash, check_password_hash # Corrected: Removed extra 'werk'
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from flask_moment import Moment
 from functools import wraps # For admin_required decorator
