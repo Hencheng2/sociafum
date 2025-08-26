@@ -40,564 +40,155 @@
     }
 
     .friends-tabs-nav {
-        background-color: var(--card-background);
+        background-color: var(--background-light);
+        padding-top: 5px;
+        padding-bottom: 5px;
         border-bottom: 1px solid var(--border-color-light);
-        box-shadow: 0 1px 3px var(--shadow-soft);
-        display: flex; /* Ensure flex for tab alignment */
-        justify-content: space-around; /* Distribute tabs evenly */
-        padding: 0 10px; /* Horizontal padding for tabs */
     }
 
     .friends-tabs-nav .nav-link {
         color: var(--secondary-text);
-        font-weight: 600;
-        padding: 12px 10px;
-        border-bottom: 3px solid transparent; /* Underline effect */
-        transition: color 0.2s ease, border-color 0.2s ease;
-        flex-grow: 1; /* Tabs take equal width */
-        text-align: center;
-        white-space: nowrap; /* Prevent tab text from wrapping */
-        overflow: hidden;
-        text-overflow: ellipsis;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 5px; /* Space between text and count */
+        font-weight: 500;
+        border: none;
+        padding: 10px 15px;
     }
 
     .friends-tabs-nav .nav-link.active {
         color: var(--primary-color);
-        border-bottom-color: var(--primary-color);
+        border-bottom: 2px solid var(--primary-color);
+        background-color: transparent;
     }
 
-    .friends-tabs-nav .nav-link:hover:not(.active) {
-        color: var(--primary-text);
+    .tab-pane {
+        display: none;
     }
 
-    .friends-tabs-nav .badge {
-        background-color: var(--danger-color);
-        color: white;
-        font-size: 0.7em;
-        padding: .3em .6em;
-        border-radius: 50%;
-        margin-left: 5px;
-        line-height: 1; /* Adjust line height for better vertical alignment */
+    .tab-pane.active {
+        display: block;
     }
 
-    .friends-content-container {
-        padding: 15px;
-        background-color: var(--background-light);
-    }
-
-    /* List item styling for users */
     .user-list-item {
         display: flex;
         align-items: center;
-        padding: 12px 15px;
-        margin-bottom: 10px;
-        background-color: var(--card-background);
-        border-radius: 10px;
-        box-shadow: 0 2px 8px var(--shadow-soft);
-        transition: transform 0.2s ease;
-        text-decoration: none; /* Remove underline for entire item */
-        color: inherit; /* Inherit text color */
+        padding: 15px 0;
+        border-bottom: 1px solid var(--border-color-light);
+        transition: background-color 0.2s ease-in-out;
     }
 
     .user-list-item:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 4px 12px var(--shadow-medium);
+        background-color: var(--hover-light);
     }
 
-    .user-list-item .profile-pic {
+    .user-list-item:last-child {
+        border-bottom: none;
+    }
+
+    .user-profile-photo {
         width: 50px;
         height: 50px;
         border-radius: 50%;
         object-fit: cover;
         margin-right: 15px;
-        border: 2px solid var(--primary-color);
-        flex-shrink: 0;
     }
 
-    .user-list-item .user-details {
-        flex-grow: 1;
-        overflow: hidden; /* For text ellipsis */
-    }
-
-    .user-list-item .user-details .real-name {
-        font-weight: 600;
+    .user-info .username {
+        font-weight: bold;
         color: var(--primary-text);
-        margin-bottom: 2px;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-
-    .user-list-item .user-details .mutual-info {
-        font-size: 0.8em;
-        color: var(--secondary-text);
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-
-    .user-list-item .action-buttons {
-        display: flex;
-        gap: 8px; /* Space between buttons */
-        flex-shrink: 0;
-    }
-
-    .user-list-item .btn-action {
-        background-color: var(--button-bg-primary);
-        color: var(--button-text-primary);
-        border: none;
-        border-radius: 8px;
-        padding: 8px 12px;
-        font-size: 0.9em;
-        font-weight: 500;
-        transition: background-color 0.2s ease;
-        display: flex;
-        align-items: center;
-        gap: 5px;
-    }
-    
-    .user-list-item .btn-action i {
         font-size: 1em;
+        margin-bottom: 2px;
     }
 
-    .user-list-item .btn-action.message {
-        background-color: var(--info-color);
+    .user-info .user-handle {
+        font-size: 0.9em;
+        color: var(--secondary-text);
     }
 
-    .user-list-item .btn-action.message:hover {
-        background-color: darken(var(--info-color), 10%);
+    .action-btn {
+        margin-left: auto;
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 0.8em;
     }
 
-    .user-list-item .btn-action.block {
-        background-color: var(--danger-color);
+    .btn-primary-outline {
+        color: var(--primary-color);
+        background-color: transparent;
+        border: 1px solid var(--primary-color);
     }
 
-    .user-list-item .btn-action.block:hover {
-        background-color: darken(var(--danger-color), 10%);
-    }
-
-    .user-list-item .btn-action.accept {
-        background-color: var(--success-color);
-    }
-
-    .user-list-item .btn-action.accept:hover {
-        background-color: darken(var(--success-color), 10%);
-    }
-
-    .user-list-item .btn-action.decline {
+    .btn-secondary {
+        color: #fff;
         background-color: var(--secondary-color);
+        border-color: var(--secondary-color);
     }
 
-    .user-list-item .btn-action.decline:hover {
-        background-color: darken(var(--secondary-color), 10%);
-    }
-
-    .user-list-item .btn-action.follow {
-        background-color: var(--primary-color);
-    }
-
-    .user-list-item .btn-action.follow:hover {
-        background-color: darken(var(--primary-color), 10%);
-    }
-
-    /* Dropdown for Following/Friends list items */
-    .user-list-item .dropdown-toggle {
-        background: none;
-        border: none;
-        color: var(--secondary-text);
-        font-size: 1.2em;
-        padding: 5px;
-        border-radius: 5px;
-        transition: background-color 0.2s ease;
-    }
-    .user-list-item .dropdown-toggle:hover {
-        background-color: var(--background-light);
-    }
-    .user-list-item .dropdown-menu {
-        background-color: var(--card-background);
-        border: 1px solid var(--border-color-light);
-        border-radius: 8px;
-        box-shadow: 0 4px 10px var(--shadow-soft);
-    }
-    .user-list-item .dropdown-item {
-        color: var(--primary-text);
-        padding: 8px 15px;
-        transition: background-color 0.2s ease;
-    }
-    .user-list-item .dropdown-item:hover {
-        background-color: var(--background-light);
-    }
-
-    /* Message for empty lists */
-    .empty-list-message {
+    .no-content-message {
         text-align: center;
+        padding: 40px;
         color: var(--secondary-text);
-        padding: 20px;
-        margin-top: 20px;
-    }
-
-    /* Responsive adjustments */
-    @media (max-width: 768px) {
-        .friends-header-sticky {
-            padding: 10px;
-        }
-        .friends-search-bar .search-icon {
-            left: 20px;
-        }
-        .friends-tabs-nav .nav-link {
-            padding: 10px 5px;
-            font-size: 0.9em;
-        }
-        .user-list-item {
-            padding: 10px;
-            margin-bottom: 8px;
-        }
-        .user-list-item .profile-pic {
-            width: 45px;
-            height: 45px;
-            margin-right: 10px;
-        }
-        .user-list-item .user-details .real-name {
-            font-size: 0.95em;
-        }
-        .user-list-item .user-details .mutual-info {
-            font-size: 0.75em;
-        }
-        .user-list-item .btn-action {
-            padding: 6px 10px;
-            font-size: 0.85em;
-            gap: 3px;
-        }
-        .user-list-item .btn-action i {
-            font-size: 0.9em;
-        }
-    }
-
-    @media (max-width: 480px) {
-        .friends-search-bar .search-icon {
-            left: 15px;
-        }
-        .friends-tabs-nav .nav-link {
-            font-size: 0.8em;
-            gap: 3px;
-        }
-        .user-list-item .profile-pic {
-            width: 40px;
-            height: 40px;
-        }
-        .user-list-item .btn-action {
-            padding: 5px 8px;
-            font-size: 0.8em;
-        }
     }
 </style>
 
-<div class="container-fluid p-0"> {# Use container-fluid to span full width #}
-
-    <div class="friends-header-sticky">
-        {# Search Bar #}
-        <div class="friends-search-bar position-relative mb-3">
-            <i class="fas fa-search search-icon"></i>
-            <input type="text" class="form-control" id="friendsSearchInput" placeholder="Search users...">
-        </div>
-
-        {# Tab Navigation #}
-        <ul class="nav nav-pills friends-tabs-nav" id="friendsTabs" role="tablist">
-            <li class="nav-item" role="presentation">
-                <button class="nav-link active" id="followers-tab" data-bs-toggle="tab" data-bs-target="#followersContent" type="button" role="tab" aria-controls="followersContent" aria-selected="true">
-                    Followers <span class="badge">{{ followers_count | default(0) }}</span>
-                </button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" id="following-tab" data-bs-toggle="tab" data-bs-target="#followingContent" type="button" role="tab" aria-controls="followingContent" aria-selected="false">
-                    Following <span class="badge">{{ following_count | default(0) }}</span>
-                </button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" id="friends-tab" data-bs-toggle="tab" data-bs-target="#friendsContent" type="button" role="tab" aria-controls="friendsContent" aria-selected="false">
-                    Friends <span class="badge">{{ friends_count | default(0) }}</span>
-                </button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" id="requests-tab" data-bs-toggle="tab" data-bs-target="#requestsContent" type="button" role="tab" aria-controls="requestsContent" aria-selected="false">
-                    Requests <span class="badge">{{ requests_count | default(0) }}</span>
-                </button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" id="suggested-tab" data-bs-toggle="tab" data-bs-target="#suggestedContent" type="button" role="tab" aria-controls="suggestedContent" aria-selected="false">
-                    Suggested
-                </button>
-            </li>
-        </ul>
+<div class="friends-header-sticky">
+    <div class="friends-search-bar position-relative">
+        <i class="fas fa-search search-icon"></i>
+        <input type="text" class="form-control" placeholder="Find people...">
     </div>
+    <ul class="nav nav-tabs friends-tabs-nav justify-content-around mt-3" id="friendsTab" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="requests-tab" data-bs-toggle="tab" data-bs-target="#requests" type="button" role="tab" aria-controls="requests" aria-selected="true">Requests</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="following-tab" data-bs-toggle="tab" data-bs-target="#following" type="button" role="tab" aria-controls="following" aria-selected="false">Following</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="followers-tab" data-bs-toggle="tab" data-bs-target="#followers" type="button" role="tab" aria-controls="followers" aria-selected="false">Followers</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="suggested-tab" data-bs-toggle="tab" data-bs-target="#suggested" type="button" role="tab" aria-controls="suggested" aria-selected="false">Suggested</button>
+        </li>
+    </ul>
+</div>
 
-    {# Tab Content #}
-    <div class="tab-content friends-content-container" id="friendsTabContent">
-        {# Followers Content #}
-        <div class="tab-pane fade show active" id="followersContent" role="tabpanel" aria-labelledby="followers-tab">
-            {% if followers %}
-                {% for user in followers %}
-                <a href="{{ url_for('profile', username=user.username) }}" class="user-list-item" data-user-id="{{ user.id }}">
-                    <img src="{{ user.profile_pic }}" alt="{{ user.username }} Profile" class="profile-pic">
-                    <div class="user-details">
-                        <p class="real-name">{{ user.real_name }}</p>
-                        <p class="mutual-info">{{ user.mutual_friends_count | default(0) }} mutual friends</p>
-                    </div>
-                    <div class="action-buttons">
-                        <button class="btn-action message-btn" data-user-id="{{ user.id }}" title="Message">
-                            <i class="fas fa-comment-dots"></i>
-                        </button>
-                        <button class="btn-action block-btn" data-user-id="{{ user.id }}" title="Block">
-                            <i class="fas fa-ban"></i>
-                        </button>
-                    </div>
-                </a>
-                {% endfor %}
-            {% else %}
-                <p class="empty-list-message">No one is following you yet.</p>
-            {% endif %}
-        </div>
+<div class="container mt-4">
+    <div class="tab-content" id="friendsTabContent">
+        <div class="tab-pane fade show active" id="requests" role="tabpanel" aria-labelledby="requests-tab">
+            <div class="no-content-message">
+                No one has requested to follow you yet.
+            </div>
+            </div>
 
-        {# Following Content #}
-        <div class="tab-pane fade" id="followingContent" role="tabpanel" aria-labelledby="following-tab">
-            {% if following %}
-                {% for user in following %}
-                <a href="{{ url_for('profile', username=user.username) }}" class="user-list-item" data-user-id="{{ user.id }}">
-                    <img src="{{ user.profile_pic }}" alt="{{ user.username }} Profile" class="profile-pic">
-                    <div class="user-details">
-                        <p class="real-name">{{ user.real_name }}</p>
-                        <p class="mutual-info">{{ user.mutual_friends_count | default(0) }} mutual friends</p>
-                    </div>
-                    <div class="action-buttons">
-                        <button class="btn-action message-btn" data-user-id="{{ user.id }}" title="Message">
-                            <i class="fas fa-comment-dots"></i>
-                        </button>
-                        <div class="dropdown">
-                            <button class="dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                <i class="fas fa-ellipsis-h"></i>
-                            </button>
-                            <ul class="dropdown-menu dropdown-menu-end">
-                                <li><a class="dropdown-item unfollow-btn" href="#" data-user-id="{{ user.id }}"><i class="fas fa-user-minus me-2"></i> Unfollow</a></li>
-                                <li><a class="dropdown-item block-btn" href="#" data-user-id="{{ user.id }}"><i class="fas fa-ban me-2"></i> Block</a></li>
-                            </ul>
-                        </div>
-                    </div>
-                </a>
-                {% endfor %}
-            {% else %}
-                <p class="empty-list-message">You are not following anyone yet.</p>
-            {% endif %}
-        </div>
+        <div class="tab-pane fade" id="following" role="tabpanel" aria-labelledby="following-tab">
+            <div class="no-content-message">
+                You are not following anyone yet.
+            </div>
+            </div>
 
-        {# Friends Content #}
-        <div class="tab-pane fade" id="friendsContent" role="tabpanel" aria-labelledby="friends-tab">
-            {% if accepted_friends %}
-                {% for user in accepted_friends %}
-                <a href="{{ url_for('profile', username=user.username) }}" class="user-list-item" data-user-id="{{ user.id }}">
-                    <img src="{{ user.profile_pic }}" alt="{{ user.username }} Profile" class="profile-pic">
-                    <div class="user-details">
-                        <p class="real-name">{{ user.real_name }}</p>
-                        <p class="mutual-info">{{ user.mutual_friends_count | default(0) }} mutual friends</p>
-                    </div>
-                    <div class="action-buttons">
-                        <button class="btn-action message-btn" data-user-id="{{ user.id }}" title="Message">
-                            <i class="fas fa-comment-dots"></i>
-                        </button>
-                        <div class="dropdown">
-                            <button class="dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                <i class="fas fa-ellipsis-h"></i>
-                            </button>
-                            <ul class="dropdown-menu dropdown-menu-end">
-                                <li><a class="dropdown-item unfriend-btn" href="#" data-user-id="{{ user.id }}"><i class="fas fa-user-minus me-2"></i> Unfriend</a></li>
-                                <li><a class="dropdown-item block-btn" href="#" data-user-id="{{ user.id }}"><i class="fas fa-ban me-2"></i> Block</a></li>
-                            </ul>
-                        </div>
-                    </div>
-                </a>
-                {% endfor %}
-            {% else %}
-                <p class="empty-list-message">No mutual friends yet.</p>
-            {% endif %}
-        </div>
+        <div class="tab-pane fade" id="followers" role="tabpanel" aria-labelledby="followers-tab">
+            <div class="no-content-message">
+                No one is following you yet.
+            </div>
+            </div>
 
-        {# Friend Requests Content #}
-        <div class="tab-pane fade" id="requestsContent" role="tabpanel" aria-labelledby="requests-tab">
-            {% if incoming_requests %}
-                {% for user in incoming_requests %}
-                <a href="{{ url_for('profile', username=user.username) }}" class="user-list-item" data-user-id="{{ user.sender_id }}">
-                    <img src="{{ user.profile_pic }}" alt="{{ user.username }} Profile" class="profile-pic">
-                    <div class="user-details">
-                        <p class="real-name">{{ user.real_name }}</p>
-                        {# For requests, mutual friends might not be relevant or available #}
-                        <p class="mutual-info">Incoming request</p>
-                    </div>
-                    <div class="action-buttons">
-                        <button class="btn-action accept-btn" data-request-id="{{ user.request_id }}"><i class="fas fa-check me-1"></i> Accept</button>
-                        <button class="btn-action decline-btn" data-request-id="{{ user.request_id }}"><i class="fas fa-times me-1"></i> Decline</button>
-                        <button class="btn-action block-btn" data-user-id="{{ user.sender_id }}"><i class="fas fa-ban"></i></button>
-                    </div>
-                </a>
-                {% endfor %}
-            {% else %}
-                <p class="empty-list-message">No pending friend requests.</p>
-            {% endif %}
-        </div>
-
-        {# Suggested Users Content #}
-        <div class="tab-pane fade" id="suggestedContent" role="tabpanel" aria-labelledby="suggested-tab">
-            {% if suggested %}
-                {% for user in suggested %}
-                <a href="{{ url_for('profile', username=user.username) }}" class="user-list-item" data-user-id="{{ user.id }}">
-                    <img src="{{ user.profile_pic }}" alt="{{ user.username }} Profile" class="profile-pic">
-                    <div class="user-details">
-                        <p class="real-name">{{ user.real_name }}</p>
-                        <p class="mutual-info">{{ user.mutual_friends_count | default(0) }} mutual friends</p>
-                    </div>
-                    <div class="action-buttons">
-                        <button class="btn-action follow-btn" data-user-id="{{ user.id }}"><i class="fas fa-user-plus me-1"></i> Follow</button>
-                        <button class="btn-action remove-btn" data-user-id="{{ user.id }}"><i class="fas fa-times me-1"></i> Remove</button>
-                        <button class="btn-action block-btn" data-user-id="{{ user.id }}"><i class="fas fa-ban"></i></button>
-                    </div>
-                </a>
-                {% endfor %}
-            {% else %}
-                <p class="empty-list-message">No suggestions for you right now.</p>
-            {% endif %}
-        </div>
+        <div class="tab-pane fade" id="suggested" role="tabpanel" aria-labelledby="suggested-tab">
+            <div class="no-content-message">
+                No suggestions for now.
+            </div>
+            </div>
     </div>
-
 </div>
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        const friendsSearchInput = document.getElementById('friendsSearchInput');
         const friendsTabContent = document.getElementById('friendsTabContent');
-        
-        // Use a broader selector for dynamic filtering across all tabs
-        const allUserListItems = friendsTabContent.querySelectorAll('.user-list-item');
 
-        function filterUsers() {
-            const searchTerm = friendsSearchInput.value.toLowerCase();
-            const activeTabPane = friendsTabContent.querySelector('.tab-pane.show.active');
-
-            if (activeTabPane) {
-                activeTabPane.querySelectorAll('.user-list-item').forEach(item => {
-                    const realName = item.querySelector('.real-name').textContent.toLowerCase();
-                    const usernameElement = item.querySelector('.user-details .username-text'); // Assuming you add a span with class 'username-text' for username
-                    const username = usernameElement ? usernameElement.textContent.toLowerCase() : '';
-
-
-                    if (realName.includes(searchTerm) || username.includes(searchTerm)) {
-                        item.style.display = 'flex'; // Show item
-                    } else {
-                        item.style.display = 'none'; // Hide item
-                    }
-                });
-            }
-        }
-
-        friendsSearchInput.addEventListener('input', filterUsers);
-
-        // Re-filter when tab changes
-        document.querySelectorAll('.friends-tabs-nav .nav-link').forEach(tabButton => {
-            tabButton.addEventListener('shown.bs.tab', function (event) {
-                filterUsers(); // Re-apply filter when a new tab is shown
-            });
-        });
-
-
-        // --- Event Listeners for Action Buttons (AJAX calls) ---
-        // Each button will require a specific Flask endpoint to handle its action
-
-        // Message Button
-        friendsTabContent.querySelectorAll('.message-btn').forEach(button => {
-            button.addEventListener('click', function(event) {
-                event.preventDefault(); // Prevent default link behavior if parent is <a>
-                event.stopPropagation(); // Stop propagation to parent <a>
-                const userId = this.dataset.userId;
-                window.location.href = `/view_chat/${userId}`; // Redirect to chat page
-            });
-        });
-
-        // Block Button
-        friendsTabContent.querySelectorAll('.block-btn').forEach(button => {
+        // Follow Button (Requests Tab - client-side logic)
+        friendsTabContent.querySelectorAll('.follow-btn').forEach(button => {
             button.addEventListener('click', function(event) {
                 event.preventDefault();
                 event.stopPropagation();
                 const userId = this.dataset.userId;
-                if (confirm('Are you sure you want to block this user? All interactions will be stopped.')) {
-                    fetch(`/api/block_user/${userId}`, { method: 'POST' })
-                        .then(response => response.json())
-                        .then(data => {
-                            if (data.success) {
-                                alert(data.message); // Use custom modal instead of alert in final app
-                                window.location.reload(); // Reload page to reflect changes
-                            } else {
-                                alert('Failed to block user: ' + data.message);
-                            }
-                        })
-                        .catch(error => console.error('Error blocking user:', error));
-                }
-            });
-        });
-
-        // Unfollow Button (For 'Following' tab)
-        friendsTabContent.querySelectorAll('.unfollow-btn').forEach(button => {
-            button.addEventListener('click', function(event) {
-                event.preventDefault();
-                event.stopPropagation();
-                const userId = this.dataset.userId;
-                if (confirm('Are you sure you want to unfollow this user?')) {
-                    // Assuming unfollow is equivalent to unfriend if only one friendship type
-                    fetch(`/api/unfriend/${userId}`, { method: 'POST' })
-                        .then(response => response.json())
-                        .then(data => {
-                            if (data.success) {
-                                alert(data.message);
-                                window.location.reload();
-                            } else {
-                                alert('Failed to unfollow user: ' + data.message);
-                            }
-                        })
-                        .catch(error => console.error('Error unfollowing user:', error));
-                }
-            });
-        });
-
-        // Unfriend Button (For 'Friends' tab)
-        friendsTabContent.querySelectorAll('.unfriend-btn').forEach(button => {
-            button.addEventListener('click', function(event) {
-                event.preventDefault();
-                event.stopPropagation();
-                const userId = this.dataset.userId;
-                if (confirm('Are you sure you want to unfriend this user?')) {
-                    fetch(`/api/unfriend/${userId}`, { method: 'POST' })
-                        .then(response => response.json())
-                        .then(data => {
-                            if (data.success) {
-                                alert(data.message);
-                                window.location.reload();
-                            } else {
-                                alert('Failed to unfriend user: ' + data.message);
-                            }
-                        })
-                        .catch(error => console.error('Error unfriending user:', error));
-                }
-            });
-        });
-
-
-        // Accept Friend Request Button
-        friendsTabContent.querySelectorAll('.accept-btn').forEach(button => {
-            button.addEventListener('click', function(event) {
-                event.preventDefault();
-                event.stopPropagation();
-                const requestId = this.dataset.requestId; // Use requestId from the button
-                fetch(`/api/accept_friend_request/${requestId}`, { method: 'POST' })
+                fetch(`/accept-friend-request/${userId}`, { method: 'POST' })
                     .then(response => response.json())
                     .then(data => {
                         if (data.success) {
@@ -611,34 +202,35 @@
             });
         });
 
-        // Decline Friend Request Button
+        // Decline Button (Requests Tab - client-side logic)
         friendsTabContent.querySelectorAll('.decline-btn').forEach(button => {
             button.addEventListener('click', function(event) {
                 event.preventDefault();
                 event.stopPropagation();
-                const requestId = this.dataset.requestId; // Use requestId from the button
-                fetch(`/api/decline_friend_request/${requestId}`, { method: 'POST' })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            alert(data.message);
-                            window.location.reload();
-                        } else {
-                            alert('Failed to decline request: ' + data.message);
-                        }
-                    })
-                    .catch(error => console.error('Error declining request:', error));
+                const userId = this.dataset.userId;
+                if (confirm('Are you sure you want to decline this request?')) {
+                    fetch(`/decline-friend-request/${userId}`, { method: 'POST' })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                alert(data.message);
+                                window.location.reload();
+                            } else {
+                                alert('Failed to decline request: ' + data.message);
+                            }
+                        })
+                        .catch(error => console.error('Error declining request:', error));
+                }
             });
         });
 
-        // Follow Button (Suggested Tab)
-        friendsTabContent.querySelectorAll('.follow-btn').forEach(button => {
+        // Add Button (Suggested Tab)
+        friendsTabContent.querySelectorAll('.add-btn').forEach(button => {
             button.addEventListener('click', function(event) {
                 event.preventDefault();
                 event.stopPropagation();
                 const userId = this.dataset.userId;
-                // Assuming "follow" initiates a friend request that the other user can accept
-                fetch(`/api/send_friend_request/${userId}`, { method: 'POST' }) 
+                fetch(`/send-friend-request/${userId}`, { method: 'POST' }) // Or /follow-user directly
                     .then(response => response.json())
                     .then(data => {
                         if (data.success) {
@@ -661,7 +253,7 @@
                 if (confirm('Remove this suggestion?')) {
                     this.closest('.user-list-item').remove(); // Client-side removal
                     // If you want to persist this removal, an AJAX call would be needed:
-                    // fetch(`/api/remove_suggestion/${userId}`, { method: 'POST' });
+                    // fetch(`/remove-suggestion/${userId}`, { method: 'POST' });
                     // alert('Suggestion removed.');
                 }
             });
