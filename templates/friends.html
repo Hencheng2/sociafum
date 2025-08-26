@@ -234,7 +234,7 @@
         </div>
     </div>
 
-    <!-- Tabbed Navigation (Red Circle in image) -->
+    <!-- Tabbed Navigation -->
     <ul class="nav nav-pills friends-tabs-nav mt-3" id="friendsTabs" role="tablist">
         <!-- Search tab is dynamic, only appears when searching -->
         <li class="nav-item d-none" id="search-tab-item">
@@ -257,7 +257,7 @@
         </li>
     </ul>
 
-    <!-- Tab Content (Each tab will have its own distinct content, addressing the blue circle concern) -->
+    <!-- Tab Content -->
     <div class="tab-content mt-4">
         <!-- Search Results Tab Content - Dynamically populated by JS -->
         <div class="tab-pane fade" id="search-content" role="tabpanel" aria-labelledby="search-tab">
@@ -429,16 +429,25 @@
         const searchContentTab = document.getElementById('search-content');
         const searchTabItem = document.getElementById('search-tab-item');
         const friendsTabsNav = document.getElementById('friendsTabs');
+        const noSearchResultsMessage = document.getElementById('no-search-results');
+
+        // Initialize Bootstrap tabs manually for initial state
+        var firstTabEl = document.querySelector('#friendsTabs .nav-link.active');
+        if (firstTabEl) {
+            var firstTab = new bootstrap.Tab(firstTabEl);
+            firstTab.show();
+        }
 
         // Store the initially active tab and its content for when search is cleared
-        let initialActiveTabButton = document.querySelector('.friends-tabs-nav .nav-link.active');
-        let initialActiveTabContent = document.querySelector('.tab-pane.show.active');
+        let initialActiveTabButton = firstTabEl;
+        let initialActiveTabContent = document.querySelector(firstTabEl.dataset.bsTarget);
+
 
         // Function to render a single user item for search results
         function renderUserItem(user) {
             return `
                 <li class="user-list-item" data-user-id="${user.id}">
-                    <a href="/profile/${user.username}" class="d-flex align-items-center text-decoration-none">
+                    <a href="{{ url_for('profile', username='${user.username}') }}" class="d-flex align-items-center text-decoration-none">
                         <img src="${user.profile_pic}" alt="${user.real_name}" class="user-profile-pic">
                         <div class="user-details me-auto">
                             <span class="user-name">${user.real_name}</span>
@@ -446,7 +455,7 @@
                         </div>
                     </a>
                     <div class="list-item-buttons">
-                        <a href="/message_member?user_id=${user.id}" class="btn btn-sm message-btn" data-bs-toggle="tooltip" title="Message"><i class="fas fa-comment-dots"></i></a>
+                        <a href="{{ url_for('message_member') }}?user_id=${user.id}" class="btn btn-sm message-btn" data-bs-toggle="tooltip" title="Message"><i class="fas fa-comment-dots"></i></a>
                         <button class="btn btn-sm follow-btn" data-bs-toggle="tooltip" title="Follow" data-user-id="${user.id}"><i class="fas fa-user-plus"></i></button>
                         <button class="btn btn-sm block-btn" data-bs-toggle="tooltip" title="Block" data-user-id="${user.id}"><i class="fas fa-ban"></i></button>
                     </div>
@@ -462,66 +471,79 @@
             if (query.length === 0) {
                 // Hide search tab item
                 searchTabItem.classList.add('d-none');
+                
                 // Deactivate search tab if it was active
-                document.getElementById('search-tab').classList.remove('active');
-                searchContentTab.classList.remove('show', 'active');
+                const searchTabButton = document.getElementById('search-tab');
+                if (searchTabButton && searchTabButton.classList.contains('active')) {
+                    searchTabButton.classList.remove('active');
+                    searchContentTab.classList.remove('show', 'active');
+                }
 
                 // Revert to the initially active tab
-                if (initialActiveTabButton) initialActiveTabButton.classList.add('active');
-                if (initialActiveTabContent) initialActiveTabContent.classList.add('show', 'active');
+                if (initialActiveTabButton) {
+                    new bootstrap.Tab(initialActiveTabButton).show();
+                }
+                noSearchResultsMessage.classList.add('d-none'); // Hide no results message
                 return;
             }
 
             // If search has content, show and activate search tab
             searchTabItem.classList.remove('d-none');
             
-            // Deactivate all other tabs
-            document.querySelectorAll('.friends-tabs-nav .nav-link').forEach(btn => btn.classList.remove('active'));
+            // Deactivate all other tabs and activate search tab
+            document.querySelectorAll('.friends-tabs-nav .nav-link').forEach(btn => {
+                if (btn.id !== 'search-tab') {
+                    btn.classList.remove('active');
+                }
+            });
             document.querySelectorAll('.tab-pane').forEach(pane => pane.classList.remove('show', 'active'));
             
             // Activate search tab
-            document.getElementById('search-tab').classList.add('active');
-            searchContentTab.classList.add('show', 'active');
+            new bootstrap.Tab(document.getElementById('search-tab')).show();
             
             // Filter users based on query
             const filteredUsers = allUsersForSearch.filter(user => {
-                const startsWithRealName = user.real_name.toLowerCase().startsWith(query);
-                const startsWithUsername = user.username.toLowerCase().startsWith(query);
-                return startsWithRealName || startsWithUsername || user.real_name.toLowerCase().includes(query) || user.username.toLowerCase().includes(query);
+                const realNameLower = user.real_name.toLowerCase();
+                const usernameLower = user.username.toLowerCase();
+                return realNameLower.startsWith(query) || usernameLower.startsWith(query) || realNameLower.includes(query) || usernameLower.includes(query);
             });
             
             // Sort: real name starts with, then username starts with, then real name contains, then username contains
             const realNameStartsWith = filteredUsers.filter(user => user.real_name.toLowerCase().startsWith(query));
             const usernameStartsWith = filteredUsers.filter(user => user.username.toLowerCase().startsWith(query) && !user.real_name.toLowerCase().startsWith(query));
-            const realNameContains = filteredUsers.filter(user => user.real_name.toLowerCase().includes(query) && !user.real_name.toLowerCase().startsWith(query) && !user.username.toLowerCase().startsWith(query));
-            const usernameContains = filteredUsers.filter(user => user.username.toLowerCase().includes(query) && !user.real_name.toLowerCase().startsWith(query) && !user.username.toLowerCase().startsWith(query) && !user.real_name.toLowerCase().includes(query));
+            const realNameContains = filteredUsers.filter(user => user.real_name.toLowerCase().includes(query) && !realNameStartsWith.includes(user) && !usernameStartsWith.includes(user));
+            const usernameContains = filteredUsers.filter(user => user.username.toLowerCase().includes(query) && !realNameStartsWith.includes(user) && !usernameStartsWith.includes(user) && !realNameContains.includes(user));
 
             const sortedMatches = [...realNameStartsWith, ...usernameStartsWith, ...realNameContains, ...usernameContains];
             
             if (sortedMatches.length > 0) {
                 const userHtml = sortedMatches.map(renderUserItem).join('');
                 searchResultsList.innerHTML = userHtml;
-                document.getElementById('no-search-results').classList.add('d-none');
+                noSearchResultsMessage.classList.add('d-none');
             } else {
                 searchResultsList.innerHTML = '';
-                document.getElementById('no-search-results').classList.remove('d-none');
+                noSearchResultsMessage.classList.remove('d-none');
             }
         }
         
         // Event listener for search input
         searchInput.addEventListener('input', filterUsers);
 
-        // Store the initially active tab button and content
+        // Event listener for tab clicks
         friendsTabsNav.addEventListener('click', function(event) {
-            const clickedTab = event.target.closest('.nav-link');
-            if (!clickedTab) return;
+            const clickedTabButton = event.target.closest('.nav-link');
+            if (!clickedTabButton) return;
 
             // Update initialActiveTab only if it's not the search tab
-            if (clickedTab.id !== 'search-tab') {
-                initialActiveTabButton = clickedTab;
-                initialActiveTabContent = document.querySelector(clickedTab.dataset.bsTarget);
+            if (clickedTabButton.id !== 'search-tab') {
+                initialActiveTabButton = clickedTabButton;
+                initialActiveTabContent = document.querySelector(clickedTabButton.dataset.bsTarget);
             }
-            // Clear search input when switching tabs manually
+            
+            // Manually activate the tab
+            new bootstrap.Tab(clickedTabButton).show();
+
+            // Clear search input and hide search results when switching tabs manually
             searchInput.value = '';
             filterUsers(); // Re-run filter to hide search results if input is empty
         });
@@ -536,9 +558,7 @@
                         alert(successMessage);
                         if (elementToRemove) {
                             elementToRemove.remove();
-                            // Optional: Reload the page or update counts for the badges
-                            // For a more robust solution, you'd update the counts dynamically here
-                            // Or, for simplicity and full data refresh, reload the page after a successful action
+                            // Reload the page to get updated counts and clean UI state
                             window.location.reload(); 
                         }
                     } else {
@@ -574,10 +594,10 @@
                 } else if (target.classList.contains('remove-btn')) {
                     if (confirm('Remove this suggestion?')) {
                          // Assuming a backend API for removing suggestions if needed to persist
-                         // For now, it's client-side removal
+                         // For now, it's client-side removal and a reload to clear from data.
                          listItem.remove();
                          alert('Suggestion removed from list.');
-                         // handleApiCall(`/api/remove_suggestion/${userId}`, 'POST', 'Suggestion removed.', listItem);
+                         window.location.reload();
                     }
                 } else if (target.classList.contains('block-btn')) {
                     if (confirm('Are you sure you want to block this user?')) {
@@ -599,4 +619,3 @@
 
     });
 </script>
-{% endblock %}
