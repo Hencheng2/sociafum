@@ -395,8 +395,8 @@
 
         {# Friends Content #}
         <div class="tab-pane fade" id="friendsContent" role="tabpanel" aria-labelledby="friends-tab">
-            {% if friends %}
-                {% for user in friends %}
+            {% if accepted_friends %}
+                {% for user in accepted_friends %}
                 <a href="{{ url_for('profile', username=user.username) }}" class="user-list-item" data-user-id="{{ user.id }}">
                     <img src="{{ user.profile_pic }}" alt="{{ user.username }} Profile" class="profile-pic">
                     <div class="user-details">
@@ -412,7 +412,7 @@
                                 <i class="fas fa-ellipsis-h"></i>
                             </button>
                             <ul class="dropdown-menu dropdown-menu-end">
-                                <li><a class="dropdown-item unfollow-btn" href="#" data-user-id="{{ user.id }}"><i class="fas fa-user-minus me-2"></i> Unfollow</a></li>
+                                <li><a class="dropdown-item unfriend-btn" href="#" data-user-id="{{ user.id }}"><i class="fas fa-user-minus me-2"></i> Unfriend</a></li>
                                 <li><a class="dropdown-item block-btn" href="#" data-user-id="{{ user.id }}"><i class="fas fa-ban me-2"></i> Block</a></li>
                             </ul>
                         </div>
@@ -426,18 +426,19 @@
 
         {# Friend Requests Content #}
         <div class="tab-pane fade" id="requestsContent" role="tabpanel" aria-labelledby="requests-tab">
-            {% if requests %}
-                {% for user in requests %}
-                <a href="{{ url_for('profile', username=user.username) }}" class="user-list-item" data-user-id="{{ user.id }}">
+            {% if incoming_requests %}
+                {% for user in incoming_requests %}
+                <a href="{{ url_for('profile', username=user.username) }}" class="user-list-item" data-user-id="{{ user.sender_id }}">
                     <img src="{{ user.profile_pic }}" alt="{{ user.username }} Profile" class="profile-pic">
                     <div class="user-details">
                         <p class="real-name">{{ user.real_name }}</p>
-                        <p class="mutual-info">{{ user.mutual_friends_count | default(0) }} mutual friends</p>
+                        {# For requests, mutual friends might not be relevant or available #}
+                        <p class="mutual-info">Incoming request</p>
                     </div>
                     <div class="action-buttons">
-                        <button class="btn-action accept-btn" data-user-id="{{ user.id }}"><i class="fas fa-check me-1"></i> Accept</button>
-                        <button class="btn-action decline-btn" data-user-id="{{ user.id }}"><i class="fas fa-times me-1"></i> Decline</button>
-                        <button class="btn-action block-btn" data-user-id="{{ user.id }}"><i class="fas fa-ban"></i></button>
+                        <button class="btn-action accept-btn" data-request-id="{{ user.request_id }}"><i class="fas fa-check me-1"></i> Accept</button>
+                        <button class="btn-action decline-btn" data-request-id="{{ user.request_id }}"><i class="fas fa-times me-1"></i> Decline</button>
+                        <button class="btn-action block-btn" data-user-id="{{ user.sender_id }}"><i class="fas fa-ban"></i></button>
                     </div>
                 </a>
                 {% endfor %}
@@ -475,27 +476,39 @@
     document.addEventListener('DOMContentLoaded', function() {
         const friendsSearchInput = document.getElementById('friendsSearchInput');
         const friendsTabContent = document.getElementById('friendsTabContent');
+        
+        // Use a broader selector for dynamic filtering across all tabs
         const allUserListItems = friendsTabContent.querySelectorAll('.user-list-item');
 
         function filterUsers() {
             const searchTerm = friendsSearchInput.value.toLowerCase();
+            const activeTabPane = friendsTabContent.querySelector('.tab-pane.show.active');
 
-            allUserListItems.forEach(item => {
-                const realName = item.querySelector('.real-name').textContent.toLowerCase();
-                // Assuming username can be extracted or is part of data-user-id if needed
-                // For simplicity, current implementation uses real name for filtering visible text.
-                // For username, you'd need a data attribute or similar.
-                // Example: const username = item.dataset.username.toLowerCase();
+            if (activeTabPane) {
+                activeTabPane.querySelectorAll('.user-list-item').forEach(item => {
+                    const realName = item.querySelector('.real-name').textContent.toLowerCase();
+                    const usernameElement = item.querySelector('.user-details .username-text'); // Assuming you add a span with class 'username-text' for username
+                    const username = usernameElement ? usernameElement.textContent.toLowerCase() : '';
 
-                if (realName.includes(searchTerm)) { // || username.includes(searchTerm)
-                    item.style.display = 'flex'; // Show item
-                } else {
-                    item.style.display = 'none'; // Hide item
-                }
-            });
+
+                    if (realName.includes(searchTerm) || username.includes(searchTerm)) {
+                        item.style.display = 'flex'; // Show item
+                    } else {
+                        item.style.display = 'none'; // Hide item
+                    }
+                });
+            }
         }
 
         friendsSearchInput.addEventListener('input', filterUsers);
+
+        // Re-filter when tab changes
+        document.querySelectorAll('.friends-tabs-nav .nav-link').forEach(tabButton => {
+            tabButton.addEventListener('shown.bs.tab', function (event) {
+                filterUsers(); // Re-apply filter when a new tab is shown
+            });
+        });
+
 
         // --- Event Listeners for Action Buttons (AJAX calls) ---
         // Each button will require a specific Flask endpoint to handle its action
@@ -506,8 +519,7 @@
                 event.preventDefault(); // Prevent default link behavior if parent is <a>
                 event.stopPropagation(); // Stop propagation to parent <a>
                 const userId = this.dataset.userId;
-                window.location.href = `/messages/${userId}`; // Redirect to chat page
-                // Or if using AJAX: fetch('/start-chat', { method: 'POST', body: JSON.stringify({ userId: userId })});
+                window.location.href = `/view_chat/${userId}`; // Redirect to chat page
             });
         });
 
@@ -518,7 +530,7 @@
                 event.stopPropagation();
                 const userId = this.dataset.userId;
                 if (confirm('Are you sure you want to block this user? All interactions will be stopped.')) {
-                    fetch(`/block-user/${userId}`, { method: 'POST' })
+                    fetch(`/api/block_user/${userId}`, { method: 'POST' })
                         .then(response => response.json())
                         .then(data => {
                             if (data.success) {
@@ -533,14 +545,15 @@
             });
         });
 
-        // Unfollow Button
+        // Unfollow Button (For 'Following' tab)
         friendsTabContent.querySelectorAll('.unfollow-btn').forEach(button => {
             button.addEventListener('click', function(event) {
                 event.preventDefault();
                 event.stopPropagation();
                 const userId = this.dataset.userId;
                 if (confirm('Are you sure you want to unfollow this user?')) {
-                    fetch(`/unfollow-user/${userId}`, { method: 'POST' })
+                    // Assuming unfollow is equivalent to unfriend if only one friendship type
+                    fetch(`/api/unfriend/${userId}`, { method: 'POST' })
                         .then(response => response.json())
                         .then(data => {
                             if (data.success) {
@@ -555,13 +568,36 @@
             });
         });
 
+        // Unfriend Button (For 'Friends' tab)
+        friendsTabContent.querySelectorAll('.unfriend-btn').forEach(button => {
+            button.addEventListener('click', function(event) {
+                event.preventDefault();
+                event.stopPropagation();
+                const userId = this.dataset.userId;
+                if (confirm('Are you sure you want to unfriend this user?')) {
+                    fetch(`/api/unfriend/${userId}`, { method: 'POST' })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                alert(data.message);
+                                window.location.reload();
+                            } else {
+                                alert('Failed to unfriend user: ' + data.message);
+                            }
+                        })
+                        .catch(error => console.error('Error unfriending user:', error));
+                }
+            });
+        });
+
+
         // Accept Friend Request Button
         friendsTabContent.querySelectorAll('.accept-btn').forEach(button => {
             button.addEventListener('click', function(event) {
                 event.preventDefault();
                 event.stopPropagation();
-                const userId = this.dataset.userId;
-                fetch(`/accept-friend-request/${userId}`, { method: 'POST' })
+                const requestId = this.dataset.requestId; // Use requestId from the button
+                fetch(`/api/accept_friend_request/${requestId}`, { method: 'POST' })
                     .then(response => response.json())
                     .then(data => {
                         if (data.success) {
@@ -580,8 +616,8 @@
             button.addEventListener('click', function(event) {
                 event.preventDefault();
                 event.stopPropagation();
-                const userId = this.dataset.userId;
-                fetch(`/decline-friend-request/${userId}`, { method: 'POST' })
+                const requestId = this.dataset.requestId; // Use requestId from the button
+                fetch(`/api/decline_friend_request/${requestId}`, { method: 'POST' })
                     .then(response => response.json())
                     .then(data => {
                         if (data.success) {
@@ -601,7 +637,8 @@
                 event.preventDefault();
                 event.stopPropagation();
                 const userId = this.dataset.userId;
-                fetch(`/send-friend-request/${userId}`, { method: 'POST' }) // Or /follow-user directly
+                // Assuming "follow" initiates a friend request that the other user can accept
+                fetch(`/api/send_friend_request/${userId}`, { method: 'POST' }) 
                     .then(response => response.json())
                     .then(data => {
                         if (data.success) {
@@ -624,7 +661,7 @@
                 if (confirm('Remove this suggestion?')) {
                     this.closest('.user-list-item').remove(); // Client-side removal
                     // If you want to persist this removal, an AJAX call would be needed:
-                    // fetch(`/remove-suggestion/${userId}`, { method: 'POST' });
+                    // fetch(`/api/remove_suggestion/${userId}`, { method: 'POST' });
                     // alert('Suggestion removed.');
                 }
             });
