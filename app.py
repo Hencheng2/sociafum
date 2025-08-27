@@ -416,32 +416,36 @@ def get_admin_user_id():
 @app.route('/')
 @app.route('/home')
 def home():
-    # Placeholder for posts and stories data
-    stories = [] # Fetch actual stories
-    
-
-    background_image = url_for('static', filename='img/default_background.jpg') # Default background
+    db = get_db()
     member = None
+    stories = []
+    posts = []
+    current_year = datetime.now(timezone.utc).year
+    
     if current_user.is_authenticated:
         member = current_user.get_member_profile()
-        # You could also load a user-specific background here
-        if current_user.chat_background_image_path:
-            background_image = current_user.chat_background_image_path
+        # Fetch stories from friends
+        stories = db.execute("""
+            SELECT s.id, s.media_type, s.media_path, u.username
+            FROM stories s
+            JOIN users u ON s.user_id = u.id
+            JOIN friendships f ON (f.user1_id = s.user_id AND f.user2_id = ? OR f.user2_id = s.user_id AND f.user1_id = ?)
+            WHERE f.status = 'accepted' AND s.expires_at > ? AND s.visibility = 'friends'
+            ORDER BY s.timestamp DESC
+        """, (current_user.id, current_user.id, datetime.now(timezone.utc))).fetchall()
         
-        # Populate dummy data for now
-        # You'll replace these with actual database queries
-        # Example structure for stories
-        stories = [
-            {'id': 1, 'type': 'image', 'media_url': url_for('static', filename='img/post1.jpg'), 'profile_pic': url_for('static', filename='img/default_profile.png'), 'username': 'user1'},
-            {'id': 2, 'type': 'video', 'media_url': url_for('static', filename='videos/reel1.mp4'), 'profile_pic': url_for('static', filename='img/default_profile.png'), 'username': 'user2'},
-        ]
-
+        # Fetch initial posts for the feed
+        posts = db.execute("""
+            SELECT p.*, m.fullName as user_real_name, m.profilePhoto as user_profile_photo, u.username
+            FROM posts p
+            JOIN members m ON p.user_id = m.user_id
+            JOIN users u ON p.user_id = u.id
+            WHERE p.visibility IN ('public', 'friends')
+            ORDER BY p.timestamp DESC
+            LIMIT 10
+        """).fetchall()
     
-    # Pass the current year to the template
-    current_year = datetime.now(timezone.utc).year
-    return render_template('index.html', background_image=background_image, member=member, current_year=current_year,
-                           stories=stories, for_you_posts=for_you_posts, following_posts=following_posts, explore_posts=explore_posts)
-
+    return render_template('index.html', member=member, current_year=current_year, stories=stories, posts=posts)
 
 # --- Authentication Routes ---
 
