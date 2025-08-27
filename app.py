@@ -2033,49 +2033,44 @@ def create_story():
     return render_template('create_story.html', current_year=current_year)
 
 # --- Search Route ---
-@app.route('/search', methods=['GET'])
+@app.route('/api/search_users', methods=['GET'])
 @login_required
-def search():
-    query = request.args.get('q', '').strip()
+def api_search_users():
+    query = request.args.get('term', '').strip()
     db = get_db()
+    results = []
     
-    search_results = []
     if query:
-        # Search users
+        # Search users, prioritizing real name matches
         users = db.execute(
             """
-            SELECT u.id, u.username, u.originalName, m.profilePhoto
+            SELECT u.id, u.username, m.fullName AS real_name, m.profilePhoto
             FROM users u
             LEFT JOIN members m ON u.id = m.user_id
-            WHERE u.username LIKE ? OR u.originalName LIKE ?
-            ORDER BY u.originalName
+            WHERE m.fullName LIKE ? OR u.username LIKE ?
+            ORDER BY 
+                CASE 
+                    WHEN m.fullName LIKE ? THEN 1
+                    WHEN u.username LIKE ? THEN 2
+                    ELSE 3
+                END,
+                m.fullName
             """,
-            (f'%{query}%', f'%{query}%')
+            (f'{query}%', f'{query}%', f'{query}%', f'{query}%')
         ).fetchall()
+        
         for user in users:
             user_dict = dict(user)
-            user_dict['profilePhoto'] = get_member_profile_pic(user_dict['id'])
-            search_results.append({'type': 'user', 'data': user_dict})
-        
-        # Search groups
-        groups = db.execute(
-            """
-            SELECT g.id, g.name, g.description, g.profilePhoto
-            FROM groups g
-            WHERE g.name LIKE ? OR g.description LIKE ?
-            ORDER BY g.name
-            """,
-            (f'%{query}%', f'%{query}%')
-        ).fetchall()
-        for group in groups:
-            group_dict = dict(group)
-            group_dict['profilePhoto'] = group_dict['profilePhoto'] or url_for('static', filename='img/default_group.png')
-            search_results.append({'type': 'group', 'data': group_dict})
-
-    # Pass the current year to the template
-    current_year = datetime.now(timezone.utc).year
-    return render_template('search.html', query=query, search_results=search_results, current_year=current_year)
-
+            user_dict['profilePhoto'] = user_dict['profilePhoto'] or url_for('static', filename='img/default_profile.png')
+            # Check if current user is following this user
+            is_following = db.execute(
+                "SELECT 1 FROM friendships WHERE user1_id = ? AND user2_id = ? AND status = 'accepted'",
+                (current_user.id, user['id'])
+            ).fetchone() is not None
+            user_dict['is_following'] = is_following
+            results.append({'type': 'user', 'data': user_dict})
+    
+    return jsonify({'results': results})
 
 # --- Dashboard & Static Pages ---
 # 'dashboard.html' is not on the user's list. Redirect to my_profile as the closest personal overview.
