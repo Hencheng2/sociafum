@@ -170,7 +170,7 @@
                 <img src="{{ post.user_profile_photo | default('/static/img/default_profile.png') }}" alt="Profile">
                 <div>
                     <h3>{{ post.user_real_name }} <small>@{{ post.username }}</small></h3>
-                    <small>{{ post.timestamp | datetimeformat }}</small>
+                    <small>{{ moment(post.timestamp).fromNow() }}</small>
                 </div>
             </div>
             <div class="post-content">
@@ -317,11 +317,9 @@
     }
 
     function addStory() {
-        // Redirect to add story page or modal
         window.location.href = '{{ url_for('add_story') }}';
     }
 
-    // Infinite scroll for posts
     window.addEventListener('scroll', () => {
         if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 100) {
             loadMorePosts();
@@ -332,7 +330,6 @@
     function loadMorePosts() {
         let loader = document.getElementById('loader');
         loader.style.display = 'block';
-        // AJAX call to load more posts
         fetch(`/api/posts?page=${++page}`)
             .then(response => response.json())
             .then(data => {
@@ -344,7 +341,7 @@
                             <img src="${post.user_profile_photo || '/static/img/default_profile.png'}" alt="Profile">
                             <div>
                                 <h3>${post.user_real_name} <small>@${post.username}</small></h3>
-                                <small>${post.timestamp}</small>
+                                <small>${new Date(post.timestamp).toLocaleString()}</small>
                             </div>
                         </div>
                         <div class="post-content">
