@@ -83,19 +83,22 @@
         padding: 20px;
         border: 1px solid #dee2e6;
         border-radius: 5px;
-        display: none;
     }
-    .new-group-form.active {
+    .new-group-form label {
         display: block;
+        margin-bottom: 5px;
     }
-    .chat-window {
-        display: none;
-        padding: 20px;
-        border: 1px solid #dee2e6;
+    .new-group-form input, .new-group-form button {
+        width: 100%;
+        padding: 8px;
+        margin-bottom: 10px;
+    }
+    .new-group-form button {
+        background: #007bff;
+        color: white;
+        border: none;
         border-radius: 5px;
-    }
-    .chat-window.active {
-        display: block;
+        cursor: pointer;
     }
 </style>
 
@@ -113,10 +116,10 @@
 <div id="chats" class="tab-content active">
     {% if chats %}
         {% for chat in chats %}
-        <div class="chat-item" onclick="openChat({{ chat.other_user.id }})">
-            <img src="{{ chat.other_user.profilePhoto | default('/static/img/default_profile.png') }}" alt="Profile">
+        <div class="chat-item" onclick="openChat({{ chat.other_user_id }})">
+            <img src="{{ chat.profilePhoto | default('/static/img/default_profile.png') }}" alt="Profile">
             <div class="chat-info">
-                <h3>{{ chat.other_user.real_name }}</h3>
+                <h3>{{ chat.real_name }}</h3>
                 <p>{{ chat.latest_message_snippet }}</p>
             </div>
             <div class="chat-meta">
@@ -138,9 +141,9 @@
 <div id="groups" class="tab-content">
     {% if groups %}
         {% for group in groups %}
-        <div class="chat-item" onclick="openGroupChat({{ group.id }})">
+        <div class="group-item" onclick="openGroupChat({{ group.id }})">
             <img src="{{ group.profilePhoto | default('/static/img/default_group.png') }}" alt="Group">
-            <div class="chat-info">
+            <div class="group-info">
                 <h3>{{ group.name }}</h3>
                 <p>{{ group.latest_message_snippet }}</p>
             </div>
@@ -153,7 +156,7 @@
         </div>
         {% endfor %}
     {% else %}
-        <div class="chat-item">
+        <div class="group-item">
             <p>No group chats yet.</p>
             <p>Create a new group or join an existing one!</p>
         </div>
@@ -162,45 +165,19 @@
 
 <div id="new" class="tab-content">
     <div class="new-group-form">
-        <form method="POST" action="{{ url_for('create_group') }}" enctype="multipart/form-data">
-            <div>
-                <label>Upload Photo</label>
-                <input type="file" name="groupPhoto" accept="image/*">
-            </div>
-            <div>
-                <label>Group Name</label>
-                <input type="text" name="groupName" required>
-            </div>
+        <form action="{{ url_for('create_group') }}" method="post" enctype="multipart/form-data">
+            <label for="groupName">Group Name</label>
+            <input type="text" id="groupName" name="groupName" required>
+            <label for="groupPhoto">Group Photo</label>
+            <input type="file" id="groupPhoto" name="groupPhoto" accept="image/*">
             <button type="submit">Create Group</button>
-            <button type="button" onclick="showTab('chats')">Cancel</button>
         </form>
     </div>
 </div>
 
 <div id="search" class="tab-content">
     <div id="search-results">
-        <p>Start typing to search for mutual friends or groups.</p>
-    </div>
-</div>
-
-<div class="chat-window" id="chatWindow">
-    <div class="chat-header">
-        <button onclick="closeChat()">×</button>
-        <button onclick="goBack()">←</button>
-        <h3 id="chatTitle">Conversation</h3>
-        <div class="chat-options">
-            <button onclick="showOptions()">⋮</button>
-            <div class="options-menu" id="optionsMenu" style="display:none;">
-                <a href="#" onclick="viewProfile()">View Profile</a>
-            </div>
-        </div>
-    </div>
-    <div id="chatContent">Conversation content loads here...</div>
-    <div class="chat-input">
-        <input type="text" id="messageInput" placeholder="Type a message...">
-        <button onclick="sendMessage()">Send</button>
-        <input type="file" id="mediaInput" accept="image/*,video/*">
-        <button onclick="uploadMedia()">Upload</button>
+        <p>Start typing to search for friends or groups.</p>
     </div>
 </div>
 
@@ -208,12 +185,8 @@
     function showTab(tabId) {
         document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
         document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-        document.querySelectorAll('.new-group-form, .chat-window').forEach(el => el.classList.remove('active'));
         document.querySelector(`[onclick="showTab('${tabId}')"]`).classList.add('active');
         document.getElementById(tabId).classList.add('active');
-        if (tabId === 'new') {
-            document.querySelector('.new-group-form').classList.add('active');
-        }
     }
 
     let debounceTimer;
@@ -223,7 +196,7 @@
         const searchResults = document.getElementById('search-results');
         
         if (!searchTerm) {
-            searchResults.innerHTML = '<p>Start typing to search for mutual friends or groups.</p>';
+            searchResults.innerHTML = '<p>Start typing to search for friends or groups.</p>';
             return;
         }
 
@@ -233,7 +206,7 @@
                 .then(data => {
                     searchResults.innerHTML = '';
                     if (data.results.length === 0) {
-                        searchResults.innerHTML = '<p>No mutual friends or groups found.</p>';
+                        searchResults.innerHTML = '<p>No friends or groups found.</p>';
                         return;
                     }
                     data.results.forEach(item => {
@@ -247,7 +220,7 @@
                                         <p>@${user.username}</p>
                                     </div>
                                     <div class="user-actions">
-                                        <button disabled>Following</button>
+                                        <button onclick="friendRequest(${user.id})" disabled>Following</button>
                                     </div>
                                 </div>`;
                             searchResults.insertAdjacentHTML('beforeend', html);
@@ -261,7 +234,7 @@
                                         <p>${group.description || 'No description'}</p>
                                     </div>
                                     <div class="group-actions">
-                                        <button disabled>Member</button>
+                                        <button onclick="event.stopPropagation(); joinGroup(${group.id})" disabled>Joined</button>
                                     </div>
                                 </div>`;
                             searchResults.insertAdjacentHTML('beforeend', html);
@@ -270,62 +243,61 @@
                 })
                 .catch(error => {
                     console.error('Error searching inbox:', error);
-                    searchResults.innerHTML = '<p>Error searching users or groups. Please try again.</p>';
+                    searchResults.innerHTML = '<p>Error searching. Please try again.</p>';
                 });
-        }, 300); // Debounce for 300ms
+        }, 300);
+    }
+
+    function friendRequest(userId) {
+        fetch('/api/friend_request', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ user_id: userId })
+        }).then(response => response.json()).then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Failed to send friend request.');
+            }
+        });
+    }
+
+    function joinGroup(groupId) {
+        fetch('/api/join_group', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ group_id: groupId })
+        }).then(response => response.json()).then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Failed to join group.');
+            }
+        });
     }
 
     function openChat(userId) {
-        document.querySelector('.chat-window').classList.add('active');
         fetch(`/api/chat/${userId}`)
             .then(response => response.json())
             .then(data => {
-                document.getElementById('chatTitle').textContent = data.user.real_name;
-                document.getElementById('chatContent').innerHTML = data.messages.map(msg => `
-                    <p><strong>${msg.sender}:</strong> ${msg.content}</p>
-                `).join('');
+                if (data.success) {
+                    window.location.href = `/chat/${userId}`;
+                } else {
+                    alert('Failed to open chat.');
+                }
             });
     }
 
     function openGroupChat(groupId) {
-        document.querySelector('.chat-window').classList.add('active');
         fetch(`/api/group_chat/${groupId}`)
             .then(response => response.json())
             .then(data => {
-                document.getElementById('chatTitle').textContent = data.group.name;
-                document.getElementById('chatContent').innerHTML = data.messages.map(msg => `
-                    <p><strong>${msg.sender}:</strong> ${msg.content}</p>
-                `).join('');
+                if (data.success) {
+                    window.location.href = `/group_chat/${groupId}`;
+                } else {
+                    alert('Failed to open group chat.');
+                }
             });
-    }
-
-    function closeChat() {
-        document.querySelector('.chat-window').classList.remove('active');
-        document.getElementById('chatContent').innerHTML = 'Conversation content loads here...';
-    }
-
-    function goBack() {
-        closeChat();
-        showTab('chats');
-    }
-
-    function showOptions() {
-        const menu = document.getElementById('optionsMenu');
-        menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
-    }
-
-    function viewProfile() {
-        alert('Profile view not implemented yet.');
-    }
-
-    function sendMessage() {
-        const message = document.getElementById('messageInput').value;
-        alert('Message sending not implemented yet.');
-    }
-
-    function uploadMedia() {
-        const file = document.getElementById('mediaInput').files[0];
-        alert('Media upload not implemented yet.');
     }
 </script>
 {% endblock %}
