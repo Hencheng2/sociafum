@@ -4,204 +4,131 @@
 
 {% block content %}
 <style>
-    .navbar {
+    .tab-container {
         display: flex;
-        justify-content: space-around;
-        align-items: center;
-        padding: 10px 0;
-        background-color: #f8f9fa;
         border-bottom: 1px solid #dee2e6;
+        margin-bottom: 20px;
     }
-    .navbar a {
-        text-decoration: none;
-        color: #333;
-        padding: 8px 16px;
-        font-weight: 500;
+    .tab {
+        padding: 10px 20px;
         cursor: pointer;
+        font-weight: bold;
+        color: #6c757d;
     }
-    .navbar a:hover, .navbar a.active {
-        background-color: #e9ecef;
-        border-radius: 4px;
-    }
-    .search-bar {
-        padding: 10px;
-        margin-bottom: 10px;
-    }
-    .search-bar input {
-        width: 100%;
-        padding: 8px;
-        font-size: 16px;
-        border: 1px solid #dee2e6;
-        border-radius: 4px;
+    .tab.active {
+        color: #007bff;
+        border-bottom: 2px solid #007bff;
     }
     .tab-content {
         display: none;
-        padding: 20px;
     }
     .tab-content.active {
         display: block;
     }
-    .chat-item, .group-item {
+    .search-bar {
+        margin-bottom: 20px;
+    }
+    .search-bar input {
+        width: 100%;
+        padding: 8px;
+        border: 1px solid #dee2e6;
+        border-radius: 20px;
+    }
+    .chat-item, .user-item, .group-item {
         display: flex;
         align-items: center;
         padding: 10px;
         border-bottom: 1px solid #dee2e6;
         cursor: pointer;
     }
-    .chat-item img, .group-item img {
+    .chat-item img, .user-item img, .group-item img {
         width: 50px;
         height: 50px;
         border-radius: 50%;
         margin-right: 10px;
     }
-    .chat-info, .group-info {
+    .chat-info, .user-info, .group-info {
         flex: 1;
     }
-    .chat-info h3, .group-info h3 {
+    .chat-info h3, .user-info h3, .group-info h3 {
         margin: 0;
         font-size: 16px;
     }
-    .chat-info p, .group-info p {
+    .chat-info p, .user-info p, .group-info p {
         margin: 0;
         font-size: 12px;
-        color: #666;
+        color: #6c757d;
     }
-    .chat-time {
-        display: flex;
-        flex-direction: column;
-        align-items: flex-end;
+    .chat-meta, .user-actions, .group-actions {
+        text-align: right;
     }
-    .chat-time small {
+    .chat-meta small, .user-actions button, .group-actions button {
         font-size: 12px;
-        color: #999;
+        color: #6c757d;
     }
-    .unread-count {
-        background-color: #007bff;
+    .user-actions button, .group-actions button {
+        margin-left: 10px;
+        padding: 5px 10px;
+        border: none;
+        background: #007bff;
         color: white;
-        border-radius: 50%;
-        padding: 2px 6px;
-        font-size: 12px;
-        margin-top: 5px;
-    }
-    .modal {
-        display: none;
-        position: fixed;
-        z-index: 1000;
-        left: 0;
-        top: 0;
-        width: 100%;
-        height: 100%;
-        overflow: auto;
-        background-color: rgba(0,0,0,0.4);
-    }
-    .modal-content {
-        background-color: #fefefe;
-        margin: 15% auto;
-        padding: 20px;
-        border: 1px solid #888;
-        width: 80%;
-    }
-    .close {
-        color: #aaa;
-        float: right;
-        font-size: 28px;
-        font-weight: bold;
-    }
-    .close:hover,
-    .close:focus {
-        color: black;
-        text-decoration: none;
+        border-radius: 5px;
         cursor: pointer;
     }
-    .conversation-navbar {
-        display: flex;
-        align-items: center;
-        padding: 10px;
-        background-color: #f8f9fa;
-        border-bottom: 1px solid #dee2e6;
+    .user-actions button:disabled, .group-actions button:disabled {
+        background: #6c757d;
+        cursor: not-allowed;
     }
-    .conversation-navbar img {
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
-        margin-right: 10px;
-    }
-    .conversation-navbar h3 {
-        margin: 0;
-        flex: 1;
-    }
-    .dropdown {
-        position: relative;
-        display: inline-block;
-    }
-    .dropdown-content {
+    .new-group-form {
+        padding: 20px;
+        border: 1px solid #dee2e6;
+        border-radius: 5px;
         display: none;
-        position: absolute;
-        background-color: #f9f9f9;
-        min-width: 160px;
-        box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
-        z-index: 1;
     }
-    .dropdown-content a {
-        color: black;
-        padding: 12px 16px;
-        text-decoration: none;
+    .new-group-form.active {
         display: block;
     }
-    .dropdown-content a:hover {
-        background-color: #f1f1f1;
+    .chat-window {
+        display: none;
+        padding: 20px;
+        border: 1px solid #dee2e6;
+        border-radius: 5px;
     }
-    .dropdown:hover .dropdown-content {
+    .chat-window.active {
         display: block;
-    }
-    .message-area {
-        position: fixed;
-        bottom: 0;
-        width: 100%;
-        padding: 10px;
-        background-color: #f8f9fa;
-        display: flex;
-        align-items: center;
-    }
-    .message-area input {
-        flex: 1;
-        padding: 8px;
-        margin-right: 10px;
-    }
-    .message-area button {
-        margin-left: 5px;
     }
 </style>
 
 <div class="search-bar">
-    <input type="text" placeholder="Search..." id="searchInput" oninput="searchInbox()">
+    <input type="text" id="searchInput" placeholder="Search Chats and Groups" oninput="searchInbox()">
 </div>
 
-<div class="navbar">
-    <a onclick="showTab('chats')" id="chats-tab">Chats {% if unread_chats_count %} ({{ unread_chats_count }}) {% endif %}</a>
-    <a onclick="showTab('groups')" id="groups-tab">Groups {% if unread_groups_count %} ({{ unread_groups_count }}) {% endif %}</a>
-    <a onclick="showTab('new')" id="new-tab">New</a>
+<div class="tab-container">
+    <div class="tab active" onclick="showTab('chats')">Chats {% if unread_chats_count %} ({{ unread_chats_count }}) {% endif %}</div>
+    <div class="tab" onclick="showTab('groups')">Groups {% if unread_groups_count %} ({{ unread_groups_count }}) {% endif %}</div>
+    <div class="tab" onclick="showTab('new')">New</div>
+    <div class="tab" onclick="showTab('search')">Search</div>
 </div>
 
-<div id="chats" class="tab-content">
+<div id="chats" class="tab-content active">
     {% if chats %}
         {% for chat in chats %}
-        <div class="chat-item" onclick="openConversation('chat', {{ chat.other_user.id }})" data-name="{{ chat.other_user.real_name }}" data-username="{{ chat.other_user.username | default('') }}">
-            <img src="{{ chat.other_user.profile_photo | default('/static/img/default_profile.png') }}" alt="Profile">
+        <div class="chat-item" onclick="openChat({{ chat.other_user.id }})">
+            <img src="{{ chat.other_user.profilePhoto | default('/static/img/default_profile.png') }}" alt="Profile">
             <div class="chat-info">
                 <h3>{{ chat.other_user.real_name }}</h3>
                 <p>{{ chat.latest_message_snippet }}</p>
             </div>
-            <div class="chat-time">
+            <div class="chat-meta">
                 <small>{{ moment(chat.timestamp).fromNow() }}</small>
                 {% if chat.unread_count > 0 %}
-                <span class="unread-count">{{ chat.unread_count }}</span>
+                <small class="unread">{{ chat.unread_count }}</small>
                 {% endif %}
             </div>
         </div>
         {% endfor %}
     {% else %}
-        <div>
+        <div class="chat-item">
             <p>No direct messages yet.</p>
             <p>Start a conversation with a friend!</p>
         </div>
@@ -211,22 +138,22 @@
 <div id="groups" class="tab-content">
     {% if groups %}
         {% for group in groups %}
-        <div class="group-item" onclick="openConversation('group', {{ group.id }})" data-name="{{ group.name }}">
-            <img src="{{ group.profile_photo | default('/static/img/default_group.png') }}" alt="Group Profile">
-            <div class="group-info">
+        <div class="chat-item" onclick="openGroupChat({{ group.id }})">
+            <img src="{{ group.profilePhoto | default('/static/img/default_group.png') }}" alt="Group">
+            <div class="chat-info">
                 <h3>{{ group.name }}</h3>
                 <p>{{ group.latest_message_snippet }}</p>
             </div>
-            <div class="chat-time">
+            <div class="chat-meta">
                 <small>{{ moment(group.timestamp).fromNow() }}</small>
                 {% if group.unread_count > 0 %}
-                <span class="unread-count">{{ group.unread_count }}</span>
+                <small class="unread">{{ group.unread_count }}</small>
                 {% endif %}
             </div>
         </div>
         {% endfor %}
     {% else %}
-        <div>
+        <div class="chat-item">
             <p>No group chats yet.</p>
             <p>Create a new group or join an existing one!</p>
         </div>
@@ -234,125 +161,171 @@
 </div>
 
 <div id="new" class="tab-content">
-    <h2>Create New Group</h2>
-    <form method="POST" action="{{ url_for('create_group') }}" enctype="multipart/form-data">
-        <div>
-            <label for="group_photo">Upload Photo</label>
-            <input type="file" id="group_photo" name="group_photo">
-        </div>
-        <div>
-            <label for="group_name">Group Name</label>
-            <input type="text" id="group_name" name="group_name" required>
-        </div>
-        <!-- Add other group info fields as needed -->
-        <button type="submit">Create Group</button>
-        <button type="button" onclick="cancelCreate()">Cancel</button>
-    </form>
+    <div class="new-group-form">
+        <form method="POST" action="{{ url_for('create_group') }}" enctype="multipart/form-data">
+            <div>
+                <label>Upload Photo</label>
+                <input type="file" name="groupPhoto" accept="image/*">
+            </div>
+            <div>
+                <label>Group Name</label>
+                <input type="text" name="groupName" required>
+            </div>
+            <button type="submit">Create Group</button>
+            <button type="button" onclick="showTab('chats')">Cancel</button>
+        </form>
+    </div>
 </div>
 
-<!-- Modal for Conversation -->
-<div id="conversationModal" class="modal">
-    <div class="modal-content">
-        <span class="close" onclick="closeModal()">&times;</span>
-        <div id="conversationNavbar" class="conversation-navbar">
-            <button onclick="closeModal()">&larr;</button>
-            <img id="convProfilePic" src="" alt="Profile">
-            <h3 id="convName"></h3>
-            <small id="convUsername"></small>
-            <div class="dropdown">
-                <button>&#8942;</button>
-                <div class="dropdown-content" id="dropdownOptions">
-                    <!-- Options will be populated based on type -->
-                </div>
+<div id="search" class="tab-content">
+    <div id="search-results">
+        <p>Start typing to search for mutual friends or groups.</p>
+    </div>
+</div>
+
+<div class="chat-window" id="chatWindow">
+    <div class="chat-header">
+        <button onclick="closeChat()">×</button>
+        <button onclick="goBack()">←</button>
+        <h3 id="chatTitle">Conversation</h3>
+        <div class="chat-options">
+            <button onclick="showOptions()">⋮</button>
+            <div class="options-menu" id="optionsMenu" style="display:none;">
+                <a href="#" onclick="viewProfile()">View Profile</a>
             </div>
         </div>
-        <div id="conversationBody">
-            <!-- Messages would load here via AJAX or similar -->
-            <p>Conversation content loads here...</p>
-        </div>
-        <div class="message-area">
-            <button><i class="fa fa-smile-o"></i></button> <!-- Stickers -->
-            <button><i class="fa fa-paperclip"></i></button> <!-- Attach -->
-            <button><i class="fa fa-camera"></i></button> <!-- Camera -->
-            <button><i class="fa fa-microphone"></i></button> <!-- Microphone -->
-            <input type="text" placeholder="Type a message...">
-            <button><i class="fa fa-paper-plane"></i></button> <!-- Send -->
-        </div>
+    </div>
+    <div id="chatContent">Conversation content loads here...</div>
+    <div class="chat-input">
+        <input type="text" id="messageInput" placeholder="Type a message...">
+        <button onclick="sendMessage()">Send</button>
+        <input type="file" id="mediaInput" accept="image/*,video/*">
+        <button onclick="uploadMedia()">Upload</button>
     </div>
 </div>
 
 <script>
     function showTab(tabId) {
-        document.querySelectorAll('.tab-content').forEach(tab => {
-            tab.classList.remove('active');
-        });
-        document.querySelectorAll('.navbar a').forEach(tab => {
-            tab.classList.remove('active');
-        });
+        document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+        document.querySelectorAll('.new-group-form, .chat-window').forEach(el => el.classList.remove('active'));
+        document.querySelector(`[onclick="showTab('${tabId}')"]`).classList.add('active');
         document.getElementById(tabId).classList.add('active');
-        document.getElementById(tabId + '-tab').classList.add('active');
+        if (tabId === 'new') {
+            document.querySelector('.new-group-form').classList.add('active');
+        }
     }
 
+    let debounceTimer;
     function searchInbox() {
-        let searchTerm = document.getElementById('searchInput').value.toLowerCase();
-        let activeTab = document.querySelector('.tab-content.active');
-        if (!activeTab) return;
-
-        let items = activeTab.querySelectorAll('.chat-item, .group-item');
-        items.forEach(item => {
-            let name = item.dataset.name.toLowerCase();
-            let username = item.dataset.username ? item.dataset.username.toLowerCase() : '';
-            if (name.startsWith(searchTerm) || username.startsWith(searchTerm)) {
-                item.style.display = 'flex';
-            } else {
-                item.style.display = 'none';
-            }
-        });
-    }
-
-    function openConversation(type, id) {
-        let modal = document.getElementById('conversationModal');
-        modal.style.display = 'block';
-
-        // Populate navbar based on type (chat or group)
-        // This is placeholder; in real, fetch data via AJAX
-        let name = type === 'chat' ? 'User Name' : 'Group Name';
-        let username = type === 'chat' ? '@username' : '';
-        let profilePic = '/static/img/default_profile.png'; // or group
-
-        document.getElementById('convProfilePic').src = profilePic;
-        document.getElementById('convName').innerText = name;
-        document.getElementById('convUsername').innerText = username;
-
-        let dropdown = document.getElementById('dropdownOptions');
-        dropdown.innerHTML = '';
-        if (type === 'chat') {
-            ['Customize name', 'Change chat wallpaper', 'Search', 'View user', 'Disappearing message', 'Block', 'Report'].forEach(opt => {
-                let a = document.createElement('a');
-                a.innerText = opt;
-                dropdown.appendChild(a);
-            });
-        } else if (type === 'group') {
-            ['Change chat wallpaper', 'Search', 'View group', 'Disappearing message', 'Leave', 'Report'].forEach(opt => {
-                let a = document.createElement('a');
-                a.innerText = opt;
-                dropdown.appendChild(a);
-            });
+        clearTimeout(debounceTimer);
+        const searchTerm = document.getElementById('searchInput').value.trim();
+        const searchResults = document.getElementById('search-results');
+        
+        if (!searchTerm) {
+            searchResults.innerHTML = '<p>Start typing to search for mutual friends or groups.</p>';
+            return;
         }
 
-        // Load conversation body (placeholder)
+        debounceTimer = setTimeout(() => {
+            fetch(`/api/search_inbox?term=${encodeURIComponent(searchTerm)}`)
+                .then(response => response.json())
+                .then(data => {
+                    searchResults.innerHTML = '';
+                    if (data.results.length === 0) {
+                        searchResults.innerHTML = '<p>No mutual friends or groups found.</p>';
+                        return;
+                    }
+                    data.results.forEach(item => {
+                        if (item.type === 'user') {
+                            const user = item.data;
+                            const html = `
+                                <div class="user-item" onclick="openChat(${user.id})">
+                                    <img src="${user.profilePhoto}" alt="Profile">
+                                    <div class="user-info">
+                                        <h3>${user.real_name}</h3>
+                                        <p>@${user.username}</p>
+                                    </div>
+                                    <div class="user-actions">
+                                        <button disabled>Following</button>
+                                    </div>
+                                </div>`;
+                            searchResults.insertAdjacentHTML('beforeend', html);
+                        } else if (item.type === 'group') {
+                            const group = item.data;
+                            const html = `
+                                <div class="group-item" onclick="openGroupChat(${group.id})">
+                                    <img src="${group.profilePhoto}" alt="Group">
+                                    <div class="group-info">
+                                        <h3>${group.name}</h3>
+                                        <p>${group.description || 'No description'}</p>
+                                    </div>
+                                    <div class="group-actions">
+                                        <button disabled>Member</button>
+                                    </div>
+                                </div>`;
+                            searchResults.insertAdjacentHTML('beforeend', html);
+                        }
+                    });
+                })
+                .catch(error => {
+                    console.error('Error searching inbox:', error);
+                    searchResults.innerHTML = '<p>Error searching users or groups. Please try again.</p>';
+                });
+        }, 300); // Debounce for 300ms
     }
 
-    function closeModal() {
-        document.getElementById('conversationModal').style.display = 'none';
+    function openChat(userId) {
+        document.querySelector('.chat-window').classList.add('active');
+        fetch(`/api/chat/${userId}`)
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('chatTitle').textContent = data.user.real_name;
+                document.getElementById('chatContent').innerHTML = data.messages.map(msg => `
+                    <p><strong>${msg.sender}:</strong> ${msg.content}</p>
+                `).join('');
+            });
     }
 
-    function cancelCreate() {
-        showTab('chats'); // Or hide, but since tab, switch back
+    function openGroupChat(groupId) {
+        document.querySelector('.chat-window').classList.add('active');
+        fetch(`/api/group_chat/${groupId}`)
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('chatTitle').textContent = data.group.name;
+                document.getElementById('chatContent').innerHTML = data.messages.map(msg => `
+                    <p><strong>${msg.sender}:</strong> ${msg.content}</p>
+                `).join('');
+            });
     }
 
-    // Show Chats tab by default
-    showTab('chats');
+    function closeChat() {
+        document.querySelector('.chat-window').classList.remove('active');
+        document.getElementById('chatContent').innerHTML = 'Conversation content loads here...';
+    }
+
+    function goBack() {
+        closeChat();
+        showTab('chats');
+    }
+
+    function showOptions() {
+        const menu = document.getElementById('optionsMenu');
+        menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+    }
+
+    function viewProfile() {
+        alert('Profile view not implemented yet.');
+    }
+
+    function sendMessage() {
+        const message = document.getElementById('messageInput').value;
+        alert('Message sending not implemented yet.');
+    }
+
+    function uploadMedia() {
+        const file = document.getElementById('mediaInput').files[0];
+        alert('Media upload not implemented yet.');
+    }
 </script>
-
 {% endblock %}
