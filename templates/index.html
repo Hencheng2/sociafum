@@ -4,20 +4,13 @@
 
 {% block content %}
 <style>
-    .header-container {
+    .whats-on-mind {
         display: flex;
         align-items: center;
-        justify-content: space-between;
         padding: 10px;
         background-color: #f8f9fa;
         border-bottom: 1px solid #dee2e6;
-    }
-    .whats-on-mind {
-        flex: 1;
-        display: flex;
-        align-items: center;
         cursor: pointer;
-        margin-right: 10px;
     }
     .whats-on-mind img {
         width: 40px;
@@ -31,49 +24,6 @@
         border: 1px solid #dee2e6;
         border-radius: 20px;
         background-color: #e9ecef;
-    }
-    .search-bar {
-        flex: 1;
-        margin-left: 10px;
-    }
-    .search-bar form {
-        display: flex;
-    }
-    .search-bar input {
-        flex: 1;
-        padding: 8px;
-        border: 1px solid #dee2e6;
-        border-radius: 20px;
-    }
-    .search-bar button {
-        padding: 8px 16px;
-        margin-left: 5px;
-        border: none;
-        background: #007bff;
-        color: white;
-        border-radius: 20px;
-        cursor: pointer;
-    }
-    .tab-container {
-        display: flex;
-        border-bottom: 1px solid #dee2e6;
-        margin-bottom: 10px;
-    }
-    .tab {
-        padding: 10px 20px;
-        cursor: pointer;
-        font-weight: bold;
-        color: #6c757d;
-    }
-    .tab.active {
-        color: #007bff;
-        border-bottom: 2px solid #007bff;
-    }
-    .tab-content {
-        display: none;
-    }
-    .tab-content.active {
-        display: block;
     }
     .stories-container {
         display: flex;
@@ -195,94 +145,72 @@
 </style>
 
 {% if current_user.is_authenticated %}
-    <div class="header-container">
-        <div class="whats-on-mind" onclick="window.location.href='{{ url_for('create_post') }}'">
-            <img src="{{ current_user.get_member_profile().profilePhoto | default('/static/img/default_profile.png') }}" alt="Profile">
-            <input type="text" placeholder="What's on your mind?" readonly>
-        </div>
-        <div class="search-bar">
-            <form action="{{ url_for('search') }}" method="GET">
-                <input type="text" name="q" placeholder="Search SociaFam">
-                <button type="submit">Search</button>
-            </form>
-        </div>
+    <div class="whats-on-mind" onclick="window.location.href='{{ url_for('create_post') }}'">
+        <img src="{{ current_user.get_member_profile().profilePhoto | default('/static/img/default_profile.png') }}" alt="Profile">
+        <input type="text" placeholder="What's on your mind?" readonly>
     </div>
 
-    <div class="tab-container">
-        <div class="tab active" onclick="showTab('home')">Home</div>
-        <div class="tab" onclick="window.location.href='{{ url_for('search') }}'">Search</div>
+    <div class="stories-container">
+        <div class="story-item add-story" onclick="addStory()">
+            <img src="{{ current_user.get_member_profile().profilePhoto | default('/static/img/default_profile.png') }}" alt="Your Story">
+            <p>Your Story</p>
+        </div>
+        {% for story in stories %}
+        <div class="story-item" onclick="openStoryModal({{ loop.index0 }})" data-id="{{ story.id }}" data-type="{{ story.media_type }}" data-path="{{ story.media_path }}" data-username="{{ story.username }}">
+            <img src="{{ story.media_path if story.media_type == 'image' else '/static/img/default_story.png' }}" alt="Story">
+            <p>{{ story.username }}</p>
+        </div>
+        {% endfor %}
     </div>
 
-    <div id="home" class="tab-content active">
-        <div class="stories-container">
-            <div class="story-item add-story" onclick="addStory()">
-                <img src="{{ current_user.get_member_profile().profilePhoto | default('/static/img/default_profile.png') }}" alt="Your Story">
-                <p>Your Story</p>
-            </div>
-            {% for story in stories %}
-            <div class="story-item" onclick="openStoryModal({{ loop.index0 }})" data-id="{{ story.id }}" data-type="{{ story.media_type }}" data-path="{{ story.media_path }}" data-username="{{ story.username }}">
-                <img src="{{ story.media_path if story.media_type == 'image' else '/static/img/default_story.png' }}" alt="Story">
-                <p>{{ story.username }}</p>
-            </div>
-            {% endfor %}
-        </div>
-
-        <div id="posts-container">
-            {% for post in posts %}
-            <div class="post">
-                <div class="post-header">
-                    <img src="{{ post.user_profile_photo | default('/static/img/default_profile.png') }}" alt="Profile">
-                    <div>
-                        <h3>{{ post.user_real_name }} <small>@{{ post.username }}</small></h3>
-                        <small>{{ moment(post.timestamp).fromNow() }}</small>
-                    </div>
-                </div>
-                <div class="post-content">
-                    <p>{{ post.description }}</p>
-                    {% if post.media_path %}
-                    {% if post.media_type == 'image' %}
-                    <img src="{{ post.media_path }}" alt="Post Media" style="width:100%;">
-                    {% elif post.media_type == 'video' %}
-                    <video src="{{ post.media_path }}" controls style="width:100%;"></video>
-                    {% endif %}
-                    {% endif %}
-                </div>
-                <div class="post-actions">
-                    <button>Like ({{ post.likes_count }})</button>
-                    <button>Comment ({{ post.comments_count }})</button>
-                    <button>Share</button>
-                    <button>Follow</button>
-                    <button>Save</button>
-                    <button>Repost</button>
-                    <button>Report</button>
-                    <button>Hide</button>
-                    <button>Notifications for this type</button>
-                    <button>Block {{ post.username }}</button>
+    <div id="posts-container">
+        {% for post in posts %}
+        <div class="post">
+            <div class="post-header">
+                <img src="{{ post.user_profile_photo | default('/static/img/default_profile.png') }}" alt="Profile">
+                <div>
+                    <h3>{{ post.user_real_name }} <small>@{{ post.username }}</small></h3>
+                    <small>{{ moment(post.timestamp).fromNow() }}</small>
                 </div>
             </div>
-            {% endfor %}
+            <div class="post-content">
+                <p>{{ post.description }}</p>
+                {% if post.media_path %}
+                {% if post.media_type == 'image' %}
+                <img src="{{ post.media_path }}" alt="Post Media" style="width:100%;">
+                {% elif post.media_type == 'video' %}
+                <video src="{{ post.media_path }}" controls style="width:100%;"></video>
+                {% endif %}
+                {% endif %}
+            </div>
+            <div class="post-actions">
+                <button>Like ({{ post.likes_count }})</button>
+                <button>Comment ({{ post.comments_count }})</button>
+                <button>Share</button>
+                <button>Follow</button>
+                <button>Save</button>
+                <button>Repost</button>
+                <button>Report</button>
+                <button>Hide</button>
+                <button>Notifications for this type</button>
+                <button>Block {{ post.username }}</button>
+            </div>
         </div>
-        <div class="loader" id="loader" style="display:none;">
-            <p>Loading more posts...</p>
-        </div>
+        {% endfor %}
     </div>
-
-    <div id="storyModal" class="modal">
-        <div class="modal-content">
-            <div class="progress-bar"><div class="progress"></div></div>
-            <div id="storyContent"></div>
-        </div>
+    <div class="loader" id="loader" style="display:none;">
+        <p>Loading more posts...</p>
     </div>
 {% endif %}
 
-<script>
-    function showTab(tabId) {
-        document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
-        document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-        document.querySelector(`[onclick="showTab('${tabId}')"]`).classList.add('active');
-        document.getElementById(tabId).classList.add('active');
-    }
+<div id="storyModal" class="modal">
+    <div class="modal-content">
+        <div class="progress-bar"><div class="progress"></div></div>
+        <div id="storyContent"></div>
+    </div>
+</div>
 
+<script>
     let currentStoryIndex = 0;
     let storyTimer;
     let isPaused = false;
@@ -442,4 +370,5 @@
             });
     }
 </script>
+
 {% endblock %}
