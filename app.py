@@ -2038,15 +2038,103 @@ def create_story():
     return render_template('create_story.html', current_year=current_year)
 
 # --- Search Route ---
+@app.route('/api/search_users', methods=['GET'])
+@login_required
+def api_search_users():
+    query = request.args.get('term', '').strip()
+    db = get_db()
+    results = []
+    
+    if query:
+        # Search users, prioritizing real name matches
+        users = db.execute(
+            """
+            SELECT u.id, u.username, m.fullName AS real_name, m.profilePhoto
+            FROM users u
+            LEFT JOIN members m ON u.id = m.user_id
+            WHERE m.fullName LIKE ? OR u.username LIKE ?
+            ORDER BY 
+                CASE 
+                    WHEN m.fullName LIKE ? THEN 1
+                    WHEN u.username LIKE ? THEN 2
+                    ELSE 3
+                END,
+                m.fullName
+            """,
+            (f'{query}%', f'{query}%', f'{query}%', f'{query}%')
+        ).fetchall()
+        for user in users:
+            user_dict = dict(user)
+            user_dict['profilePhoto'] = user_dict['profilePhoto'] or url_for('static', filename='img/default_profile.png')
+            # Check if current user is following this user
+            is_following = db.execute(
+                "SELECT 1 FROM friendships WHERE user1_id = ? AND user2_id = ? AND status = 'accepted'",
+                (current_user.id, user['id'])
+            ).fetchone() is not None
+            user_dict['is_following'] = is_following
+            results.append({'type': 'user', 'data': user_dict})
+    
+    return jsonify({'results': results})
+
+@app.route('/api/search_inbox', methods=['GET'])
+@login_required
+def api_search_inbox():
+    query = request.args.get('term', '').strip()
+    db = get_db()
+    results = []
+    
+    if query:
+        # Search mutual users (both follow each other)
+        users = db.execute(
+            """
+            SELECT u.id, u.username, m.fullName AS real_name, m.profilePhoto
+            FROM users u
+            JOIN members m ON u.id = m.user_id
+            JOIN friendships f1 ON u.id = f1.user2_id AND f1.user1_id = ? AND f1.status = 'accepted'
+            JOIN friendships f2 ON u.id = f2.user1_id AND f2.user2_id = ? AND f2.status = 'accepted'
+            WHERE m.fullName LIKE ? OR u.username LIKE ?
+            ORDER BY 
+                CASE 
+                    WHEN m.fullName LIKE ? THEN 1
+                    WHEN u.username LIKE ? THEN 2
+                    ELSE 3
+                END,
+                m.fullName
+            """,
+            (current_user.id, current_user.id, f'{query}%', f'{query}%', f'{query}%', f'{query}%')
+        ).fetchall()
+        for user in users:
+            user_dict = dict(user)
+            user_dict['profilePhoto'] = user_dict['profilePhoto'] or url_for('static', filename='img/default_profile.png')
+            user_dict['is_following'] = True  # Mutual users are always following each other
+            results.append({'type': 'user', 'data': user_dict})
+        
+        # Search groups
+        groups = db.execute(
+            """
+            SELECT g.id, g.name, g.description, g.profilePhoto
+            FROM groups g
+            JOIN group_members gm ON g.id = gm.group_id AND gm.user_id = ?
+            WHERE g.name LIKE ? OR g.description LIKE ?
+            ORDER BY g.name
+            """,
+            (current_user.id, f'{query}%', f'{query}%')
+        ).fetchall()
+        for group in groups:
+            group_dict = dict(group)
+            group_dict['profilePhoto'] = group_dict['profilePhoto'] or url_for('static', filename='img/default_group.png')
+            group_dict['is_member'] = True  # Only return groups the user is a member of
+            results.append({'type': 'group', 'data': group_dict})
+    
+    return jsonify({'results': results})
+
 @app.route('/search', methods=['GET'])
 @login_required
 def search():
     query = request.args.get('q', '').strip()
     db = get_db()
-    
     search_results = []
     if query:
-        # Search users
         users = db.execute(
             """
             SELECT u.id, u.username, u.originalName, m.profilePhoto
@@ -2062,7 +2150,6 @@ def search():
             user_dict['profilePhoto'] = get_member_profile_pic(user_dict['id'])
             search_results.append({'type': 'user', 'data': user_dict})
         
-        # Search groups
         groups = db.execute(
             """
             SELECT g.id, g.name, g.description, g.profilePhoto
@@ -2077,10 +2164,27 @@ def search():
             group_dict['profilePhoto'] = group_dict['profilePhoto'] or url_for('static', filename='img/default_group.png')
             search_results.append({'type': 'group', 'data': group_dict})
 
-    # Pass the current year to the template
     current_year = datetime.now(timezone.utc).year
     return render_template('search.html', query=query, search_results=search_results, current_year=current_year)
 
+@app.route('/api/follow', methods=['POST'])
+@login_required
+def api_follow():
+    data = request.json
+    user_id = data.get('user_id')
+    if not user_id:
+        return jsonify({'success': False, 'message': 'User ID required.'}), 400
+    db = get_db()
+    try:
+        db.execute(
+            "INSERT INTO friendships (user1_id, user2_id, status, timestamp) VALUES (?, ?, 'pending', ?)",
+            (current_user.id, user_id, datetime.now(timezone.utc))
+        )
+        db.commit()
+        return jsonify({'success': True})
+    except Exception as e:
+        db.rollback()
+        return jsonify({'success': False, 'message': str(e)}), 500
 
 # --- Dashboard & Static Pages ---
 # 'dashboard.html' is not on the user's list. Redirect to my_profile as the closest personal overview.
