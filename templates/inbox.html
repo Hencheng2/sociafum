@@ -34,39 +34,39 @@
         border: 1px solid #dee2e6;
         border-radius: 20px;
     }
-    .chat-item, .user-item {
+    .chat-item, .user-item, .group-item {
         display: flex;
         align-items: center;
         padding: 10px;
         border-bottom: 1px solid #dee2e6;
         cursor: pointer;
     }
-    .chat-item img, .user-item img {
+    .chat-item img, .user-item img, .group-item img {
         width: 50px;
         height: 50px;
         border-radius: 50%;
         margin-right: 10px;
     }
-    .chat-info, .user-info {
+    .chat-info, .user-info, .group-info {
         flex: 1;
     }
-    .chat-info h3, .user-info h3 {
+    .chat-info h3, .user-info h3, .group-info h3 {
         margin: 0;
         font-size: 16px;
     }
-    .chat-info p, .user-info p {
+    .chat-info p, .user-info p, .group-info p {
         margin: 0;
         font-size: 12px;
         color: #6c757d;
     }
-    .chat-meta, .user-actions {
+    .chat-meta, .user-actions, .group-actions {
         text-align: right;
     }
-    .chat-meta small, .user-actions button {
+    .chat-meta small, .user-actions button, .group-actions button {
         font-size: 12px;
         color: #6c757d;
     }
-    .user-actions button {
+    .user-actions button, .group-actions button {
         margin-left: 10px;
         padding: 5px 10px;
         border: none;
@@ -75,7 +75,7 @@
         border-radius: 5px;
         cursor: pointer;
     }
-    .user-actions button:disabled {
+    .user-actions button:disabled, .group-actions button:disabled {
         background: #6c757d;
         cursor: not-allowed;
     }
@@ -100,7 +100,7 @@
 </style>
 
 <div class="search-bar">
-    <input type="text" id="searchInput" placeholder="Search SociaFam" oninput="searchUsers()">
+    <input type="text" id="searchInput" placeholder="Search Chats and Groups" oninput="searchInbox()">
 </div>
 
 <div class="tab-container">
@@ -179,7 +179,7 @@
 
 <div id="search" class="tab-content">
     <div id="search-results">
-        <p>Start typing to search for users across SociaFam.</p>
+        <p>Start typing to search for mutual friends or groups.</p>
     </div>
 </div>
 
@@ -217,23 +217,23 @@
     }
 
     let debounceTimer;
-    function searchUsers() {
+    function searchInbox() {
         clearTimeout(debounceTimer);
         const searchTerm = document.getElementById('searchInput').value.trim();
         const searchResults = document.getElementById('search-results');
         
         if (!searchTerm) {
-            searchResults.innerHTML = '<p>Start typing to search for users across SociaFam.</p>';
+            searchResults.innerHTML = '<p>Start typing to search for mutual friends or groups.</p>';
             return;
         }
 
         debounceTimer = setTimeout(() => {
-            fetch(`/api/search_users?term=${encodeURIComponent(searchTerm)}`)
+            fetch(`/api/search_inbox?term=${encodeURIComponent(searchTerm)}`)
                 .then(response => response.json())
                 .then(data => {
                     searchResults.innerHTML = '';
                     if (data.results.length === 0) {
-                        searchResults.innerHTML = '<p>No users found.</p>';
+                        searchResults.innerHTML = '<p>No mutual friends or groups found.</p>';
                         return;
                     }
                     data.results.forEach(item => {
@@ -247,9 +247,21 @@
                                         <p>@${user.username}</p>
                                     </div>
                                     <div class="user-actions">
-                                        <button onclick="followUser(${user.id})" ${user.is_following ? 'disabled' : ''}>
-                                            ${user.is_following ? 'Following' : 'Follow'}
-                                        </button>
+                                        <button disabled>Following</button>
+                                    </div>
+                                </div>`;
+                            searchResults.insertAdjacentHTML('beforeend', html);
+                        } else if (item.type === 'group') {
+                            const group = item.data;
+                            const html = `
+                                <div class="group-item" onclick="openGroupChat(${group.id})">
+                                    <img src="${group.profilePhoto}" alt="Group">
+                                    <div class="group-info">
+                                        <h3>${group.name}</h3>
+                                        <p>${group.description || 'No description'}</p>
+                                    </div>
+                                    <div class="group-actions">
+                                        <button disabled>Member</button>
                                     </div>
                                 </div>`;
                             searchResults.insertAdjacentHTML('beforeend', html);
@@ -257,8 +269,8 @@
                     });
                 })
                 .catch(error => {
-                    console.error('Error searching users:', error);
-                    searchResults.innerHTML = '<p>Error searching users. Please try again.</p>';
+                    console.error('Error searching inbox:', error);
+                    searchResults.innerHTML = '<p>Error searching users or groups. Please try again.</p>';
                 });
         }, 300); // Debounce for 300ms
     }
@@ -303,34 +315,17 @@
     }
 
     function viewProfile() {
-        // Implement profile view redirect
         alert('Profile view not implemented yet.');
     }
 
     function sendMessage() {
         const message = document.getElementById('messageInput').value;
-        // Implement message sending via API
         alert('Message sending not implemented yet.');
     }
 
     function uploadMedia() {
         const file = document.getElementById('mediaInput').files[0];
-        // Implement media upload via API
         alert('Media upload not implemented yet.');
-    }
-
-    function followUser(userId) {
-        fetch('/api/follow', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ user_id: userId })
-        }).then(response => response.json()).then(data => {
-            if (data.success) {
-                location.reload();
-            } else {
-                alert('Failed to follow user.');
-            }
-        });
     }
 </script>
 {% endblock %}
