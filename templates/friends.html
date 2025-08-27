@@ -4,104 +4,71 @@
 
 {% block content %}
 <style>
-    .tab-container {
+    .navbar {
         display: flex;
+        justify-content: space-around;
+        align-items: center;
+        padding: 10px 0;
+        background-color: #f8f9fa;
         border-bottom: 1px solid #dee2e6;
-        margin-bottom: 20px;
     }
-    .tab {
-        padding: 10px 20px;
+    .navbar a {
+        text-decoration: none;
+        color: #333;
+        padding: 8px 16px;
+        font-weight: 500;
         cursor: pointer;
-        font-weight: bold;
-        color: #6c757d;
     }
-    .tab.active {
-        color: #007bff;
-        border-bottom: 2px solid #007bff;
-    }
-    .tab-content {
-        display: none;
-    }
-    .tab-content.active {
-        display: block;
+    .navbar a:hover, .navbar a.active {
+        background-color: #e9ecef;
+        border-radius: 4px;
     }
     .search-bar {
-        margin-bottom: 20px;
+        padding: 10px;
+        margin-bottom: 10px;
     }
     .search-bar input {
         width: 100%;
         padding: 8px;
-        border: 1px solid #dee2e6;
-        border-radius: 20px;
-    }
-    .user-item {
-        display: flex;
-        align-items: center;
-        padding: 10px;
-        border-bottom: 1px solid #dee2e6;
-    }
-    .user-item img {
-        width: 50px;
-        height: 50px;
-        border-radius: 50%;
-        margin-right: 10px;
-    }
-    .user-info {
-        flex: 1;
-    }
-    .user-info h3 {
-        margin: 0;
         font-size: 16px;
+        border: 1px solid #dee2e6;
+        border-radius: 4px;
     }
-    .user-info p {
-        margin: 0;
-        font-size: 12px;
-        color: #6c757d;
+    .tab-content {
+        display: none;
+        padding: 20px;
     }
-    .user-actions button {
-        margin-left: 10px;
-        padding: 5px 10px;
-        border: none;
-        background: #007bff;
-        color: white;
-        border-radius: 5px;
-        cursor: pointer;
-    }
-    .user-actions button:disabled {
-        background: #6c757d;
-        cursor: not-allowed;
+    .tab-content.active {
+        display: block;
     }
 </style>
 
 <div class="search-bar">
-    <input type="text" id="searchInput" placeholder="Search SociaFam" oninput="searchUsers()">
+    <input type="text" placeholder="Search for people..." id="searchInput" oninput="searchUsers()">
 </div>
 
-<div class="tab-container">
-    <div class="tab active" onclick="showTab('followers')">Followers ({{ followers|length }})</div>
-    <div class="tab" onclick="showTab('following')">Following ({{ following|length }})</div>
-    <div class="tab" onclick="showTab('friends')">Friends ({{ all_friends|length }})</div>
-    <div class="tab" onclick="showTab('requests')">Friend requests ({{ friend_requests|length }})</div>
-    <div class="tab" onclick="showTab('suggested')">Suggested</div>
-    <div class="tab" onclick="showTab('search')">Search</div>
+<div class="navbar">
+    <a onclick="showTab('followers')" id="followers-tab">Followers ({{ followers|length }})</a>
+    <a onclick="showTab('following')" id="following-tab">Following ({{ following|length }})</a>
+    <a onclick="showTab('friends')" id="friends-tab">Friends ({{ all_friends|length }})</a>
+    <a onclick="showTab('friend-requests')" id="friend-requests-tab">Friend requests ({{ friend_requests|length }})</a>
+    <a onclick="showTab('suggested')" id="suggested-tab">Suggested</a>
 </div>
 
-<div id="followers" class="tab-content active">
+<div id="followers" class="tab-content">
     {% if followers %}
         {% for follower in followers %}
-        <div class="user-item">
-            <img src="{{ follower.profilePhoto | default('/static/img/default_profile.png') }}" alt="Profile">
-            <div class="user-info">
+        <div>
+            <img src="{{ follower.profile_picture }}" alt="Profile Picture">
+            <div>
                 <h3>{{ follower.realName }}</h3>
                 <p>{{ follower.mutual_count }} mutual friends/followers</p>
             </div>
-            <div class="user-actions">
-                <button onclick="blockUser({{ follower.id }})">Block</button>
-            </div>
+            <button>Block</button>
         </div>
         {% endfor %}
     {% else %}
-        <div class="user-item">
+        <div>
             <p>No one is following you yet.</p>
             <p>Share your profile with friends to get followers!</p>
         </div>
@@ -111,20 +78,20 @@
 <div id="following" class="tab-content">
     {% if following %}
         {% for user in following %}
-        <div class="user-item">
-            <img src="{{ user.profilePhoto | default('/static/img/default_profile.png') }}" alt="Profile">
-            <div class="user-info">
+        <div>
+            <img src="{{ user.profile_picture }}" alt="Profile Picture">
+            <div>
                 <h3>{{ user.realName }}</h3>
                 <p>{{ user.mutual_count }} mutual friends/followers</p>
             </div>
-            <div class="user-actions">
-                <button onclick="unfollowUser({{ user.id }})">Unfollow</button>
-                <button onclick="blockUser({{ user.id }})">Block</button>
+            <div>
+                <button>Unfollow</button>
+                <button>Block</button>
             </div>
         </div>
         {% endfor %}
     {% else %}
-        <div class="user-item">
+        <div>
             <p>No one is following you yet.</p>
             <p>Follow people you know to see their posts and updates here.</p>
         </div>
@@ -134,44 +101,42 @@
 <div id="friends" class="tab-content">
     {% if all_friends %}
         {% for friend in all_friends %}
-        <div class="user-item">
-            <img src="{{ friend.profilePhoto | default('/static/img/default_profile.png') }}" alt="Profile">
-            <div class="user-info">
+        <div>
+            <img src="{{ friend.profile_picture }}" alt="Profile Picture">
+            <div>
                 <h3>{{ friend.realName }}</h3>
                 <p>{{ friend.mutual_count }} mutual friends/followers</p>
             </div>
-            <div class="user-actions">
-                <button onclick="unfollowUser({{ friend.id }})">Unfollow</button>
-                <button onclick="blockUser({{ friend.id }})">Block</button>
+            <div>
+                <button>Unfollow</button>
+                <button>Block</button>
             </div>
         </div>
         {% endfor %}
     {% else %}
-        <div class="user-item">
+        <div>
             <p>You have no friends yet.</p>
             <p>Explore suggested users or use the search bar to find people.</p>
         </div>
     {% endif %}
 </div>
 
-<div id="requests" class="tab-content">
+<div id="friend-requests" class="tab-content">
     {% if friend_requests %}
         {% for request in friend_requests %}
-        <div class="user-item">
-            <img src="{{ request.sender_profilePhoto | default('/static/img/default_profile.png') }}" alt="Profile">
-            <div class="user-info">
+        <div>
+            <img src="{{ request.sender_profile_picture }}" alt="Profile Picture">
+            <div>
                 <h3>{{ request.sender_realName }}</h3>
                 <p>{{ request.mutual_count }} mutual friends/followers</p>
             </div>
-            <div class="user-actions">
-                <button onclick="acceptFriendRequest({{ request.id }})">Accept</button>
-                <button onclick="declineFriendRequest({{ request.id }})">Decline</button>
-                <button onclick="blockUser({{ request.sender_id }})">Block</button>
-            </div>
+            <button>Accept</button>
+            <button>Decline</button>
+            <button>Block</button>
         </div>
         {% endfor %}
     {% else %}
-        <div class="user-item">
+        <div>
             <p>You have no new friend requests.</p>
             <p>Come back later or send some of your own!</p>
         </div>
@@ -181,175 +146,49 @@
 <div id="suggested" class="tab-content">
     {% if suggested_users %}
         {% for user in suggested_users %}
-        <div class="user-item">
-            <img src="{{ user.profilePhoto | default('/static/img/default_profile.png') }}" alt="Profile">
-            <div class="user-info">
+        <div>
+            <img src="{{ user.profile_picture }}" alt="Profile Picture">
+            <div>
                 <h3>{{ user.realName }}</h3>
                 <p>{{ user.mutual_count }} mutual friends/followers</p>
             </div>
-            <div class="user-actions">
-                <button onclick="friendRequest({{ user.id }})">Follow</button>
-                <button onclick="removeSuggested({{ user.id }})">Remove</button>
-                <button onclick="blockUser({{ user.id }})">Block</button>
-            </div>
+            <button>Follow</button>
+            <button>Remove</button>
+            <button>Block</button>
         </div>
         {% endfor %}
     {% else %}
-        <div class="user-item">
+        <div>
             <p>No suggested users for now.</p>
             <p>Check back later or search for people you may know.</p>
         </div>
     {% endif %}
 </div>
 
-<div id="search" class="tab-content">
-    <div id="search-results">
-        <p>Start typing to search for users across SociaFam.</p>
-    </div>
-</div>
-
 <script>
     function showTab(tabId) {
-        document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
-        document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-        document.querySelector(`[onclick="showTab('${tabId}')"]`).classList.add('active');
+        // Hide all tab contents
+        document.querySelectorAll('.tab-content').forEach(tab => {
+            tab.classList.remove('active');
+        });
+        // Remove active class from all tabs
+        document.querySelectorAll('.navbar a').forEach(tab => {
+            tab.classList.remove('active');
+        });
+        // Show selected tab content and mark tab as active
         document.getElementById(tabId).classList.add('active');
+        document.getElementById(tabId + '-tab').classList.add('active');
     }
 
-    let debounceTimer;
     function searchUsers() {
-        clearTimeout(debounceTimer);
-        const searchTerm = document.getElementById('searchInput').value.trim();
-        const searchResults = document.getElementById('search-results');
-        
-        if (!searchTerm) {
-            searchResults.innerHTML = '<p>Start typing to search for users across SociaFam.</p>';
-            return;
-        }
-
-        debounceTimer = setTimeout(() => {
-            fetch(`/api/search_users?term=${encodeURIComponent(searchTerm)}`)
-                .then(response => response.json())
-                .then(data => {
-                    searchResults.innerHTML = '';
-                    if (data.results.length === 0) {
-                        searchResults.innerHTML = '<p>No users found.</p>';
-                        return;
-                    }
-                    data.results.forEach(item => {
-                        if (item.type === 'user') {
-                            const user = item.data;
-                            const html = `
-                                <div class="user-item">
-                                    <img src="${user.profilePhoto}" alt="Profile">
-                                    <div class="user-info">
-                                        <h3>${user.real_name}</h3>
-                                        <p>@${user.username}</p>
-                                    </div>
-                                    <div class="user-actions">
-                                        <button onclick="friendRequest(${user.id})" ${user.is_following ? 'disabled' : ''}>
-                                            ${user.is_following ? 'Following' : 'Follow'}
-                                        </button>
-                                        <button onclick="messageUser(${user.id})">Message</button>
-                                    </div>
-                                </div>`;
-                            searchResults.insertAdjacentHTML('beforeend', html);
-                        }
-                    });
-                })
-                .catch(error => {
-                    console.error('Error searching users:', error);
-                    searchResults.innerHTML = '<p>Error searching users. Please try again.</p>';
-                });
-        }, 300);
+        // Placeholder for search functionality
+        let searchTerm = document.getElementById('searchInput').value;
+        console.log("Searching for: ", searchTerm);
+        // Add actual search logic here (e.g., filter users or make an API call)
     }
 
-    function friendRequest(userId) {
-        fetch('/api/friend_request', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ user_id: userId })
-        }).then(response => response.json()).then(data => {
-            if (data.success) {
-                location.reload();
-            } else {
-                alert('Failed to send friend request.');
-            }
-        });
-    }
-
-    function unfollowUser(userId) {
-        fetch('/api/unfollow', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ user_id: userId })
-        }).then(response => response.json()).then(data => {
-            if (data.success) {
-                location.reload();
-            } else {
-                alert('Failed to unfollow user.');
-            }
-        });
-    }
-
-    function acceptFriendRequest(requestId) {
-        fetch('/api/accept_friend_request', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ request_id: requestId })
-        }).then(response => response.json()).then(data => {
-            if (data.success) {
-                location.reload();
-            } else {
-                alert('Failed to accept friend request.');
-            }
-        });
-    }
-
-    function declineFriendRequest(requestId) {
-        fetch('/api/decline_friend_request', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ request_id: requestId })
-        }).then(response => response.json()).then(data => {
-            if (data.success) {
-                location.reload();
-            } else {
-                alert('Failed to decline friend request.');
-            }
-        });
-    }
-
-    function blockUser(userId) {
-        fetch('/api/block_user', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ user_id: userId })
-        }).then(response => response.json()).then(data => {
-            if (data.success) {
-                location.reload();
-            } else {
-                alert('Failed to block user.');
-            }
-        });
-    }
-
-    function removeSuggested(userId) {
-        fetch('/api/remove_suggested', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ user_id: userId })
-        }).then(response => response.json()).then(data => {
-            if (data.success) {
-                location.reload();
-            } else {
-                alert('Failed to remove suggested user.');
-            }
-        });
-    }
-
-    function messageUser(userId) {
-        window.location.href = `/chat/${userId}`;
-    }
+    // Show the first tab (Followers) by default
+    showTab('followers');
 </script>
+
 {% endblock %}
