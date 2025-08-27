@@ -164,8 +164,8 @@
                 <p>{{ request.mutual_count }} mutual friends/followers</p>
             </div>
             <div class="user-actions">
-                <button onclick="acceptRequest({{ request.id }})">Accept</button>
-                <button onclick="declineRequest({{ request.id }})">Decline</button>
+                <button onclick="acceptFriendRequest({{ request.id }})">Accept</button>
+                <button onclick="declineFriendRequest({{ request.id }})">Decline</button>
                 <button onclick="blockUser({{ request.sender_id }})">Block</button>
             </div>
         </div>
@@ -188,7 +188,7 @@
                 <p>{{ user.mutual_count }} mutual friends/followers</p>
             </div>
             <div class="user-actions">
-                <button onclick="followUser({{ user.id }})">Follow</button>
+                <button onclick="friendRequest({{ user.id }})">Follow</button>
                 <button onclick="removeSuggested({{ user.id }})">Remove</button>
                 <button onclick="blockUser({{ user.id }})">Block</button>
             </div>
@@ -247,7 +247,7 @@
                                         <p>@${user.username}</p>
                                     </div>
                                     <div class="user-actions">
-                                        <button onclick="followUser(${user.id})" ${user.is_following ? 'disabled' : ''}>
+                                        <button onclick="friendRequest(${user.id})" ${user.is_following ? 'disabled' : ''}>
                                             ${user.is_following ? 'Following' : 'Follow'}
                                         </button>
                                         <button onclick="messageUser(${user.id})">Message</button>
@@ -261,11 +261,11 @@
                     console.error('Error searching users:', error);
                     searchResults.innerHTML = '<p>Error searching users. Please try again.</p>';
                 });
-        }, 300); // Debounce for 300ms
+        }, 300);
     }
 
-    function followUser(userId) {
-        fetch('/api/follow', {
+    function friendRequest(userId) {
+        fetch('/api/friend_request', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ user_id: userId })
@@ -273,7 +273,7 @@
             if (data.success) {
                 location.reload();
             } else {
-                alert('Failed to follow user.');
+                alert('Failed to send friend request.');
             }
         });
     }
@@ -292,8 +292,8 @@
         });
     }
 
-    function acceptRequest(requestId) {
-        fetch('/api/accept_request', {
+    function acceptFriendRequest(requestId) {
+        fetch('/api/accept_friend_request', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ request_id: requestId })
@@ -301,13 +301,13 @@
             if (data.success) {
                 location.reload();
             } else {
-                alert('Failed to accept request.');
+                alert('Failed to accept friend request.');
             }
         });
     }
 
-    function declineRequest(requestId) {
-        fetch('/api/decline_request', {
+    function declineFriendRequest(requestId) {
+        fetch('/api/decline_friend_request', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ request_id: requestId })
@@ -315,7 +315,7 @@
             if (data.success) {
                 location.reload();
             } else {
-                alert('Failed to decline request.');
+                alert('Failed to decline friend request.');
             }
         });
     }
