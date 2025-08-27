@@ -418,9 +418,7 @@ def get_admin_user_id():
 def home():
     # Placeholder for posts and stories data
     stories = [] # Fetch actual stories
-    for_you_posts = [] # Fetch actual 'for you' posts
-    following_posts = [] # Fetch actual 'following' posts
-    explore_posts = [] # Fetch actual 'explore' posts
+    
 
     background_image = url_for('static', filename='img/default_background.jpg') # Default background
     member = None
@@ -437,13 +435,6 @@ def home():
             {'id': 1, 'type': 'image', 'media_url': url_for('static', filename='img/post1.jpg'), 'profile_pic': url_for('static', filename='img/default_profile.png'), 'username': 'user1'},
             {'id': 2, 'type': 'video', 'media_url': url_for('static', filename='videos/reel1.mp4'), 'profile_pic': url_for('static', filename='img/default_profile.png'), 'username': 'user2'},
         ]
-        # Example structure for posts
-        for_you_posts = [
-            {'id': 1, 'profile_pic': url_for('static', filename='img/default_profile.png'), 'username': 'user3', 'real_name': 'User Three', 'timestamp': datetime.now(timezone.utc) - timedelta(hours=1), 'media_url': url_for('static', filename='img/post2.jpg'), 'description': 'Beautiful day out!', 'likes_count': 10, 'comments_count': 2, 'views_count': 50},
-            {'id': 2, 'profile_pic': url_for('static', filename='img/default_profile.png'), 'username': 'user4', 'real_name': 'User Four', 'timestamp': datetime.now(timezone.utc) - timedelta(hours=3), 'media_url': None, 'description': 'Just thinking about life...', 'likes_count': 5, 'comments_count': 1, 'views_count': 20},
-        ]
-        following_posts = for_you_posts # Same for now
-        explore_posts = for_you_posts # Same for now
 
     
     # Pass the current year to the template
