@@ -4,850 +4,376 @@
 
 {% block content %}
 <style>
-    /* Custom styles for the Home page */
-    body {
-        /* Ensure body allows for scrolling content below fixed header, but fixed navbar is at bottom */
-        padding-top: 0; /* Reset base.html padding-top as content will manage it */
-        padding-bottom: var(--navbar-height); /* Space for the fixed bottom navbar */
-    }
-
-    /* --- Stories Section --- */
-    .stories-container {
-        position: relative;
-        width: 100%;
-        padding: 15px 0; /* Vertical padding */
-        background-color: var(--background-light);
-        border-bottom: 1px solid var(--border-color-light);
-        box-shadow: 0 2px 5px var(--shadow-soft);
-        overflow-x: auto; /* Horizontal scroll */
-        -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
-        white-space: nowrap; /* Prevent items from wrapping */
-        display: flex; /* Use flexbox for layout */
+    .whats-on-mind {
+        display: flex;
         align-items: center;
-        gap: 15px; /* Space between story circles */
-        padding-left: 15px; /* Start padding */
-        padding-right: 15px; /* End padding */
-        box-sizing: border-box; /* Include padding in width */
-    }
-
-    .story-circle-wrapper {
-        display: inline-block; /* For horizontal layout */
-        text-align: center;
-        flex-shrink: 0; /* Prevent shrinking on small screens */
+        padding: 10px;
+        background-color: #f8f9fa;
+        border-bottom: 1px solid #dee2e6;
         cursor: pointer;
-        position: relative; /* For the gradient border */
     }
-
-    .story-circle {
-        width: 65px; /* Size of the story circle */
-        height: 65px;
-        border-radius: 50%;
-        overflow: hidden;
-        margin: 0 auto 5px auto; /* Center and space from username */
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background-color: var(--card-background); /* Inner background */
-        position: relative;
-    }
-
-    .story-circle::before {
-        content: '';
-        position: absolute;
-        top: -3px; /* Adjust to make border visible */
-        left: -3px;
-        right: -3px;
-        bottom: -3px;
-        border-radius: 50%;
-        padding: 2px; /* Thickness of the gradient border */
-        background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%); /* Instagram-like gradient */
-        -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-        mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-        -webkit-mask-composite: xor;
-        mask-composite: exclude;
-        z-index: 1;
-    }
-
-    .story-circle img {
-        width: 90%; /* Smaller image inside to show border */
-        height: 90%;
-        object-fit: cover;
-        border-radius: 50%;
-        position: relative; /* Ensure image is above pseudo-element */
-        z-index: 2;
-    }
-
-    .story-username {
-        font-size: 0.7em;
-        color: var(--secondary-text);
-        white-space: nowrap; /* Prevent username from wrapping */
-        overflow: hidden;
-        text-overflow: ellipsis; /* Add ellipsis if name is too long */
-        max-width: 70px; /* Limit width of username text */
-        display: block;
-    }
-
-    /* --- Posts Navigation (Sticky) --- */
-    .posts-nav-sticky-wrapper {
-        position: sticky;
-        top: 0; /* Stick to the top of the viewport when scrolled */
-        z-index: 999; /* Ensure it stays above posts but below alerts */
-        background-color: var(--background-light); /* Match page background */
-        border-bottom: 1px solid var(--border-color-light);
-        box-shadow: 0 2px 4px var(--shadow-soft);
-    }
-
-    .posts-nav {
-        display: flex;
-        justify-content: space-around;
-        padding: 10px 0;
-    }
-
-    .posts-nav .nav-link {
-        color: var(--secondary-text);
-        font-weight: 600;
-        padding: 8px 15px;
-        border-radius: 20px;
-        transition: background-color 0.2s ease, color 0.2s ease;
-        text-decoration: none;
-    }
-
-    .posts-nav .nav-link.active {
-        background-color: var(--primary-color);
-        color: white;
-    }
-
-    .posts-nav .nav-link:hover:not(.active) {
-        background-color: rgba(var(--primary-color-rgb), 0.1); /* Lighter hover */
-        color: var(--primary-text);
-    }
-
-    /* --- Posts Feed Sections --- */
-    .posts-feed-section {
-        padding: 20px 15px; /* Padding for the main content area */
-        max-width: 600px; /* Max width for content on large screens */
-        margin: 0 auto; /* Center content */
-    }
-
-    .post-card {
-        background-color: var(--card-background);
-        border: 1px solid var(--border-color-light);
-        border-radius: 12px;
-        box-shadow: 0 4px 10px var(--shadow-soft);
-        margin-bottom: 25px; /* Space between posts */
-        overflow: hidden;
-    }
-
-    .post-header {
-        display: flex;
-        align-items: center;
-        padding: 15px;
-        border-bottom: 1px solid var(--border-color-light);
-    }
-
-    .post-header .profile-pic {
+    .whats-on-mind img {
         width: 40px;
         height: 40px;
         border-radius: 50%;
-        object-fit: cover;
         margin-right: 10px;
     }
-
-    .post-header .user-info {
-        flex-grow: 1;
+    .whats-on-mind input {
+        flex: 1;
+        padding: 8px;
+        border: 1px solid #dee2e6;
+        border-radius: 20px;
+        background-color: #e9ecef;
     }
-
-    .post-header .username {
-        font-weight: 600;
-        color: var(--primary-text);
-        margin-bottom: 0;
-        line-height: 1.2;
+    .stories-container {
+        display: flex;
+        overflow-x: auto;
+        padding: 10px 0;
+        border-bottom: 1px solid #dee2e6;
     }
-
-    .post-header .post-time {
-        font-size: 0.8em;
-        color: var(--secondary-text);
+    .story-item {
+        text-align: center;
+        margin: 0 10px;
+        cursor: pointer;
     }
-
-    .post-content img, .post-content video {
-        width: 100%;
-        height: auto;
-        display: block;
-        max-height: 500px; /* Limit height for large media */
-        object-fit: contain; /* Ensure entire media is visible */
-        background-color: black; /* Background for media if letterboxed */
+    .story-item img {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        border: 2px solid #007bff;
     }
-
-    .post-description {
-        padding: 15px;
-        color: var(--primary-text);
-        font-size: 0.95em;
-        white-space: pre-wrap; /* Preserve whitespace and line breaks */
+    .story-item p {
+        margin: 5px 0 0;
+        font-size: 12px;
     }
-
+    .add-story {
+        position: relative;
+    }
+    .add-story::after {
+        content: '+';
+        position: absolute;
+        bottom: 0;
+        right: 0;
+        background-color: #007bff;
+        color: white;
+        border-radius: 50%;
+        width: 20px;
+        height: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+    }
+    .post {
+        border: 1px solid #dee2e6;
+        margin: 10px 0;
+        padding: 10px;
+        background-color: white;
+    }
+    .post-header {
+        display: flex;
+        align-items: center;
+    }
+    .post-header img {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        margin-right: 10px;
+    }
+    .post-header div {
+        flex: 1;
+    }
+    .post-header h3 {
+        margin: 0;
+        font-size: 16px;
+    }
+    .post-header small {
+        font-size: 12px;
+        color: #999;
+    }
+    .post-content p {
+        margin: 10px 0;
+    }
     .post-actions {
         display: flex;
-        justify-content: space-around;
-        align-items: center;
-        padding: 10px 15px;
-        border-top: 1px solid var(--border-color-light);
+        justify-content: space-between;
     }
-
-    .post-action-btn {
+    .post-actions button {
         background: none;
         border: none;
-        color: var(--secondary-text);
-        font-size: 1.2em;
         cursor: pointer;
-        padding: 5px 10px;
-        border-radius: 5px;
-        transition: color 0.2s ease, background-color 0.2s ease;
-        display: flex;
-        align-items: center;
-        gap: 5px; /* Space between icon and count */
     }
-
-    .post-action-btn:hover {
-        color: var(--primary-color);
-        background-color: rgba(var(--primary-color-rgb), 0.1);
+    .loader {
+        text-align: center;
+        padding: 20px;
     }
-
-    .post-action-btn.active .fa-heart {
-        color: var(--danger-color); /* Red for liked heart */
-    }
-
-    .post-action-btn .count {
-        font-size: 0.8em;
-    }
-
-    .post-options-dropdown {
-        position: relative;
-        display: inline-block;
-        margin-left: auto; /* Push to the right */
-    }
-
-    .post-options-dropdown .dropdown-toggle {
-        background: none;
-        border: none;
-        color: var(--secondary-text);
-        font-size: 1.2em;
-        cursor: pointer;
-        padding: 5px;
-        border-radius: 5px;
-    }
-
-    .post-options-dropdown .dropdown-menu {
-        background-color: var(--card-background);
-        border: 1px solid var(--border-color-light);
-        border-radius: 8px;
-        box-shadow: 0 4px 10px var(--shadow-soft);
-    }
-
-    .post-options-dropdown .dropdown-item {
-        color: var(--primary-text);
-        padding: 8px 15px;
-        transition: background-color 0.2s ease;
-    }
-
-    .post-options-dropdown .dropdown-item:hover {
-        background-color: var(--background-light);
-    }
-
-    /* Explore Tab - Gallery Grid */
-    .gallery-grid {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr); /* 3 columns on desktop */
-        gap: 10px;
-        padding: 15px;
-    }
-
-    .gallery-item {
-        position: relative;
-        padding-bottom: 100%; /* Creates square aspect ratio */
-        overflow: hidden;
-        border-radius: 8px;
-        cursor: pointer;
-        background-color: var(--background-light);
-    }
-
-    .gallery-item img {
-        position: absolute;
-        top: 0;
+    .modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
         left: 0;
+        top: 0;
         width: 100%;
         height: 100%;
-        object-fit: cover;
-        transition: transform 0.2s ease;
+        background-color: black;
     }
-
-    .gallery-item:hover img {
-        transform: scale(1.05);
+    .modal-content {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
     }
-
-    /* Responsive adjustments */
-    @media (max-width: 768px) {
-        .stories-container {
-            gap: 10px;
-            padding-left: 10px;
-            padding-right: 10px;
-        }
-        .story-circle {
-            width: 60px;
-            height: 60px;
-        }
-        .story-username {
-            max-width: 60px;
-        }
-        .posts-feed-section {
-            padding: 15px 10px;
-        }
-        .post-card {
-            margin-bottom: 20px;
-        }
-        .post-header {
-            padding: 10px;
-        }
-        .post-header .profile-pic {
-            width: 35px;
-            height: 35px;
-        }
-        .post-description {
-            padding: 10px;
-            font-size: 0.9em;
-        }
-        .post-actions {
-            padding: 8px 10px;
-        }
-        .post-action-btn {
-            font-size: 1.1em;
-            padding: 5px;
-        }
-        .gallery-grid {
-            grid-template-columns: repeat(2, 1fr); /* 2 columns on mobile */
-            gap: 8px;
-            padding: 10px;
-        }
+    .modal-content img, .modal-content video, .modal-content audio {
+        max-width: 100%;
+        max-height: 100%;
     }
-
-    @media (max-width: 480px) {
-        .stories-container {
-            gap: 8px;
-            padding-left: 8px;
-            padding-right: 8px;
-        }
-        .story-circle {
-            width: 55px;
-            height: 55px;
-        }
-        .story-username {
-            max-width: 55px;
-            font-size: 0.65em;
-        }
-        .posts-nav .nav-link {
-            padding: 6px 10px;
-            font-size: 0.8em;
-        }
-        .post-header .username {
-            font-size: 0.9em;
-        }
-        .post-header .post-time {
-            font-size: 0.7em;
-        }
+    .progress-bar {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        right: 10px;
+        height: 3px;
+        background-color: rgba(255,255,255,0.3);
     }
-
+    .progress {
+        height: 100%;
+        background-color: white;
+        width: 0;
+    }
 </style>
 
-<div class="container-fluid p-0"> {# Use container-fluid to span full width #}
-
-    {% if current_user.is_authenticated %}
-        {# Stories Section #}
-        <div class="stories-container" id="storiesContainer">
-            {# Add Story Button (user's own story) #}
-            <div class="story-circle-wrapper">
-                <a href="{{ url_for('create_story') }}" class="story-circle story-add-button">
-                    <i class="fas fa-plus fa-2x" style="color: var(--primary-color);"></i>
-                </a>
-                <span class="story-username">Your Story</span>
-            </div>
-
-            {% for story in stories %}
-            <div class="story-circle-wrapper" data-story-id="{{ story.id }}" data-story-media-url="{{ story.media_url }}">
-                <div class="story-circle">
-                    <img src="{{ story.profile_pic }}" alt="{{ story.username }} Profile">
-                </div>
-                <span class="story-username">{{ story.username }}</span>
-            </div>
-            {% endfor %}
-        </div>
-
-        {# Posts Navigation (Sticky) #}
-        <div class="posts-nav-sticky-wrapper">
-            <div class="posts-nav">
-                <a class="nav-link active" id="forYouTab" data-bs-toggle="tab" href="#forYouContent">For You</a>
-                <a class="nav-link" id="followingTab" data-bs-toggle="tab" href="#followingContent">Following</a>
-                <a class="nav-link" id="exploreTab" data-bs-toggle="tab" href="#exploreContent">Explore</a>
-            </div>
-        </div>
-
-        {# Posts Feed Sections (Tab Content) #}
-        <div class="tab-content">
-            <div class="tab-pane fade show active" id="forYouContent">
-                <div class="posts-feed-section" id="forYouFeed">
-                    {# Loop through 'for_you_posts' data #}
-                    {% for post in for_you_posts %}
-                        {% include 'includes/post_card.html' %}
-                    {% endfor %}
-                    {# Placeholder for infinite scroll loader #}
-                    <div class="text-center py-3" id="forYouLoading" style="display: none;">
-                        <div class="spinner-border text-primary" role="status">
-                            <span class="visually-hidden">Loading more posts...</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="tab-pane fade" id="followingContent">
-                <div class="posts-feed-section" id="followingFeed">
-                    {# Loop through 'following_posts' data #}
-                    {% for post in following_posts %}
-                        {% include 'includes/post_card.html' %}
-                    {% endfor %}
-                    <p class="text-center text-muted">No more posts from people you follow.</p>
-                </div>
-            </div>
-
-            <div class="tab-pane fade" id="exploreContent">
-                <div class="gallery-grid" id="exploreGrid">
-                    {# Loop through 'explore_posts' data (gallery style) #}
-                    {% for post in explore_posts %}
-                        <div class="gallery-item" data-post-id="{{ post.id }}" data-bs-toggle="modal" data-bs-target="#postDetailModal">
-                            <img src="{{ post.media_url }}" alt="Post Image">
-                        </div>
-                    {% endfor %}
-                    <p class="text-center text-muted col-span-full">Discover more posts.</p>
-                </div>
-            </div>
-        </div>
-
-    {% else %}
-        {# Content for non-authenticated users #}
-        <div class="text-center p-5">
-            <h1 class="display-4 mb-3">Welcome to SociaFam</h1>
-            <p class="lead mb-4">Connect with your friends and share memories.</p>
-            <a href="{{ url_for('login') }}" class="btn btn-primary btn-lg me-3">Login</a>
-            <a href="{{ url_for('register') }}" class="btn btn-secondary btn-lg">Register</a>
-        </div>
-    {% endif %}
-
-</div>
-
-{# Story Viewer Modal (Full-screen) #}
-<div class="modal fade" id="storyViewerModal" tabindex="-1" aria-labelledby="storyViewerModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-fullscreen">
-        <div class="modal-content bg-dark text-white">
-            <div class="modal-body p-0 d-flex flex-column justify-content-center align-items-center position-relative">
-                {# Story content will be loaded here via JS #}
-                <img id="storyViewerImage" src="" class="img-fluid" style="max-height: 100vh; object-fit: contain; display: none;" alt="Story">
-                <video id="storyViewerVideo" src="" class="img-fluid" style="max-height: 100vh; object-fit: contain; display: none;" autoplay playsinline muted></video>
-                <div class="position-absolute top-0 start-0 w-100 p-3 d-flex align-items-center">
-                    <img id="storyOwnerProfilePic" src="" alt="Profile" class="profile-pic me-2" style="width: 40px; height: 40px;">
-                    <span id="storyOwnerUsername" class="fw-bold"></span>
-                    <button type="button" class="btn-close btn-close-white ms-auto" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                {# Progress bar #}
-                <div class="story-progress-bar-container position-absolute top-0 start-0 w-100" style="height: 3px; background-color: rgba(255,255,255,0.3);">
-                    <div id="storyProgressBar" style="width: 0%; height: 100%; background-color: white;"></div>
-                </div>
-                {# Navigation arrows (optional, for desktop or specific touch zones) #}
-                <button class="carousel-control-prev" type="button" id="prevStoryBtn" style="width: 20%;">
-                    <span class="carousel-control-prev-icon" aria-hidden="true"></span>
-                    <span class="visually-hidden">Previous</span>
-                </button>
-                <button class="carousel-control-next" type="button" id="nextStoryBtn" style="width: 20%;">
-                    <span class="carousel-control-next-icon" aria-hidden="true"></span>
-                    <span class="visually-hidden">Next</span>
-                </button>
-            </div>
-        </div>
+{% if current_user.is_authenticated %}
+    <div class="whats-on-mind" onclick="window.location.href='{{ url_for('create_post') }}'">
+        <img src="{{ current_user.get_member_profile().profilePhoto | default('/static/img/default_profile.png') }}" alt="Profile">
+        <input type="text" placeholder="What's on your mind?" readonly>
     </div>
-</div>
 
-{# Post Detail Modal (for Explore and Post Clicks) #}
-<div class="modal fade" id="postDetailModal" tabindex="-1" aria-labelledby="postDetailModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="postDetailModalLabel">Post Details</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body" id="postDetailModalBody">
-                {# Post content will be loaded here via AJAX #}
-                <div class="text-center py-5">
-                    <div class="spinner-border text-primary" role="status">
-                        <span class="visually-hidden">Loading post...</span>
-                    </div>
+    <div class="stories-container">
+        <div class="story-item add-story" onclick="addStory()">
+            <img src="{{ current_user.get_member_profile().profilePhoto | default('/static/img/default_profile.png') }}" alt="Your Story">
+            <p>Your Story</p>
+        </div>
+        {% for story in stories %}
+        <div class="story-item" onclick="openStoryModal({{ loop.index0 }})" data-id="{{ story.id }}" data-type="{{ story.media_type }}" data-path="{{ story.media_path }}" data-username="{{ story.username }}">
+            <img src="{{ story.media_path if story.media_type == 'image' else '/static/img/default_story.png' }}" alt="Story">
+            <p>{{ story.username }}</p>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div id="posts-container">
+        {% for post in posts %}
+        <div class="post">
+            <div class="post-header">
+                <img src="{{ post.user_profile_photo | default('/static/img/default_profile.png') }}" alt="Profile">
+                <div>
+                    <h3>{{ post.user_real_name }} <small>@{{ post.username }}</small></h3>
+                    <small>{{ post.timestamp | datetimeformat }}</small>
                 </div>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            <div class="post-content">
+                <p>{{ post.description }}</p>
+                {% if post.media_path %}
+                {% if post.media_type == 'image' %}
+                <img src="{{ post.media_path }}" alt="Post Media" style="width:100%;">
+                {% elif post.media_type == 'video' %}
+                <video src="{{ post.media_path }}" controls style="width:100%;"></video>
+                {% endif %}
+                {% endif %}
+            </div>
+            <div class="post-actions">
+                <button>Like ({{ post.likes_count }})</button>
+                <button>Comment ({{ post.comments_count }})</button>
+                <button>Share</button>
+                <button>Follow</button>
+                <button>Save</button>
+                <button>Repost</button>
+                <button>Views: {{ post.views_count | default(0) }}</button>
+                <button>Report</button>
+                <button>Hide</button>
+                <button>Notifications for this type</button>
+                <button>Block {{ post.username }}</button>
             </div>
         </div>
+        {% endfor %}
+    </div>
+    <div class="loader" id="loader" style="display:none;">
+        <p>Loading more posts...</p>
+    </div>
+{% endif %}
+
+<div id="storyModal" class="modal">
+    <div class="modal-content">
+        <div class="progress-bar"><div class="progress"></div></div>
+        <div id="storyContent"></div>
     </div>
 </div>
 
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // --- Sticky Posts Nav Logic ---
-        const postsNavWrapper = document.querySelector('.posts-nav-sticky-wrapper');
-        const storiesContainer = document.getElementById('storiesContainer');
+    let currentStoryIndex = 0;
+    let storyTimer;
+    let isPaused = false;
+    let touchStartX = 0;
+    let touchEndX = 0;
+    let touchStartY = 0;
+    let touchEndY = 0;
 
-        function toggleStickyNav() {
-            if (storiesContainer) {
-                // When stories container scrolls out of view, make nav sticky
-                if (window.scrollY > storiesContainer.offsetHeight) {
-                    postsNavWrapper.style.position = 'fixed';
-                    postsNavWrapper.style.top = '0';
-                    postsNavWrapper.style.width = '100%';
-                } else {
-                    postsNavWrapper.style.position = 'sticky';
-                    postsNavWrapper.style.top = '0';
-                    postsNavWrapper.style.width = '100%'; // Ensure it always takes full width
-                }
-            }
+    function openStoryModal(index) {
+        currentStoryIndex = index;
+        loadStory();
+        document.getElementById('storyModal').style.display = 'flex';
+        startProgress();
+        document.addEventListener('touchstart', handleTouchStart);
+        document.addEventListener('touchend', handleTouchEnd);
+        document.addEventListener('mousedown', pauseStory);
+        document.addEventListener('mouseup', resumeStory);
+    }
+
+    function closeStoryModal() {
+        document.getElementById('storyModal').style.display = 'none';
+        clearTimeout(storyTimer);
+        document.querySelector('.progress').style.width = '0%';
+        document.removeEventListener('touchstart', handleTouchStart);
+        document.removeEventListener('touchend', handleTouchEnd);
+        document.removeEventListener('mousedown', pauseStory);
+        document.removeEventListener('mouseup', resumeStory);
+    }
+
+    function loadStory() {
+        let stories = document.querySelectorAll('.story-item:not(.add-story)');
+        let story = stories[currentStoryIndex];
+        let type = story.dataset.type;
+        let path = story.dataset.path;
+        let content = '';
+        if (type === 'image') {
+            content = `<img src="${path}" alt="Story">`;
+        } else if (type === 'video') {
+            content = `<video src="${path}" autoplay loop></video>`;
+        } else if (type === 'audio') {
+            content = `<audio src="${path}" autoplay></audio>`;
         }
-        window.addEventListener('scroll', toggleStickyNav);
-        // Initial check on load
-        toggleStickyNav();
+        document.getElementById('storyContent').innerHTML = content;
+    }
 
+    function startProgress(duration = 5000) {
+        let progress = document.querySelector('.progress');
+        progress.style.width = '0%';
+        progress.style.transition = `width ${duration/1000}s linear`;
+        setTimeout(() => { progress.style.width = '100%'; }, 10);
+        storyTimer = setTimeout(nextStory, duration);
+    }
 
-        // --- Tab Switching Logic (Bootstrap handled, but manual for content if AJAX) ---
-        // For demonstration, content is pre-rendered. For infinite scroll/lazy loading,
-        // you'd typically fetch content via AJAX when a tab is activated.
+    function nextStory() {
+        let stories = document.querySelectorAll('.story-item:not(.add-story)');
+        currentStoryIndex = (currentStoryIndex + 1) % stories.length;
+        loadStory();
+        startProgress();
+    }
 
-        // --- Story Viewer Modal Logic ---
-        const storyViewerModalElement = document.getElementById('storyViewerModal');
-        const storyViewerModal = new bootstrap.Modal(storyViewerModalElement);
-        const storyViewerImage = document.getElementById('storyViewerImage');
-        const storyViewerVideo = document.getElementById('storyViewerVideo');
-        const storyOwnerProfilePic = document.getElementById('storyOwnerProfilePic');
-        const storyOwnerUsername = document.getElementById('storyOwnerUsername');
-        const storyProgressBar = document.getElementById('storyProgressBar');
-        const prevStoryBtn = document.getElementById('prevStoryBtn');
-        const nextStoryBtn = document.getElementById('nextStoryBtn');
+    function prevStory() {
+        let stories = document.querySelectorAll('.story-item:not(.add-story)');
+        currentStoryIndex = (currentStoryIndex - 1 + stories.length) % stories.length;
+        loadStory();
+        startProgress();
+    }
 
-        let currentStoryIndex = -1;
-        let storyPlaybackTimeout;
-        let storyProgressInterval;
-        const STORIES_DURATION_MS = 5000; // 5 seconds per image story
+    function handleTouchStart(e) {
+        touchStartX = e.changedTouches[0].screenX;
+        touchStartY = e.changedTouches[0].screenY;
+        pauseStory();
+    }
 
-        // Dummy stories data (replace with actual data from Flask backend)
-        const allStories = [
-            // Example structure: { id: 1, type: 'image', media_url: '{{ url_for('static', filename='img/story1.jpg') }}', profile_pic: '{{ url_for('static', filename='img/profile1.png') }}', username: 'john_doe' },
-            // { id: 2, type: 'video', media_url: '{{ url_for('static', filename='videos/story2.mp4') }}', profile_pic: '{{ url_for('static', filename='img/profile2.png') }}', username: 'jane_smith' },
-            // ... your actual Jinja loop for stories data
-            {% for story in stories %}
-            {
-                id: {{ story.id }},
-                type: '{{ story.type }}',
-                media_url: '{{ story.media_url }}',
-                profile_pic: '{{ story.profile_pic }}',
-                username: '{{ story.username }}'
-            },
-            {% endfor %}
-        ];
-
-
-        document.querySelectorAll('.story-circle-wrapper[data-story-id]').forEach((element, index) => {
-            element.addEventListener('click', function() {
-                currentStoryIndex = index;
-                showStory(currentStoryIndex);
-                storyViewerModal.show();
-            });
-        });
-
-        function showStory(index) {
-            clearTimeout(storyPlaybackTimeout);
-            clearInterval(storyProgressInterval);
-            storyProgressBar.style.width = '0%'; // Reset progress
-
-            if (index < 0 || index >= allStories.length) {
-                storyViewerModal.hide();
-                return;
-            }
-
-            const story = allStories[index];
-            storyOwnerProfilePic.src = story.profile_pic;
-            storyOwnerUsername.textContent = story.username;
-
-            storyViewerImage.style.display = 'none';
-            storyViewerVideo.style.display = 'none';
-            storyViewerVideo.pause();
-            storyViewerVideo.currentTime = 0;
-
-            if (story.type === 'image') {
-                storyViewerImage.src = story.media_url;
-                storyViewerImage.style.display = 'block';
-                startImageStoryProgress();
-            } else if (story.type === 'video') {
-                storyViewerVideo.src = story.media_url;
-                storyViewerVideo.style.display = 'block';
-                storyViewerVideo.muted = false; // Unmute video
-                storyViewerVideo.play();
-                startVideoStoryProgress();
-            }
-        }
-
-        function startImageStoryProgress() {
-            let progress = 0;
-            const intervalTime = 50; // Update every 50ms
-            storyProgressInterval = setInterval(() => {
-                progress += (intervalTime / STORIES_DURATION_MS) * 100;
-                if (progress >= 100) {
-                    progress = 100;
-                    clearInterval(storyProgressInterval);
-                    nextStory();
-                }
-                storyProgressBar.style.width = `${progress}%`;
-            }, intervalTime);
-        }
-
-        function startVideoStoryProgress() {
-            storyViewerVideo.addEventListener('timeupdate', function() {
-                if (!this.paused && this.duration) {
-                    const progress = (this.currentTime / this.duration) * 100;
-                    storyProgressBar.style.width = `${progress}%`;
-                }
-            });
-            storyViewerVideo.addEventListener('ended', nextStory);
-        }
-
-
-        function nextStory() {
-            currentStoryIndex++;
-            if (currentStoryIndex < allStories.length) {
-                showStory(currentStoryIndex);
+    function handleTouchEnd(e) {
+        touchEndX = e.changedTouches[0].screenX;
+        touchEndY = e.changedTouches[0].screenY;
+        let deltaX = touchEndX - touchStartX;
+        let deltaY = touchEndY - touchStartY;
+        if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 50) {
+            if (deltaX > 0) {
+                prevStory();
             } else {
-                storyViewerModal.hide();
+                nextStory();
             }
+        } else if (deltaY > 50) {
+            closeStoryModal();
+        } else {
+            resumeStory();
         }
+    }
 
-        function prevStory() {
-            currentStoryIndex--;
-            if (currentStoryIndex >= 0) {
-                showStory(currentStoryIndex);
-            } else {
-                storyViewerModal.hide();
-            }
+    function pauseStory() {
+        isPaused = true;
+        clearTimeout(storyTimer);
+        document.querySelector('.progress').style.transition = 'none';
+    }
+
+    function resumeStory() {
+        isPaused = false;
+        let progress = document.querySelector('.progress');
+        let remaining = (100 - parseFloat(progress.style.width)) / 100 * 5000;
+        startProgress(remaining);
+    }
+
+    function addStory() {
+        // Redirect to add story page or modal
+        window.location.href = '{{ url_for('add_story') }}';
+    }
+
+    // Infinite scroll for posts
+    window.addEventListener('scroll', () => {
+        if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 100) {
+            loadMorePosts();
         }
-
-        prevStoryBtn.addEventListener('click', prevStory);
-        nextStoryBtn.addEventListener('click', nextStory);
-
-        // Swipe left/right for story navigation (desktop/touch)
-        let touchstartX = 0;
-        let touchendX = 0;
-        let touchstartY = 0;
-        let touchendY = 0;
-        const minSwipeDistance = 50; // pixels
-
-        storyViewerModalElement.addEventListener('touchstart', e => {
-            touchstartX = e.changedTouches[0].screenX;
-            touchstartY = e.changedTouches[0].screenY;
-        }, { passive: true });
-
-        storyViewerModalElement.addEventListener('touchend', e => {
-            touchendX = e.changedTouches[0].screenX;
-            touchendY = e.changedTouches[0].screenY;
-            handleStoryGesture();
-        });
-
-        function handleStoryGesture() {
-            const diffX = touchendX - touchstartX;
-            const diffY = touchendY - touchstartY;
-
-            // Prioritize vertical swipe for closing
-            if (Math.abs(diffY) > Math.abs(diffX) && diffY > minSwipeDistance) {
-                // Swipe down to close
-                storyViewerModal.hide();
-                return;
-            }
-
-            // Then handle horizontal swipes
-            if (Math.abs(diffX) > minSwipeDistance) {
-                if (diffX < 0) { // Swiped left
-                    nextStory();
-                } else { // Swiped right
-                    prevStory();
-                }
-            }
-        }
-
-        // Tap to pause/play (for videos)
-        storyViewerModalElement.addEventListener('click', function(e) {
-            if (e.target === storyViewerVideo) {
-                if (storyViewerVideo.paused) {
-                    storyViewerVideo.play();
-                } else {
-                    storyViewerVideo.pause();
-                }
-            } else if (e.target === storyViewerImage) {
-                // For images, tap to pause progress
-                if (storyProgressInterval) {
-                    clearInterval(storyProgressInterval);
-                    storyProgressInterval = null; // Indicate paused
-                } else {
-                    startImageStoryProgress(); // Resume
-                }
-            }
-        });
-
-
-        storyViewerModalElement.addEventListener('hide.bs.modal', function () {
-            clearTimeout(storyPlaybackTimeout);
-            clearInterval(storyProgressInterval);
-            storyViewerVideo.pause();
-            storyViewerVideo.currentTime = 0;
-            storyViewerImage.src = ''; // Clear image source
-            storyViewerVideo.src = ''; // Clear video source
-            currentStoryIndex = -1; // Reset index
-        });
-
-
-        // --- Post Detail Modal Logic (for Explore & Feed Clicks) ---
-        const postDetailModalElement = document.getElementById('postDetailModal');
-        const postDetailModalBody = document.getElementById('postDetailModalBody');
-
-        postDetailModalElement.addEventListener('show.bs.modal', function (event) {
-            const button = event.relatedTarget; // Button that triggered the modal
-            const postId = button.getAttribute('data-post-id');
-
-            // Show spinner while loading
-            postDetailModalBody.innerHTML = `
-                <div class="text-center py-5">
-                    <div class="spinner-border text-primary" role="status">
-                        <span class="visually-hidden">Loading post...</span>
-                    </div>
-                </div>`;
-
-            // Fetch post details via AJAX
-            // Assuming a Flask route like /api/post-details/<post_id>
-            fetch(`/api/post-details/${postId}`)
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error('Network response was not ok');
-                    }
-                    return response.text(); // Get HTML content
-                })
-                .then(html => {
-                    postDetailModalBody.innerHTML = html;
-                    // Re-initialize any JS within the loaded content here if needed
-                })
-                .catch(error => {
-                    console.error('Error fetching post details:', error);
-                    postDetailModalBody.innerHTML = `<p class="text-danger text-center">Failed to load post. Please try again.</p>`;
-                });
-        });
-
-        postDetailModalElement.addEventListener('hidden.bs.modal', function () {
-            // Clear content when modal is hidden
-            postDetailModalBody.innerHTML = '';
-        });
-
-        // --- Infinite Scroll for "For You" Feed (Example Placeholder) ---
-        const forYouFeed = document.getElementById('forYouFeed');
-        const forYouLoading = document.getElementById('forYouLoading');
-        let forYouPage = 1;
-        let forYouHasMore = true; // Assume there's more initially
-
-        function loadMoreForYouPosts() {
-            if (!forYouHasMore || isLoading) return; // Prevent multiple loads
-
-            setIsLoading(true); // Set global loading state, or specific for this feed
-            forYouLoading.style.display = 'block'; // Show spinner
-
-            fetch(`/api/for-you-posts?page=${forYouPage + 1}`) // Assuming a Flask API endpoint
-                .then(response => response.json())
-                .then(data => {
-                    if (data.posts && data.posts.length > 0) {
-                        data.posts.forEach(post => {
-                            // Dynamically create and append post cards
-                            // This would ideally use a templating engine client-side or render HTML from backend
-                            const postCardHtml = `
-                                <div class="post-card">
-                                    <div class="post-header">
-                                        <img src="${post.profile_pic}" alt="${post.username} Profile" class="profile-pic">
-                                        <div class="user-info">
-                                            <p class="username">${post.real_name} @${post.username}</p>
-                                            <p class="post-time">${moment(post.timestamp).fromNow()}</p>
-                                        </div>
-                                        <div class="post-options-dropdown dropdown">
-                                            <button class="dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                                <i class="fas fa-ellipsis-h"></i>
-                                            </button>
-                                            <ul class="dropdown-menu dropdown-menu-end">
-                                                <li><a class="dropdown-item" href="#">Save Post</a></li>
-                                                <li><a class="dropdown-item" href="#">Report Post</a></li>
-                                                <li><a class="dropdown-item" href="#">Hide Post</a></li>
-                                                <li><a class="dropdown-item" href="#">Block User</a></li>
-                                            </ul>
-                                        </div>
-                                    </div>
-                                    ${post.media_url ? `<div class="post-content"><img src="${post.media_url}" alt="Post Media"></div>` : ''}
-                                    ${post.description ? `<p class="post-description">${post.description}</p>` : ''}
-                                    <div class="post-actions">
-                                        <button class="post-action-btn like-btn" data-post-id="${post.id}">
-                                            <i class="fas fa-heart"></i> <span class="count">${post.likes_count}</span>
-                                        </button>
-                                        <button class="post-action-btn comment-btn" data-post-id="${post.id}">
-                                            <i class="fas fa-comment"></i> <span class="count">${post.comments_count}</span>
-                                        </button>
-                                        <button class="post-action-btn share-btn" data-post-id="${post.id}">
-                                            <i class="fas fa-share"></i>
-                                        </button>
-                                        <span class="text-muted small ms-auto me-2">${post.views_count} views</span>
-                                    </div>
-                                </div>
-                            `;
-                            forYouFeed.insertAdjacentHTML('beforeend', postCardHtml);
-                        });
-                        forYouPage++;
-                        if (data.posts.length < 10) { // Assuming page size of 10
-                            forYouHasMore = false;
-                        }
-                    } else {
-                        forYouHasMore = false;
-                    }
-                })
-                .catch(error => {
-                    console.error('Error loading more posts:', error);
-                    forYouHasMore = false; // Stop trying on error
-                })
-                .finally(() => {
-                    forYouLoading.style.display = 'none';
-                    setIsLoading(false); // Reset global loading state
-                });
-        }
-
-        let isLoading = false; // Simple global loading state for infinite scroll
-        function setIsLoading(state) {
-            isLoading = state;
-        }
-
-        // Infinite scroll event listener
-        window.addEventListener('scroll', () => {
-            const {
-                scrollTop,
-                scrollHeight,
-                clientHeight
-            } = document.documentElement;
-            // Check if user is near the bottom of the page
-            if (scrollTop + clientHeight >= scrollHeight - 200 && document.getElementById('forYouContent').classList.contains('show')) {
-                loadMoreForYouPosts();
-            }
-        });
-
-        // Initial load for "For You" feed
-        // loadMoreForYouPosts(); // Uncomment if you want to initially load via AJAX
     });
+
+    let page = 1;
+    function loadMorePosts() {
+        let loader = document.getElementById('loader');
+        loader.style.display = 'block';
+        // AJAX call to load more posts
+        fetch(`/api/posts?page=${++page}`)
+            .then(response => response.json())
+            .then(data => {
+                let container = document.getElementById('posts-container');
+                data.posts.forEach(post => {
+                    let postHtml = `
+                    <div class="post">
+                        <div class="post-header">
+                            <img src="${post.user_profile_photo || '/static/img/default_profile.png'}" alt="Profile">
+                            <div>
+                                <h3>${post.user_real_name} <small>@${post.username}</small></h3>
+                                <small>${post.timestamp}</small>
+                            </div>
+                        </div>
+                        <div class="post-content">
+                            <p>${post.description}</p>
+                            ${post.media_path ? (post.media_type === 'image' ? `<img src="${post.media_path}" alt="Post Media" style="width:100%;">` : `<video src="${post.media_path}" controls style="width:100%;"></video>`) : ''}
+                        </div>
+                        <div class="post-actions">
+                            <button>Like (${post.likes_count || 0})</button>
+                            <button>Comment (${post.comments_count || 0})</button>
+                            <button>Share</button>
+                            <button>Follow</button>
+                            <button>Save</button>
+                            <button>Repost</button>
+                            <button>Views: ${post.views_count || 0}</button>
+                            <button>Report</button>
+                            <button>Hide</button>
+                            <button>Notifications for this type</button>
+                            <button>Block ${post.username}</button>
+                        </div>
+                    </div>`;
+                    container.insertAdjacentHTML('beforeend', postHtml);
+                });
+                loader.style.display = 'none';
+            })
+            .catch(error => {
+                console.error('Error loading posts:', error);
+                loader.style.display = 'none';
+            });
+    }
 </script>
+
 {% endblock %}
