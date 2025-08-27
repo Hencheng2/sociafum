@@ -307,6 +307,51 @@ def process_mentions_and_links(text):
     
     return processed_text
 
+# Add these helper functions to app.py (place them after other helpers like process_mentions_and_links)
+
+def get_relationship_status(current_id, other_id):
+    db = get_db()
+    friendship = db.execute(
+        """
+        SELECT status, user1_id FROM friendships
+        WHERE (user1_id = ? AND user2_id = ?) OR (user1_id = ? AND user2_id = ?)
+        """,
+        (current_id, other_id, other_id, current_id)
+    ).fetchone()
+    if friendship:
+        if friendship['status'] == 'accepted':
+            return 'friend'
+        elif friendship['status'] == 'pending':
+            if friendship['user1_id'] == current_id:
+                return 'pending_sent'
+            else:
+                return 'pending_received'
+        else:
+            return 'none'  # Treat declined as none for UI purposes
+    return 'none'
+
+def is_blocked(blocker_id, blocked_id):
+    db = get_db()
+    blocked = db.execute(
+        "SELECT id FROM blocked_users WHERE blocker_id = ? AND blocked_id = ?",
+        (blocker_id, blocked_id)
+    ).fetchone()
+    return bool(blocked)
+
+def get_mutual_friends_count(user1_id, user2_id):
+    db = get_db()
+    query = """
+        SELECT COUNT(*) FROM (
+            SELECT CASE WHEN user1_id = ? THEN user2_id ELSE user1_id END AS friend_id
+            FROM friendships WHERE (user1_id = ? OR user2_id = ?) AND status = 'accepted'
+            INTERSECT
+            SELECT CASE WHEN user1_id = ? THEN user2_id ELSE user1_id END AS friend_id
+            FROM friendships WHERE (user1_id = ? OR user2_id = ?) AND status = 'accepted'
+        )
+    """
+    count = db.execute(query, (user1_id, user1_id, user1_id, user2_id, user2_id, user2_id)).fetchone()[0]
+    return count
+
 # --- Global Context Processor for Navbar Icons ---
 @app.context_processor
 def inject_navbar_data():
