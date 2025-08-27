@@ -110,6 +110,7 @@
     .post-item, .reel-item {
         padding: 10px;
         border-bottom: 1px solid #dee2e6;
+        cursor: pointer;
     }
     .post-item img, .reel-item video {
         max-width: 200px;
@@ -125,7 +126,7 @@
         background: rgba(0, 0, 0, 0.5);
         align-items: center;
         justify-content: center;
-        z-index: 2000; /* Above footer */
+        z-index: 2000;
     }
     .modal-content {
         background: white;
@@ -179,7 +180,7 @@
 
 <div class="profile-container">
     <div class="profile-header">
-        <img src="{{ current_user_profile.profilePhoto | default('/static/img/default_profile.png') }}" alt="Profile Photo" onclick="openPhotoModal()">
+        <img src="{{ current_user_profile.profilePhoto | default('/static/Uploads/profile_photos/default_profile.png') }}" alt="Profile Photo" onclick="openPhotoModal()">
         <h2>{{ current_user_profile.real_name }}</h2>
         <p>Unique Key: {{ current_user.unique_key }}</p>
         <div class="stats">
@@ -205,7 +206,7 @@
             </div>
         </div>
         <div class="actions">
-            <button onclick="window.location.href='{{ url_for('edit_profile') }}'">Edit Profile</button>
+            <button onclick="alert('Profile editing is not yet implemented. Please contact support.')">Edit Profile</button>
             <button onclick="openShareModal()">Share Profile</button>
         </div>
     </div>
