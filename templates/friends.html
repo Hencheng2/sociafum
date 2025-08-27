@@ -17,120 +17,178 @@
         color: #333;
         padding: 8px 16px;
         font-weight: 500;
+        cursor: pointer;
     }
-    .navbar a:hover {
+    .navbar a:hover, .navbar a.active {
         background-color: #e9ecef;
         border-radius: 4px;
     }
+    .search-bar {
+        padding: 10px;
+        margin-bottom: 10px;
+    }
+    .search-bar input {
+        width: 100%;
+        padding: 8px;
+        font-size: 16px;
+        border: 1px solid #dee2e6;
+        border-radius: 4px;
+    }
+    .tab-content {
+        display: none;
+        padding: 20px;
+    }
+    .tab-content.active {
+        display: block;
+    }
 </style>
 
-<div class="navbar">
-    <a href="#search">Search function</a>
-    <a href="#followers">Followers ({{ followers|length }})</a>
-    <a href="#following">Following ({{ following|length }})</a>
-    <a href="#friends">Friends ({{ all_friends|length }})</a>
-    <a href="#friend-requests">Friend requests ({{ friend_requests|length }})</a>
-    <a href="#suggested">Suggested</a>
+<div class="search-bar">
+    <input type="text" placeholder="Search for people..." id="searchInput" oninput="searchUsers()">
 </div>
 
-{% if followers %}
-    {% for follower in followers %}
-    <div>
-        <img src="{{ follower.profile_picture }}" alt="Profile Picture">
-        <div>
-            <h3>{{ follower.realName }}</h3>
-            <p>{{ follower.mutual_count }} mutual friends/followers</p>
-        </div>
-        <button>Block</button>
-    </div>
-    {% endfor %}
-{% else %}
-    <div>
-        <p>No one is following you yet.</p>
-        <p>Share your profile with friends to get followers!</p>
-    </div>
-{% endif %}
+<div class="navbar">
+    <a onclick="showTab('followers')" id="followers-tab">Followers ({{ followers|length }})</a>
+    <a onclick="showTab('following')" id="following-tab">Following ({{ following|length }})</a>
+    <a onclick="showTab('friends')" id="friends-tab">Friends ({{ all_friends|length }})</a>
+    <a onclick="showTab('friend-requests')" id="friend-requests-tab">Friend requests ({{ friend_requests|length }})</a>
+    <a onclick="showTab('suggested')" id="suggested-tab">Suggested</a>
+</div>
 
-{% if following %}
-    {% for user in following %}
-    <div>
-        <img src="{{ user.profile_picture }}" alt="Profile Picture">
+<div id="followers" class="tab-content">
+    {% if followers %}
+        {% for follower in followers %}
         <div>
-            <h3>{{ user.realName }}</h3>
-            <p>{{ user.mutual_count }} mutual friends/followers</p>
-        </div>
-        <div>
-            <button>Unfollow</button>
+            <img src="{{ follower.profile_picture }}" alt="Profile Picture">
+            <div>
+                <h3>{{ follower.realName }}</h3>
+                <p>{{ follower.mutual_count }} mutual friends/followers</p>
+            </div>
             <button>Block</button>
         </div>
-    </div>
-    {% endfor %}
-{% else %}
-    <div>
-        <p>No one is following you yet.</p>
-        <p>Follow people you know to see their posts and updates here.</p>
-    </div>
-{% endif %}
-
-{% if all_friends %}
-    {% for friend in all_friends %}
-    <div>
-        <img src="{{ friend.profile_picture }}" alt="Profile Picture">
+        {% endfor %}
+    {% else %}
         <div>
-            <h3>{{ friend.realName }}</h3>
-            <p>{{ friend.mutual_count }} mutual friends/followers</p>
+            <p>No one is following you yet.</p>
+            <p>Share your profile with friends to get followers!</p>
         </div>
+    {% endif %}
+</div>
+
+<div id="following" class="tab-content">
+    {% if following %}
+        {% for user in following %}
         <div>
-            <button>Unfollow</button>
+            <img src="{{ user.profile_picture }}" alt="Profile Picture">
+            <div>
+                <h3>{{ user.realName }}</h3>
+                <p>{{ user.mutual_count }} mutual friends/followers</p>
+            </div>
+            <div>
+                <button>Unfollow</button>
+                <button>Block</button>
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <div>
+            <p>No one is following you yet.</p>
+            <p>Follow people you know to see their posts and updates here.</p>
+        </div>
+    {% endif %}
+</div>
+
+<div id="friends" class="tab-content">
+    {% if all_friends %}
+        {% for friend in all_friends %}
+        <div>
+            <img src="{{ friend.profile_picture }}" alt="Profile Picture">
+            <div>
+                <h3>{{ friend.realName }}</h3>
+                <p>{{ friend.mutual_count }} mutual friends/followers</p>
+            </div>
+            <div>
+                <button>Unfollow</button>
+                <button>Block</button>
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <div>
+            <p>You have no friends yet.</p>
+            <p>Explore suggested users or use the search bar to find people.</p>
+        </div>
+    {% endif %}
+</div>
+
+<div id="friend-requests" class="tab-content">
+    {% if friend_requests %}
+        {% for request in friend_requests %}
+        <div>
+            <img src="{{ request.sender_profile_picture }}" alt="Profile Picture">
+            <div>
+                <h3>{{ request.sender_realName }}</h3>
+                <p>{{ request.mutual_count }} mutual friends/followers</p>
+            </div>
+            <button>Accept</button>
+            <button>Decline</button>
             <button>Block</button>
         </div>
-    </div>
-    {% endfor %}
-{% else %}
-    <div>
-        <p>You have no friends yet.</p>
-        <p>Explore suggested users or use the search bar to find people.</p>
-    </div>
-{% endif %}
-
-{% if friend_requests %}
-    {% for request in friend_requests %}
-    <div>
-        <img src="{{ request.sender_profile_picture }}" alt="Profile Picture">
+        {% endfor %}
+    {% else %}
         <div>
-            <h3>{{ request.sender_realName }}</h3>
-            <p>{{ request.mutual_count }} mutual friends/followers</p>
+            <p>You have no new friend requests.</p>
+            <p>Come back later or send some of your own!</p>
         </div>
-        <button>Accept</button>
-        <button>Decline</button>
-        <button>Block</button>
-    </div>
-    {% endfor %}
-{% else %}
-    <div>
-        <p>You have no new friend requests.</p>
-        <p>Come back later or send some of your own!</p>
-    </div>
-{% endif %}
+    {% endif %}
+</div>
 
-{% if suggested_users %}
-    {% for user in suggested_users %}
-    <div>
-        <img src="{{ user.profile_picture }}" alt="Profile Picture">
+<div id="suggested" class="tab-content">
+    {% if suggested_users %}
+        {% for user in suggested_users %}
         <div>
-            <h3>{{ user.realName }}</h3>
-            <p>{{ user.mutual_count }} mutual friends/followers</p>
+            <img src="{{ user.profile_picture }}" alt="Profile Picture">
+            <div>
+                <h3>{{ user.realName }}</h3>
+                <p>{{ user.mutual_count }} mutual friends/followers</p>
+            </div>
+            <button>Follow</button>
+            <button>Remove</button>
+            <button>Block</button>
         </div>
-        <button>Follow</button>
-        <button>Remove</button>
-        <button>Block</button>
-    </div>
-    {% endfor %}
-{% else %}
-    <div>
-        <p>No suggested users for now.</p>
-        <p>Check back later or search for people you may know.</p>
-    </div>
-{% endif %}
+        {% endfor %}
+    {% else %}
+        <div>
+            <p>No suggested users for now.</p>
+            <p>Check back later or search for people you may know.</p>
+        </div>
+    {% endif %}
+</div>
+
+<script>
+    function showTab(tabId) {
+        // Hide all tab contents
+        document.querySelectorAll('.tab-content').forEach(tab => {
+            tab.classList.remove('active');
+        });
+        // Remove active class from all tabs
+        document.querySelectorAll('.navbar a').forEach(tab => {
+            tab.classList.remove('active');
+        });
+        // Show selected tab content and mark tab as active
+        document.getElementById(tabId).classList.add('active');
+        document.getElementById(tabId + '-tab').classList.add('active');
+    }
+
+    function searchUsers() {
+        // Placeholder for search functionality
+        let searchTerm = document.getElementById('searchInput').value;
+        console.log("Searching for: ", searchTerm);
+        // Add actual search logic here (e.g., filter users or make an API call)
+    }
+
+    // Show the first tab (Followers) by default
+    showTab('followers');
+</script>
 
 {% endblock %}
