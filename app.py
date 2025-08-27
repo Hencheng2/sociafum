@@ -416,36 +416,41 @@ def get_admin_user_id():
 @app.route('/')
 @app.route('/home')
 def home():
-    db = get_db()
+    # Placeholder for posts and stories data
+    stories = [] # Fetch actual stories
+    for_you_posts = [] # Fetch actual 'for you' posts
+    following_posts = [] # Fetch actual 'following' posts
+    explore_posts = [] # Fetch actual 'explore' posts
+
+    background_image = url_for('static', filename='img/default_background.jpg') # Default background
     member = None
-    stories = []
-    posts = []
-    current_year = datetime.now(timezone.utc).year
-    
     if current_user.is_authenticated:
         member = current_user.get_member_profile()
-        # Fetch stories from friends
-        stories = db.execute("""
-            SELECT s.id, s.media_type, s.media_path, u.username
-            FROM stories s
-            JOIN users u ON s.user_id = u.id
-            JOIN friendships f ON (f.user1_id = s.user_id AND f.user2_id = ? OR f.user2_id = s.user_id AND f.user1_id = ?)
-            WHERE f.status = 'accepted' AND s.expires_at > ? AND s.visibility = 'friends'
-            ORDER BY s.timestamp DESC
-        """, (current_user.id, current_user.id, datetime.now(timezone.utc))).fetchall()
+        # You could also load a user-specific background here
+        if current_user.chat_background_image_path:
+            background_image = current_user.chat_background_image_path
         
-        # Fetch initial posts for the feed
-        posts = db.execute("""
-            SELECT p.*, m.fullName as user_real_name, m.profilePhoto as user_profile_photo, u.username
-            FROM posts p
-            JOIN members m ON p.user_id = m.user_id
-            JOIN users u ON p.user_id = u.id
-            WHERE p.visibility IN ('public', 'friends')
-            ORDER BY p.timestamp DESC
-            LIMIT 10
-        """).fetchall()
+        # Populate dummy data for now
+        # You'll replace these with actual database queries
+        # Example structure for stories
+        stories = [
+            {'id': 1, 'type': 'image', 'media_url': url_for('static', filename='img/post1.jpg'), 'profile_pic': url_for('static', filename='img/default_profile.png'), 'username': 'user1'},
+            {'id': 2, 'type': 'video', 'media_url': url_for('static', filename='videos/reel1.mp4'), 'profile_pic': url_for('static', filename='img/default_profile.png'), 'username': 'user2'},
+        ]
+        # Example structure for posts
+        for_you_posts = [
+            {'id': 1, 'profile_pic': url_for('static', filename='img/default_profile.png'), 'username': 'user3', 'real_name': 'User Three', 'timestamp': datetime.now(timezone.utc) - timedelta(hours=1), 'media_url': url_for('static', filename='img/post2.jpg'), 'description': 'Beautiful day out!', 'likes_count': 10, 'comments_count': 2, 'views_count': 50},
+            {'id': 2, 'profile_pic': url_for('static', filename='img/default_profile.png'), 'username': 'user4', 'real_name': 'User Four', 'timestamp': datetime.now(timezone.utc) - timedelta(hours=3), 'media_url': None, 'description': 'Just thinking about life...', 'likes_count': 5, 'comments_count': 1, 'views_count': 20},
+        ]
+        following_posts = for_you_posts # Same for now
+        explore_posts = for_you_posts # Same for now
+
     
-    return render_template('index.html', member=member, current_year=current_year, stories=stories, posts=posts)
+    # Pass the current year to the template
+    current_year = datetime.now(timezone.utc).year
+    return render_template('index.html', background_image=background_image, member=member, current_year=current_year,
+                           stories=stories, for_you_posts=for_you_posts, following_posts=following_posts, explore_posts=explore_posts)
+
 
 # --- Authentication Routes ---
 
@@ -2033,44 +2038,49 @@ def create_story():
     return render_template('create_story.html', current_year=current_year)
 
 # --- Search Route ---
-@app.route('/api/search_users', methods=['GET'])
+@app.route('/search', methods=['GET'])
 @login_required
-def api_search_users():
-    query = request.args.get('term', '').strip()
+def search():
+    query = request.args.get('q', '').strip()
     db = get_db()
-    results = []
     
+    search_results = []
     if query:
-        # Search users, prioritizing real name matches
+        # Search users
         users = db.execute(
             """
-            SELECT u.id, u.username, m.fullName AS real_name, m.profilePhoto
+            SELECT u.id, u.username, u.originalName, m.profilePhoto
             FROM users u
             LEFT JOIN members m ON u.id = m.user_id
-            WHERE m.fullName LIKE ? OR u.username LIKE ?
-            ORDER BY 
-                CASE 
-                    WHEN m.fullName LIKE ? THEN 1
-                    WHEN u.username LIKE ? THEN 2
-                    ELSE 3
-                END,
-                m.fullName
+            WHERE u.username LIKE ? OR u.originalName LIKE ?
+            ORDER BY u.originalName
             """,
-            (f'{query}%', f'{query}%', f'{query}%', f'{query}%')
+            (f'%{query}%', f'%{query}%')
         ).fetchall()
-        
         for user in users:
             user_dict = dict(user)
-            user_dict['profilePhoto'] = user_dict['profilePhoto'] or url_for('static', filename='img/default_profile.png')
-            # Check if current user is following this user
-            is_following = db.execute(
-                "SELECT 1 FROM friendships WHERE user1_id = ? AND user2_id = ? AND status = 'accepted'",
-                (current_user.id, user['id'])
-            ).fetchone() is not None
-            user_dict['is_following'] = is_following
-            results.append({'type': 'user', 'data': user_dict})
-    
-    return jsonify({'results': results})
+            user_dict['profilePhoto'] = get_member_profile_pic(user_dict['id'])
+            search_results.append({'type': 'user', 'data': user_dict})
+        
+        # Search groups
+        groups = db.execute(
+            """
+            SELECT g.id, g.name, g.description, g.profilePhoto
+            FROM groups g
+            WHERE g.name LIKE ? OR g.description LIKE ?
+            ORDER BY g.name
+            """,
+            (f'%{query}%', f'%{query}%')
+        ).fetchall()
+        for group in groups:
+            group_dict = dict(group)
+            group_dict['profilePhoto'] = group_dict['profilePhoto'] or url_for('static', filename='img/default_group.png')
+            search_results.append({'type': 'group', 'data': group_dict})
+
+    # Pass the current year to the template
+    current_year = datetime.now(timezone.utc).year
+    return render_template('search.html', query=query, search_results=search_results, current_year=current_year)
+
 
 # --- Dashboard & Static Pages ---
 # 'dashboard.html' is not on the user's list. Redirect to my_profile as the closest personal overview.
