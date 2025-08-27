@@ -4,785 +4,502 @@
 
 {% block content %}
 <style>
-    /* Custom styles for the Search page */
-    body {
-        padding-top: 0;
-        padding-bottom: var(--navbar-height); /* Space for main fixed bottom navbar */
-        overflow-x: hidden;
+    .search-container {
+        padding: 20px;
+        max-width: 800px;
+        margin: 0 auto;
     }
-
-    .search-main-container {
+    .search-bar {
+        margin-bottom: 20px;
+    }
+    .search-bar form {
         display: flex;
-        flex-direction: column;
-        height: calc(100vh - var(--navbar-height)); /* Full viewport height minus bottom navbar */
-        position: relative;
-        background-color: var(--background-light);
+        align-items: center;
     }
-
-    /* Fixed Top Section: Search Input and Tab Nav */
-    .search-top-fixed-header {
-        position: sticky;
-        top: 0;
-        z-index: 1000;
-        background-color: var(--background-light);
-        padding: 15px;
-        border-bottom: 1px solid var(--border-color-light);
-        box-shadow: 0 2px 5px var(--shadow-soft);
-    }
-
-    .search-input-wrapper {
-        position: relative;
-        margin-bottom: 15px;
-    }
-
-    .search-input-wrapper .form-control {
+    .search-bar input[type="text"] {
         width: 100%;
-        border-radius: 25px;
-        padding-left: 40px;
-        background-color: var(--card-background);
-        border: 1px solid var(--input-border-color);
+        padding: 10px;
+        border: 1px solid #dee2e6;
+        border-radius: 20px;
+        font-size: 16px;
     }
-
-    .search-input-wrapper .search-icon {
-        position: absolute;
-        left: 15px;
-        top: 50%;
-        transform: translateY(-50%);
-        color: var(--secondary-text);
-        font-size: 1.1em;
-    }
-
-    /* Search Tabs Navigation */
-    .search-tabs-nav {
-        background-color: var(--card-background);
-        border-bottom: 1px solid var(--border-color-light);
-        display: flex;
-        justify-content: space-around;
-        padding: 0 5px;
-        overflow-x: auto; /* Allow horizontal scroll for many tabs */
-        -webkit-overflow-scrolling: touch;
-        white-space: nowrap; /* Prevent wrapping */
-    }
-
-    .search-tabs-nav .nav-item {
-        flex-shrink: 0; /* Prevent items from shrinking */
-    }
-
-    .search-tabs-nav .nav-link {
-        color: var(--secondary-text);
-        font-weight: 600;
-        padding: 12px 10px;
-        border-bottom: 3px solid transparent;
-        transition: color 0.2s ease, border-color 0.2s ease;
-        flex-grow: 1;
-        text-align: center;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 5px;
-        font-size: 0.9em;
-    }
-
-    .search-tabs-nav .nav-link.active {
-        color: var(--primary-color);
-        border-bottom-color: var(--primary-color);
-    }
-
-    .search-tabs-nav .nav-link:hover:not(.active) {
-        color: var(--primary-text);
-    }
-
-    /* Scrollable Search Results Area */
-    .search-results-scrollable {
-        flex: 1; /* Takes remaining vertical space */
-        overflow-y: auto; /* Make this section scrollable */
-        -webkit-overflow-scrolling: touch;
-        padding: 15px; /* Padding within the scrollable content */
-    }
-
-    /* General List Item Styling (for Users, Groups) */
-    .result-list-item {
-        display: flex;
-        align-items: center;
-        padding: 12px 15px;
-        margin-bottom: 10px;
-        background-color: var(--card-background);
-        border-radius: 12px;
-        box-shadow: 0 2px 8px var(--shadow-soft);
-        transition: transform 0.2s ease, box-shadow 0.2s ease;
-        text-decoration: none;
-        color: inherit;
-    }
-
-    .result-list-item:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 4px 12px var(--shadow-medium);
-    }
-
-    .result-profile-pic {
-        width: 50px;
-        height: 50px;
-        border-radius: 50%;
-        object-fit: cover;
-        margin-right: 15px;
-        border: 2px solid var(--primary-color);
-        flex-shrink: 0;
-    }
-
-    .result-details {
-        flex-grow: 1;
-        overflow: hidden;
-    }
-
-    .result-details .name {
-        font-weight: 600;
-        color: var(--primary-text);
-        margin-bottom: 3px;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        font-size: 1.1em;
-    }
-
-    .result-details .meta {
-        font-size: 0.9em;
-        color: var(--secondary-text);
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-
-    .result-actions {
-        flex-shrink: 0;
-        margin-left: 15px;
-    }
-
-    .result-actions .btn-action {
-        background-color: var(--primary-color);
+    .search-bar button {
+        margin-left: 10px;
+        padding: 10px 20px;
+        background: #007bff;
         color: white;
         border: none;
         border-radius: 20px;
-        padding: 8px 15px;
-        font-size: 0.9em;
-        font-weight: 500;
-        transition: background-color 0.2s ease;
-    }
-    .result-actions .btn-action:hover {
-        background-color: darken(var(--primary-color), 10%);
-    }
-    .result-actions .btn-action.message {
-        background-color: var(--info-color);
-    }
-
-    /* Gallery Grid for Posts/Reels */
-    .gallery-grid {
-        display: grid;
-        grid-template-columns: repeat(4, 1fr); /* 4 columns for posts/reels */
-        gap: 10px;
-        padding: 15px 0; /* Adjust padding for grid content */
-    }
-
-    .gallery-item {
-        position: relative;
-        padding-bottom: 100%;
-        overflow: hidden;
-        border-radius: 8px;
         cursor: pointer;
-        background-color: var(--background-light);
-        box-shadow: 0 2px 5px var(--shadow-soft);
     }
-
-    .gallery-item img, .gallery-item video {
-        position: absolute;
+    .tab-container {
+        display: flex;
+        flex-wrap: wrap;
+        border-bottom: 1px solid #dee2e6;
+        margin-bottom: 20px;
+    }
+    .tab {
+        flex: 1;
+        padding: 10px 20px;
+        text-align: center;
+        cursor: pointer;
+        font-weight: bold;
+        color: #6c757d;
+        transition: all 0.3s;
+    }
+    .tab.active {
+        color: #007bff;
+        border-bottom: 2px solid #007bff;
+    }
+    .tab-content {
+        display: none;
+    }
+    .tab-content.active {
+        display: block;
+    }
+    .result-item {
+        display: flex;
+        align-items: center;
+        padding: 10px;
+        border-bottom: 1px solid #dee2e6;
+    }
+    .result-item img {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        margin-right: 10px;
+    }
+    .result-info {
+        flex: 1;
+    }
+    .result-info h3 {
+        margin: 0;
+        font-size: 16px;
+    }
+    .result-info p {
+        margin: 0;
+        font-size: 12px;
+        color: #6c757d;
+    }
+    .result-actions {
+        display: flex;
+        gap: 10px;
+    }
+    .result-actions button {
+        padding: 5px 10px;
+        border: none;
+        background: #007bff;
+        color: white;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 12px;
+    }
+    .result-actions button:disabled {
+        background: #6c757d;
+        cursor: not-allowed;
+    }
+    .post-item, .reel-item {
+        padding: 10px;
+        border-bottom: 1px solid #dee2e6;
+    }
+    .post-item img, .reel-item img {
+        max-width: 200px;
+        border-radius: 5px;
+    }
+    .modal {
+        display: none;
+        position: fixed;
         top: 0;
         left: 0;
         width: 100%;
         height: 100%;
-        object-fit: cover;
-        transition: transform 0.2s ease;
+        background: rgba(0, 0, 0, 0.5);
+        align-items: center;
+        justify-content: center;
     }
-
-    .gallery-item:hover img, .gallery-item:hover video {
-        transform: scale(1.05);
+    .modal-content {
+        background: white;
+        padding: 20px;
+        border-radius: 5px;
+        max-width: 500px;
+        width: 90%;
     }
-
-    .gallery-item .video-play-icon {
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        font-size: 2em;
-        color: rgba(255,255,255,0.8);
-        text-shadow: 0 0 5px rgba(0,0,0,0.5);
-        display: none;
+    .modal-content img, .modal-content video {
+        max-width: 100%;
+        border-radius: 5px;
     }
-    .gallery-item[data-media-type="video"] .video-play-icon {
-        display: block;
-    }
-
-
-    .no-results-message {
-        text-align: center;
-        color: var(--secondary-text);
-        padding: 30px;
-        margin-top: 20px;
-        background-color: var(--card-background);
-        border-radius: 12px;
-        box-shadow: 0 4px 10px var(--shadow-soft);
-    }
-
-    /* Responsive adjustments */
-    @media (max-width: 768px) {
-        .search-top-fixed-header {
+    @media (max-width: 600px) {
+        .tab-container {
+            flex-direction: column;
+        }
+        .tab {
+            flex: none;
             padding: 10px;
         }
-        .search-input-wrapper .search-icon {
-            left: 10px;
+        .search-bar form {
+            flex-direction: column;
         }
-        .search-tabs-nav .nav-link {
-            padding: 10px 5px;
-            font-size: 0.8em;
-            gap: 3px;
-        }
-        .search-results-scrollable {
-            padding: 10px;
-        }
-        .result-list-item {
-            padding: 10px;
-            margin-bottom: 8px;
-        }
-        .result-profile-pic {
-            width: 45px;
-            height: 45px;
-            margin-right: 10px;
-        }
-        .result-details .name {
-            font-size: 1em;
-        }
-        .result-details .meta {
-            font-size: 0.85em;
-        }
-        .result-actions .btn-action {
-            padding: 6px 12px;
-            font-size: 0.85em;
-        }
-        .gallery-grid {
-            grid-template-columns: repeat(3, 1fr); /* 3 columns on tablet */
-            gap: 8px;
-            padding: 10px 0;
-        }
-    }
-
-    @media (max-width: 480px) {
-        .search-tabs-nav .nav-link {
-            font-size: 0.7em;
-            padding: 8px 3px;
-        }
-        .result-profile-pic {
-            width: 40px;
-            height: 40px;
-        }
-        .result-details .name {
-            font-size: 0.95em;
-        }
-        .result-actions .btn-action {
-            padding: 5px 10px;
-            font-size: 0.8em;
-        }
-        .gallery-grid {
-            grid-template-columns: repeat(2, 1fr); /* 2 columns on mobile */
-            gap: 8px;
+        .search-bar button {
+            margin-left: 0;
+            margin-top: 10px;
+            width: 100%;
         }
     }
 </style>
 
-<div class="search-main-container">
-    <div class="search-top-fixed-header">
-        <h2 class="text-center mb-3">Search SociaFam</h2>
-        {# Search Input #}
-        <div class="search-input-wrapper">
-            <i class="fas fa-search search-icon"></i>
-            <input type="text" class="form-control" id="globalSearchInput" placeholder="Search users, groups, posts, reels...">
-        </div>
-
-        {# Search Tabs Navigation #}
-        <ul class="nav nav-pills search-tabs-nav" id="searchTabs" role="tablist">
-            <li class="nav-item" role="presentation">
-                <button class="nav-link active" id="all-tab" data-bs-toggle="tab" data-bs-target="#allResultsContent" type="button" role="tab" aria-controls="allResultsContent" aria-selected="true">
-                    <i class="fas fa-grip-horizontal me-1"></i> All
-                </button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" id="users-tab" data-bs-toggle="tab" data-bs-target="#usersResultsContent" type="button" role="tab" aria-controls="usersResultsContent" aria-selected="false">
-                    <i class="fas fa-user-friends me-1"></i> Users
-                </button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" id="groups-tab" data-bs-toggle="tab" data-bs-target="#groupsResultsContent" type="button" role="tab" aria-controls="groupsResultsContent" aria-selected="false">
-                    <i class="fas fa-users me-1"></i> Groups
-                </button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" id="posts-tab" data-bs-toggle="tab" data-bs-target="#postsResultsContent" type="button" role="tab" aria-controls="postsResultsContent" aria-selected="false">
-                    <i class="fas fa-th-large me-1"></i> Posts
-                </button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" id="reels-tab" data-bs-toggle="tab" data-bs-target="#reelsResultsContent" type="button" role="tab" aria-controls="reelsResultsContent" aria-selected="false">
-                    <i class="fas fa-video me-1"></i> Reels
-                </button>
-            </li>
-        </ul>
+<div class="search-container">
+    <div class="search-bar">
+        <form action="{{ url_for('search') }}" method="get">
+            <input type="text" name="q" placeholder="Search SociaFam" value="{{ query | default('') }}" oninput="searchLive()">
+            <button type="submit">Search</button>
+        </form>
     </div>
 
-    {# Scrollable Search Results Area #}
-    <div class="tab-content search-results-scrollable" id="searchTabContent">
+    <div class="tab-container">
+        <div class="tab active" onclick="showTab('all')">All</div>
+        <div class="tab" onclick="showTab('users')">Users</div>
+        <div class="tab" onclick="showTab('groups')">Groups</div>
+        <div class="tab" onclick="showTab('posts')">Posts</div>
+        <div class="tab" onclick="showTab('reels')">Reels</div>
+    </div>
 
-        {# All Results Tab #}
-        <div class="tab-pane fade show active" id="allResultsContent" role="tabpanel" aria-labelledby="all-tab">
-            <div id="allResultsList">
-                {% if search_results_all %}
-                    {% for item in search_results_all %}
-                        {% if item.type == 'user' %}
-                            <a href="{{ url_for('profile', username=item.username) }}" class="result-list-item" data-search-terms="{{ item.real_name | lower }} {{ item.username | lower }}" data-item-type="{{ item.type }}">
-                                <img src="{{ item.profile_pic }}" alt="{{ item.real_name }} Profile" class="result-profile-pic">
-                                <div class="result-details">
-                                    <p class="name">{{ item.real_name }}</p>
-                                    <p class="meta">@{{ item.username }} | User</p>
-                                </div>
-                                <div class="result-actions">
-                                    <button class="btn-action btn-sm follow-btn" data-user-id="{{ item.id }}">{% if item.is_following %}Following{% else %}Follow{% endif %}</button>
-                                </div>
-                            </a>
-                        {% elif item.type == 'group' %}
-                            <a href="{{ url_for('view_group_profile', group_id=item.id) }}" class="result-list-item" data-search-terms="{{ item.name | lower }}" data-item-type="{{ item.type }}">
-                                <img src="{{ item.profile_pic }}" alt="{{ item.name }} Group" class="result-profile-pic">
-                                <div class="result-details">
-                                    <p class="name">{{ item.name }}</p>
-                                    <p class="meta">{{ item.member_count }} Members | Group</p>
-                                </div>
-                                <div class="result-actions">
-                                    {% if item.is_member %}
-                                        <span class="badge bg-success">Member</span>
-                                    {% else %}
-                                        <button class="btn-action btn-sm join-group-btn" data-group-id="{{ item.id }}">Join</button>
-                                    {% endif %}
-                                </div>
-                            </a>
-                        {% elif item.type == 'post' %}
-                            <div class="gallery-grid">
-                                <div class="gallery-item" data-post-id="{{ item.id }}" data-bs-toggle="modal" data-bs-target="#postDetailModal" data-media-type="image" data-search-terms="{{ item.description | lower }}">
-                                    <img src="{{ item.media_url }}" alt="Post Image">
-                                </div>
-                            </div>
-                        {% elif item.type == 'reel' %}
-                            <div class="gallery-grid">
-                                <div class="gallery-item" data-reel-id="{{ item.id }}" data-bs-toggle="modal" data-bs-target="#reelViewerModal" data-media-type="video" data-search-terms="{{ item.description | lower }}">
-                                    <video src="{{ item.video_url }}" muted playsinline preload="metadata"></video>
-                                    <i class="fas fa-play-circle video-play-icon"></i>
-                                </div>
-                            </div>
+    <div id="all" class="tab-content active">
+        {% if search_results %}
+            {% for item in search_results %}
+                {% if item.type == 'user' %}
+                    <div class="result-item">
+                        <img src="{{ item.data.profilePhoto | default('/static/img/default_profile.png') }}" alt="Profile">
+                        <div class="result-info">
+                            <h3>{{ item.data.real_name }}</h3>
+                            <p>@{{ item.data.username }} | User</p>
+                        </div>
+                        <div class="result-actions">
+                            <button onclick="friendRequest({{ item.data.id }})" {% if item.data.is_following %}disabled{% endif %}>
+                                {{ 'Following' if item.data.is_following else 'Follow' }}
+                            </button>
+                            <button onclick="openChat({{ item.data.id }})">Message</button>
+                        </div>
+                    </div>
+                {% elif item.type == 'group' %}
+                    <div class="result-item">
+                        <img src="{{ item.data.profilePhoto | default('/static/img/default_group.png') }}" alt="Group">
+                        <div class="result-info">
+                            <h3>{{ item.data.name }}</h3>
+                            <p>{{ item.data.member_count | default(0) }} Members | Group</p>
+                        </div>
+                        <div class="result-actions">
+                            <button onclick="joinGroup({{ item.data.id }})" {% if item.data.is_member %}disabled{% endif %}>
+                                {{ 'Member' if item.data.is_member else 'Join' }}
+                            </button>
+                        </div>
+                    </div>
+                {% elif item.type == 'post' %}
+                    <div class="post-item" onclick="openPostModal({{ item.data.id }})">
+                        <p>{{ item.data.description | default('No description') }}</p>
+                        {% if item.data.media_path %}
+                            <img src="{{ item.data.media_path }}" alt="Post Media">
                         {% endif %}
-                    {% endfor %}
-                {% else %}
-                    <div class="no-results-message">
-                        <i class="fas fa-search fa-3x mb-3"></i>
-                        <p class="lead">Start typing to search for content across SociaFam.</p>
+                        <p>Posted by @{{ item.data.username }} | {{ moment(item.data.timestamp).fromNow() }}</p>
+                    </div>
+                {% elif item.type == 'reel' %}
+                    <div class="reel-item" onclick="openReelModal({{ item.data.id }})">
+                        {% if item.data.media_path %}
+                            <video src="{{ item.data.media_path }}" width="200" muted></video>
+                        {% endif %}
+                        <p>Posted by @{{ item.data.username }} | {{ moment(item.data.timestamp).fromNow() }}</p>
                     </div>
                 {% endif %}
-            </div>
-        </div>
+            {% endfor %}
+        {% else %}
+            <p>Start typing to search for content across SociaFam.</p>
+        {% endif %}
+    </div>
 
-        {# Users Results Tab #}
-        <div class="tab-pane fade" id="usersResultsContent" role="tabpanel" aria-labelledby="users-tab">
-            <div id="usersResultsList">
-                {% if search_results_users %}
-                    {% for user in search_results_users %}
-                        <a href="{{ url_for('profile', username=user.username) }}" class="result-list-item" data-search-terms="{{ user.real_name | lower }} {{ user.username | lower }}" data-item-type="user">
-                            <img src="{{ user.profile_pic }}" alt="{{ user.real_name }} Profile" class="result-profile-pic">
-                            <div class="result-details">
-                                <p class="name">{{ user.real_name }}</p>
-                                <p class="meta">@{{ user.username }}</p>
-                            </div>
-                            <div class="result-actions">
-                                <button class="btn-action btn-sm follow-btn" data-user-id="{{ user.id }}">{% if user.is_following %}Following{% else %}Follow{% endif %}</button>
-                                <a href="{{ url_for('view_chat', other_user_id=user.id) }}" class="btn-action btn-sm message">Message</a>
-                            </div>
-                        </a>
-                    {% endfor %}
-                {% else %}
-                    <div class="no-results-message">
-                        <i class="fas fa-user-friends fa-3x mb-3"></i>
-                        <p class="lead">No users found.</p>
+    <div id="users" class="tab-content">
+        {% if search_results | selectattr('type', 'equalto', 'user') | list %}
+            {% for item in search_results | selectattr('type', 'equalto', 'user') %}
+                <div class="result-item">
+                    <img src="{{ item.data.profilePhoto | default('/static/img/default_profile.png') }}" alt="Profile">
+                    <div class="result-info">
+                        <h3>{{ item.data.real_name }}</h3>
+                        <p>@{{ item.data.username }}</p>
                     </div>
-                {% endif %}
-            </div>
-        </div>
-
-        {# Groups Results Tab #}
-        <div class="tab-pane fade" id="groupsResultsContent" role="tabpanel" aria-labelledby="groups-tab">
-            <div id="groupsResultsList">
-                {% if search_results_groups %}
-                    {% for group in search_results_groups %}
-                        <a href="{{ url_for('view_group_profile', group_id=group.id) }}" class="result-list-item" data-search-terms="{{ group.name | lower }}" data-item-type="group">
-                            <img src="{{ group.profile_pic }}" alt="{{ group.name }} Group" class="result-profile-pic">
-                            <div class="result-details">
-                                <p class="name">{{ group.name }}</p>
-                                <p class="meta">{{ group.member_count }} Members</p>
-                            </div>
-                            <div class="result-actions">
-                                {% if group.is_member %}
-                                    <span class="badge bg-success">Member</span>
-                                {% else %}
-                                    <button class="btn-action btn-sm join-group-btn" data-group-id="{{ group.id }}">Join</button>
-                                {% endif %}
-                            </div>
-                        </a>
-                    {% endfor %}
-                {% else %}
-                    <div class="no-results-message">
-                        <i class="fas fa-users fa-3x mb-3"></i>
-                        <p class="lead">No groups found.</p>
+                    <div class="result-actions">
+                        <button onclick="friendRequest({{ item.data.id }})" {% if item.data.is_following %}disabled{% endif %}>
+                            {{ 'Following' if item.data.is_following else 'Follow' }}
+                        </button>
+                        <button onclick="openChat({{ item.data.id }})">Message</button>
                     </div>
-                {% endif %}
-            </div>
-        </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <p>No users found.</p>
+        {% endif %}
+    </div>
 
-        {# Posts Results Tab #}
-        <div class="tab-pane fade" id="postsResultsContent" role="tabpanel" aria-labelledby="posts-tab">
-            <div class="gallery-grid" id="postsResultsGrid">
-                {% if search_results_posts %}
-                    {% for post in search_results_posts %}
-                        <div class="gallery-item" data-post-id="{{ post.id }}" data-bs-toggle="modal" data-bs-target="#postDetailModal" data-media-type="image" data-search-terms="{{ post.description | lower }}">
-                            <img src="{{ post.media_url }}" alt="Post Image">
-                        </div>
-                    {% endfor %}
-                {% else %}
-                    <p class="text-muted text-center col-span-full py-4">No posts found with that keyword.</p>
-                {% endif %}
-            </div>
-        </div>
+    <div id="groups" class="tab-content">
+        {% if search_results | selectattr('type', 'equalto', 'group') | list %}
+            {% for item in search_results | selectattr('type', 'equalto', 'group') %}
+                <div class="result-item">
+                    <img src="{{ item.data.profilePhoto | default('/static/img/default_group.png') }}" alt="Group">
+                    <div class="result-info">
+                        <h3>{{ item.data.name }}</h3>
+                        <p>{{ item.data.member_count | default(0) }} Members</p>
+                    </div>
+                    <div class="result-actions">
+                        <button onclick="joinGroup({{ item.data.id }})" {% if item.data.is_member %}disabled{% endif %}>
+                            {{ 'Member' if item.data.is_member else 'Join' }}
+                        </button>
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <p>No groups found.</p>
+        {% endif %}
+    </div>
 
-        {# Reels Results Tab #}
-        <div class="tab-pane fade" id="reelsResultsContent" role="tabpanel" aria-labelledby="reels-tab">
-            <div class="gallery-grid" id="reelsResultsGrid">
-                {% if search_results_reels %}
-                    {% for reel in search_results_reels %}
-                        <div class="gallery-item" data-reel-id="{{ reel.id }}" data-bs-toggle="modal" data-bs-target="#reelViewerModal" data-media-type="video" data-search-terms="{{ reel.description | lower }}">
-                            <video src="{{ reel.video_url }}" muted playsinline preload="metadata"></video>
-                            <i class="fas fa-play-circle video-play-icon"></i>
-                        </div>
-                    {% endfor %}
-                {% else %}
-                    <p class="text-muted text-center col-span-full py-4">No reels found with that keyword.</p>
-                {% endif %}
-            </div>
-        </div>
+    <div id="posts" class="tab-content">
+        {% if search_results | selectattr('type', 'equalto', 'post') | list %}
+            {% for item in search_results | selectattr('type', 'equalto', 'post') %}
+                <div class="post-item" onclick="openPostModal({{ item.data.id }})">
+                    <p>{{ item.data.description | default('No description') }}</p>
+                    {% if item.data.media_path %}
+                        <img src="{{ item.data.media_path }}" alt="Post Media">
+                    {% endif %}
+                    <p>Posted by @{{ item.data.username }} | {{ moment(item.data.timestamp).fromNow() }}</p>
+                </div>
+            {% endfor %}
+        {% else %}
+            <p>No posts found with that keyword.</p>
+        {% endif %}
+    </div>
+
+    <div id="reels" class="tab-content">
+        {% if search_results | selectattr('type', 'equalto', 'reel') | list %}
+            {% for item in search_results | selectattr('type', 'equalto', 'reel') %}
+                <div class="reel-item" onclick="openReelModal({{ item.data.id }})">
+                    {% if item.data.media_path %}
+                        <video src="{{ item.data.media_path }}" width="200" muted></video>
+                    {% endif %}
+                    <p>Posted by @{{ item.data.username }} | {{ moment(item.data.timestamp).fromNow() }}</p>
+                </div>
+            {% endfor %}
+        {% else %}
+            <p>No reels found with that keyword.</p>
+        {% endif %}
     </div>
 </div>
 
-{# Reusing Post Detail Modal from index.html #}
-<div class="modal fade" id="postDetailModal" tabindex="-1" aria-labelledby="postDetailModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="postDetailModalLabel">Post Details</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body" id="postDetailModalBody">
-                <div class="text-center py-5">
-                    <div class="spinner-border text-primary" role="status">
-                        <span class="visually-hidden">Loading post...</span>
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-            </div>
+<!-- Post Detail Modal -->
+<div id="postModal" class="modal">
+    <div class="modal-content">
+        <h2>Post Details</h2>
+        <div id="postModalContent">
+            <p>Loading post...</p>
         </div>
+        <button onclick="closeModal('postModal')">Close</button>
     </div>
 </div>
 
-{# Reusing Reel Viewer Modal from reels.html #}
-<div class="modal fade" id="reelViewerModal" tabindex="-1" aria-labelledby="reelViewerModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-fullscreen">
-        <div class="modal-content bg-dark text-white">
-            <div class="modal-body p-0 d-flex flex-column justify-content-center align-items-center position-relative">
-                <video id="reelViewerVideo" src="" class="img-fluid" style="max-height: 100vh; object-fit: contain; display: none;" autoplay playsinline muted loop></video>
-                <div class="position-absolute top-0 start-0 w-100 p-3 d-flex align-items-center">
-                    <img id="reelOwnerProfilePic" src="" alt="Profile" class="profile-pic me-2" style="width: 40px; height: 40px;">
-                    <span id="reelOwnerUsername" class="fw-bold"></span>
-                    <button type="button" class="btn-close btn-close-white ms-auto" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-            </div>
+<!-- Reel Viewer Modal -->
+<div id="reelModal" class="modal">
+    <div class="modal-content">
+        <div id="reelModalContent">
+            <p>Loading reel...</p>
         </div>
+        <button onclick="closeModal('reelModal')">Close</button>
     </div>
 </div>
 
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const globalSearchInput = document.getElementById('globalSearchInput');
-        const searchTabContent = document.getElementById('searchTabContent');
-        const searchTabs = document.getElementById('searchTabs');
+    function showTab(tabId) {
+        document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+        document.querySelector(`[onclick="showTab('${tabId}')"]`).classList.add('active');
+        document.getElementById(tabId).classList.add('active');
+    }
 
-        // Store all results from Flask for client-side filtering
-        const allResultsData = {
-            users: {% if search_results_users %}{{ search_results_users | tojson | safe }}{% else %}[]{% endif %},
-            groups: {% if search_results_groups %}{{ search_results_groups | tojson | safe }}{% else %}[]{% endif %},
-            posts: {% if search_results_posts %}{{ search_results_posts | tojson | safe }}{% else %}[]{% endif %},
-            reels: {% if search_results_reels %}{{ search_results_reels | tojson | safe }}{% else %}[]{% endif %}
-        };
-        // Flatten all results for the 'All' tab for initial client-side display and search
-        let allCombinedResults = [
-            ...allResultsData.users.map(item => ({...item, type: 'user', search_terms: `${item.real_name?.toLowerCase() || ''} ${item.username?.toLowerCase() || ''}`})),
-            ...allResultsData.groups.map(item => ({...item, type: 'group', search_terms: `${item.name?.toLowerCase() || ''}`})),
-            ...allResultsData.posts.map(item => ({...item, type: 'post', search_terms: `${item.description?.toLowerCase() || ''}`})),
-            ...allResultsData.reels.map(item => ({...item, type: 'reel', search_terms: `${item.description?.toLowerCase() || ''}`}))
-        ];
+    let debounceTimer;
+    function searchLive() {
+        clearTimeout(debounceTimer);
+        const query = document.querySelector('input[name="q"]').value.trim();
+        if (!query) {
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.innerHTML = '<p>Start typing to search for content across SociaFam.</p>';
+            });
+            return;
+        }
 
-
-        function filterSearchResults() {
-            const searchTerm = globalSearchInput.value.toLowerCase();
-            const activeTabPane = searchTabContent.querySelector('.tab-pane.show.active');
-            
-            if (!activeTabPane) return;
-
-            // Handle filtering for "All" tab separately as it combines multiple types
-            if (activeTabPane.id === 'allResultsContent') {
-                const allResultsList = document.getElementById('allResultsList');
-                allResultsList.innerHTML = ''; // Clear previous results
-
-                const filtered = allCombinedResults.filter(item => item.search_terms.includes(searchTerm));
-                
-                if (filtered.length === 0 && searchTerm.length > 0) {
-                     allResultsList.innerHTML = `
-                        <div class="no-results-message">
-                            <i class="fas fa-search-minus fa-3x mb-3"></i>
-                            <p class="lead">No matching results found for "${searchTerm}".</p>
-                        </div>
-                     `;
-                     return;
-                } else if (filtered.length === 0 && searchTerm.length === 0) {
-                     allResultsList.innerHTML = `
-                        <div class="no-results-message">
-                            <i class="fas fa-search fa-3x mb-3"></i>
-                            <p class="lead">Start typing to search for content across SociaFam.</p>
-                        </div>
-                     `;
-                     return;
-                }
-
-
-                filtered.forEach(item => {
-                    let html = '';
-                    if (item.type === 'user') {
-                        html = `
-                            <a href="/profile/${item.username}" class="result-list-item" data-search-terms="${item.search_terms}" data-item-type="${item.type}">
-                                <img src="${item.profile_pic}" alt="${item.real_name} Profile" class="result-profile-pic">
-                                <div class="result-details">
-                                    <p class="name">${item.real_name}</p>
-                                    <p class="meta">@${item.username} | User</p>
-                                </div>
-                                <div class="result-actions">
-                                    <button class="btn-action btn-sm follow-btn" data-user-id="${item.id}">${item.is_following ? 'Following' : 'Follow'}</button>
-                                </div>
-                            </a>
-                        `;
-                    } else if (item.type === 'group') {
-                        html = `
-                            <a href="/groups/${item.id}/profile" class="result-list-item" data-search-terms="${item.search_terms}" data-item-type="${item.type}">
-                                <img src="${item.profile_pic}" alt="${item.name} Group" class="result-profile-pic">
-                                <div class="result-details">
-                                    <p class="name">${item.name}</p>
-                                    <p class="meta">${item.member_count} Members | Group</p>
-                                </div>
-                                <div class="result-actions">
-                                    ${item.is_member ? '<span class="badge bg-success">Member</span>' : `<button class="btn-action btn-sm join-group-btn" data-group-id="${item.id}">Join</button>`}
-                                </div>
-                            </a>
-                        `;
-                    } else if (item.type === 'post') {
-                         html = `
-                            <div class="gallery-grid">
-                                <div class="gallery-item" data-post-id="${item.id}" data-bs-toggle="modal" data-bs-target="#postDetailModal" data-media-type="image" data-search-terms="${item.search_terms}">
-                                    <img src="${item.media_url}" alt="Post Image">
-                                </div>
-                            </div>
-                        `;
-                    } else if (item.type === 'reel') {
-                         html = `
-                            <div class="gallery-grid">
-                                <div class="gallery-item" data-reel-id="${item.id}" data-bs-toggle="modal" data-bs-target="#reelViewerModal" data-media-type="video" data-search-terms="${item.search_terms}">
-                                    <video src="${item.video_url}" muted playsinline preload="metadata"></video>
-                                    <i class="fas fa-play-circle video-play-icon"></i>
-                                </div>
-                            </div>
-                        `;
-                    }
-                    allResultsList.insertAdjacentHTML('beforeend', html);
+        debounceTimer = setTimeout(() => {
+            fetch(`/api/search_users?term=${encodeURIComponent(query)}`)
+                .then(response => response.json())
+                .then(data => {
+                    updateTabContent('users', data.results.filter(item => item.type === 'user'));
+                    updateTabContent('all', data.results);
+                    // Fetch groups, posts, reels via additional APIs
+                    fetch(`/api/search_groups?term=${encodeURIComponent(query)}`)
+                        .then(response => response.json())
+                        .then(data => updateTabContent('groups', data.results))
+                        .catch(() => document.getElementById('groups').innerHTML = '<p>Error searching groups.</p>');
+                    fetch(`/api/search_posts?term=${encodeURIComponent(query)}`)
+                        .then(response => response.json())
+                        .then(data => updateTabContent('posts', data.results))
+                        .catch(() => document.getElementById('posts').innerHTML = '<p>Error searching posts.</p>');
+                    fetch(`/api/search_reels?term=${encodeURIComponent(query)}`)
+                        .then(response => response.json())
+                        .then(data => updateTabContent('reels', data.results))
+                        .catch(() => document.getElementById('reels').innerHTML = '<p>Error searching reels.</p>');
+                })
+                .catch(error => {
+                    console.error('Error searching:', error);
+                    document.querySelectorAll('.tab-content').forEach(content => {
+                        content.innerHTML = '<p>Error searching. Please try again.</p>';
+                    });
                 });
+        }, 300);
+    }
 
-                 // Re-attach event listeners for newly rendered elements
-                attachDynamicEventListeners(allResultsList);
-
-            } else {
-                // Filter elements within the current active tab pane
-                const allItemsInTab = activeTabPane.querySelectorAll('[data-search-terms]');
-                let foundResults = 0;
-
-                allItemsInTab.forEach(item => {
-                    const searchTerms = item.dataset.searchTerms;
-                    if (searchTerms.includes(searchTerm)) {
-                        item.style.display = item.classList.contains('gallery-grid') ? 'grid' : 'flex'; // Handle grid vs flex
-                        foundResults++;
-                    } else {
-                        item.style.display = 'none';
-                    }
-                });
-
-                // Show no results message if nothing found in specific tabs
-                const emptyMessageContainer = activeTabPane.querySelector('.no-results-message') || activeTabPane.querySelector('p.text-muted.text-center');
-                if (searchTerm.length > 0 && foundResults === 0) {
-                     if (!emptyMessageContainer) { // Create if doesn't exist
-                         const msg = document.createElement('div');
-                         msg.className = 'no-results-message';
-                         msg.innerHTML = `<i class="fas fa-search-minus fa-3x mb-3"></i><p class="lead">No matching results found for "${searchTerm}" in this category.</p>`;
-                         activeTabPane.appendChild(msg);
-                     } else {
-                        emptyMessageContainer.style.display = 'block';
-                        emptyMessageContainer.innerHTML = `<i class="fas fa-search-minus fa-3x mb-3"></i><p class="lead">No matching results found for "${searchTerm}" in this category.</p>`;
-                     }
-                } else if (searchTerm.length === 0 && emptyMessageContainer) {
-                    emptyMessageContainer.style.display = 'none'; // Hide if search cleared and it's a dynamic message
-                } else if (searchTerm.length > 0 && foundResults > 0 && emptyMessageContainer) {
-                     emptyMessageContainer.style.display = 'none'; // Hide if results are found
-                }
+    function updateTabContent(tabId, results) {
+        const container = document.getElementById(tabId);
+        container.innerHTML = '';
+        if (results.length === 0) {
+            container.innerHTML = `<p>No ${tabId} found.</p>`;
+            return;
+        }
+        results.forEach(item => {
+            if (item.type === 'user') {
+                const user = item.data;
+                const html = `
+                    <div class="result-item">
+                        <img src="${user.profilePhoto || '/static/img/default_profile.png'}" alt="Profile">
+                        <div class="result-info">
+                            <h3>${user.real_name}</h3>
+                            <p>@${user.username}</p>
+                        </div>
+                        <div class="result-actions">
+                            <button onclick="friendRequest(${user.id})" ${user.is_following ? 'disabled' : ''}>
+                                ${user.is_following ? 'Following' : 'Follow'}
+                            </button>
+                            <button onclick="openChat(${user.id})">Message</button>
+                        </div>
+                    </div>`;
+                container.insertAdjacentHTML('beforeend', html);
+            } else if (item.type === 'group') {
+                const group = item.data;
+                const html = `
+                    <div class="result-item">
+                        <img src="${group.profilePhoto || '/static/img/default_group.png'}" alt="Group">
+                        <div class="result-info">
+                            <h3>${group.name}</h3>
+                            <p>${group.member_count || 0} Members</p>
+                        </div>
+                        <div class="result-actions">
+                            <button onclick="joinGroup(${group.id})" ${group.is_member ? 'disabled' : ''}>
+                                ${group.is_member ? 'Member' : 'Join'}
+                            </button>
+                        </div>
+                    </div>`;
+                container.insertAdjacentHTML('beforeend', html);
+            } else if (item.type === 'post') {
+                const post = item.data;
+                const html = `
+                    <div class="post-item" onclick="openPostModal(${post.id})">
+                        <p>${post.description || 'No description'}</p>
+                        ${post.media_path ? `<img src="${post.media_path}" alt="Post Media">` : ''}
+                        <p>Posted by @${post.username} | ${new Date(post.timestamp).toLocaleString()}</p>
+                    </div>`;
+                container.insertAdjacentHTML('beforeend', html);
+            } else if (item.type === 'reel') {
+                const reel = item.data;
+                const html = `
+                    <div class="reel-item" onclick="openReelModal(${reel.id})">
+                        ${reel.media_path ? `<video src="${reel.media_path}" width="200" muted></video>` : ''}
+                        <p>Posted by @${reel.username} | ${new Date(reel.timestamp).toLocaleString()}</p>
+                    </div>`;
+                container.insertAdjacentHTML('beforeend', html);
             }
-        }
-
-        globalSearchInput.addEventListener('input', filterSearchResults);
-
-        // When a tab is shown, re-filter results or reset visibility if search bar is empty
-        searchTabs.addEventListener('shown.bs.tab', function (event) {
-            filterSearchResults(); // Re-filter for the new tab
         });
+    }
 
-        // --- Attach Event Listeners for dynamically rendered elements ---
-        function attachDynamicEventListeners(container) {
-            // Follow button
-            container.querySelectorAll('.follow-btn').forEach(button => {
-                button.addEventListener('click', function(event) {
-                    event.preventDefault();
-                    event.stopPropagation();
-                    const userId = this.dataset.userId;
-                    fetch(`/api/follow_user/${userId}`, { method: 'POST' })
-                        .then(response => response.json())
-                        .then(data => {
-                            if (data.success) {
-                                alert(data.message);
-                                if (data.new_follow_status === 'following') {
-                                    this.textContent = 'Following';
-                                } else {
-                                    this.textContent = 'Follow'; // Handle unfollow or pending
-                                }
-                            } else {
-                                alert('Failed to follow/unfollow: ' + data.message);
-                            }
-                        })
-                        .catch(error => console.error('Error:', error));
-                });
-            });
+    function friendRequest(userId) {
+        fetch('/api/friend_request', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ user_id: userId })
+        }).then(response => response.json()).then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Failed to send friend request.');
+            }
+        });
+    }
 
-            // Join Group button
-            container.querySelectorAll('.join-group-btn').forEach(button => {
-                button.addEventListener('click', function(event) {
-                    event.preventDefault();
-                    event.stopPropagation();
-                    const groupId = this.dataset.groupId;
-                    fetch(`/api/group/${groupId}/join_request`, { method: 'POST' })
-                        .then(response => response.json())
-                        .then(data => {
-                            if (data.success) {
-                                alert(data.message);
-                                this.textContent = 'Requested'; // Change button text
-                                this.disabled = true; // Disable until request handled
-                            } else {
-                                alert('Failed to join group: ' + data.message);
-                            }
-                        })
-                        .catch(error => console.error('Error:', error));
-                });
-            });
+    function joinGroup(groupId) {
+        fetch('/api/join_group', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ group_id: groupId })
+        }).then(response => response.json()).then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Failed to join group.');
+            }
+        });
+    }
 
-            // Post Detail Modal Logic (reusing existing)
-            container.querySelectorAll('[data-bs-target="#postDetailModal"]').forEach(item => {
-                item.addEventListener('click', function (event) {
-                    const postId = this.getAttribute('data-post-id') || this.getAttribute('data-item-id');
-                    const postDetailModalBody = document.getElementById('postDetailModalBody');
-                    postDetailModalBody.innerHTML = `
-                        <div class="text-center py-5">
-                            <div class="spinner-border text-primary" role="status">
-                                <span class="visually-hidden">Loading post...</span>
-                            </div>
-                        </div>`;
-                    fetch(`/api/post-details/${postId}`)
-                        .then(response => response.text())
-                        .then(html => postDetailModalBody.innerHTML = html)
-                        .catch(error => postDetailModalBody.innerHTML = `<p class="text-danger text-center">Failed to load post.</p>`);
-                });
-            });
-
-            // Reel Viewer Modal Logic (reusing existing)
-            container.querySelectorAll('[data-bs-target="#reelViewerModal"]').forEach(item => {
-                item.addEventListener('click', function (event) {
-                    const reelId = this.getAttribute('data-reel-id') || this.getAttribute('data-item-id');
-                    const reelViewerVideo = document.getElementById('reelViewerVideo');
-                    const reelOwnerProfilePic = document.getElementById('reelOwnerProfilePic');
-                    const reelOwnerUsername = document.getElementById('reelOwnerUsername');
-
-                    // Find reel details from allResultsData.reels
-                    const reel = allResultsData.reels.find(r => r.id == reelId); // Assuming all reels data is accessible
-
-                    if (reel) {
-                        reelViewerVideo.src = reel.video_url;
-                        reelOwnerProfilePic.src = reel.owner_profile_pic || '{{ url_for('static', filename='img/default_profile.png') }}';
-                        reelOwnerUsername.textContent = '@' + (reel.owner_username || 'Unknown User');
-                        reelViewerVideo.style.display = 'block';
-                        reelViewerVideo.play().catch(e => console.error("Video autoplay error:", e));
-                    } else {
-                        console.error("Reel not found for ID:", reelId);
-                    }
-                });
-            });
-        }
-        
-        // Initial attachment of event listeners for static content
-        attachDynamicEventListeners(searchTabContent);
-
-
-        // Handle modal hide to reset video
-        const reelViewerModalElement = document.getElementById('reelViewerModal');
-        const reelViewerVideo = document.getElementById('reelViewerVideo');
-        if (reelViewerModalElement && reelViewerVideo) {
-             reelViewerModalElement.addEventListener('hidden.bs.modal', function () {
-                reelViewerVideo.pause();
-                reelViewerVideo.currentTime = 0;
-                reelViewerVideo.src = '';
-                reelViewerVideo.style.display = 'none';
-            });
-             reelViewerModalElement.addEventListener('click', function(e) {
-                if (e.target === reelViewerVideo) {
-                    if (reelViewerVideo.paused) {
-                        reelViewerVideo.play();
-                    } else {
-                        reelViewerVideo.pause();
-                    }
+    function openChat(userId) {
+        fetch(`/api/chat/${userId}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    window.location.href = `/chat/${userId}`;
+                } else {
+                    alert('Failed to open chat.');
                 }
             });
-        }
-    });
+    }
+
+    function openPostModal(postId) {
+        fetch(`/api/posts/${postId}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const modal = document.getElementById('postModal');
+                    const content = document.getElementById('postModalContent');
+                    content.innerHTML = `
+                        <p>${data.post.description || 'No description'}</p>
+                        ${data.post.media_path ? `<img src="${data.post.media_path}" alt="Post Media">` : ''}
+                        <p>Posted by @${data.post.username} | ${new Date(data.post.timestamp).toLocaleString()}</p>
+                    `;
+                    modal.style.display = 'flex';
+                } else {
+                    alert('Failed to load post.');
+                }
+            });
+    }
+
+    function openReelModal(reelId) {
+        fetch(`/api/reels/${reelId}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const modal = document.getElementById('reelModal');
+                    const content = document.getElementById('reelModalContent');
+                    content.innerHTML = `
+                        ${data.reel.media_path ? `<video src="${data.reel.media_path}" controls autoplay></video>` : ''}
+                        <p>Posted by @${data.reel.username} | ${new Date(data.reel.timestamp).toLocaleString()}</p>
+                    `;
+                    modal.style.display = 'flex';
+                } else {
+                    alert('Failed to load reel.');
+                }
+            });
+    }
+
+    function closeModal(modalId) {
+        document.getElementById(modalId).style.display = 'none';
+    }
 </script>
 {% endblock %}
