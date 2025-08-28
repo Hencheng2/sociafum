@@ -1843,13 +1843,23 @@ def create_post():
                 media_path = os.path.join('static', 'uploads', 'posts', filename)
 
         try:
-            # THIS IS THE ONLY CHANGE:
-            # We are inserting the `post_content` variable into the `description` column
+            # Insert the post into the database
             cursor.execute("INSERT INTO posts (user_id, description, media_path, media_type, visibility) VALUES (?, ?, ?, ?, ?)",
                            (current_user.id, post_content, media_path, media_type, visibility))
             db.commit()
             flash('Post uploaded successfully!', 'success')
-            return jsonify({'success': True, 'message': 'Post uploaded successfully!'})
+            
+            # --- FIX: Redirect to the home page after success ---
+            return redirect(url_for('home'))
+
+        except sqlite3.IntegrityError as e:
+            db.rollback()
+            app.logger.error(f"Integrity Error while posting: {e}")
+            return jsonify({'success': False, 'message': 'Database error. Post could not be created.'}), 500
+        except Exception as e:
+            db.rollback()
+            app.logger.error(f"Error creating post: {e}")
+            return jsonify({'success': False, 'message': 'Failed to create post.'}), 500
 
         except sqlite3.IntegrityError as e:
             db.rollback()
