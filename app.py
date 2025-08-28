@@ -1872,6 +1872,49 @@ def create_post():
 
     return render_template('create_post.html', title='Create Post')
 
+# ... (your existing create_post route) ...
+
+# API Endpoint to get posts for the home feed
+@app.route('/api/get_posts', methods=['GET'])
+@login_required
+def get_posts():
+    db = get_db()
+    cursor = db.cursor()
+    
+    # Query to get all public posts, plus any posts by the current user
+    try:
+        query = """
+        SELECT 
+            p.id, p.description, p.media_path, p.media_type, p.timestamp, 
+            u.username, u.originalName, u.profile_pic
+        FROM posts p
+        JOIN users u ON p.user_id = u.id
+        WHERE p.visibility = 'public' OR p.user_id = ?
+        ORDER BY p.timestamp DESC;
+        """
+        posts = cursor.execute(query, (current_user.id,)).fetchall()
+        
+        posts_list = []
+        for post in posts:
+            posts_list.append({
+                'id': post['id'],
+                'description': post['description'],
+                'media_path': post['media_path'],
+                'media_type': post['media_type'],
+                'timestamp': post['timestamp'],
+                'username': post['username'],
+                'originalName': post['originalName'],
+                'profile_pic': url_for('static', filename=f"uploads/profile_photos/{post['profile_pic']}") if post['profile_pic'] else url_for('static', filename='img/default_profile.jpg')
+            })
+            
+        return jsonify(posts_list)
+
+    except Exception as e:
+        app.logger.error(f"Error fetching posts: {e}")
+        return jsonify({'error': 'Failed to fetch posts'}), 500
+
+# ... (the rest of your app.py code) ...
+
 
 @app.route('/create_reel', methods=['GET', 'POST']) # Changed URL path to avoid conflict
 @login_required
