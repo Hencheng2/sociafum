@@ -415,6 +415,7 @@ def get_admin_user_id():
 
 @app.route('/')
 @app.route('/home')
+@login_required
 def home():
     # Placeholder for posts and stories data
     stories = [] # Fetch actual stories
