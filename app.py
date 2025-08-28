@@ -32,7 +32,7 @@ DATABASE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'family_tree
 # Upload folders configuration
 app.config['UPLOAD_FOLDER'] = os.path.join('static', 'uploads') # General upload folder
 app.config['PROFILE_PHOTOS_FOLDER'] = os.path.join(app.config['UPLOAD_FOLDER'], 'profile_photos')
-app.config['POST_MEDIA_FOLDER'] = os.path.join(app.config['UPLOAD_FOLDER'], 'post_media')
+app.config['POSTS_FOLDER'] = os.path.join(app.config['UPLOAD_FOLDER'], 'posts')
 app.config['REEL_MEDIA_FOLDER'] = os.path.join(app.config['UPLOAD_FOLDER'], 'reel_media')
 app.config['STORY_MEDIA_FOLDER'] = os.path.join(app.config['UPLOAD_FOLDER'], 'story_media')
 app.config['VOICE_NOTES_FOLDER'] = os.path.join(app.config['UPLOAD_FOLDER'], 'voice_notes')
@@ -42,7 +42,7 @@ app.config['CHAT_BACKGROUND_FOLDER'] = os.path.join(app.config['UPLOAD_FOLDER'],
 # Ensure upload directories exist
 for folder in [
     app.config['PROFILE_PHOTOS_FOLDER'],
-    app.config['POST_MEDIA_FOLDER'],
+    app.config['POSTS_FOLDER'],
     app.config['REEL_MEDIA_FOLDER'],
     app.config['STORY_MEDIA_FOLDER'],
     app.config['VOICE_NOTES_FOLDER'],
@@ -1824,10 +1824,10 @@ def create_post():
         media_path = None
         media_type = None
 
-        # --- FIX: Ensure the correct directory exists with the correct variable name and casing ---
-        post_media_folder = app.config['POST_MEDIA_FOLDER']
-        if not os.path.exists(post_media_folder):
-            os.makedirs(post_media_folder)
+        # --- NEW CODE: Ensure the posts upload directory exists ---
+        posts_folder = app.config['POSTS_FOLDER']
+        if not os.path.exists(posts_folder):
+            os.makedirs(posts_folder)
 
         if 'media_file' in request.files:
             file = request.files['media_file']
@@ -1835,12 +1835,12 @@ def create_post():
                 filename = secure_filename(file.filename)
                 media_type = file.mimetype.split('/')[0] # 'image' or 'video'
 
-                # --- FIX: Using the correctly defined folder and variable ---
-                file_path = os.path.join(post_media_folder, filename)
+                # --- NEW CODE: Using the correctly defined folder ---
+                file_path = os.path.join(posts_folder, filename)
                 file.save(file_path)
-
-                # Store the correct relative path for the database
-                media_path = os.path.join('static', 'uploads', 'post_media', filename)
+                
+                # Store relative path for database
+                media_path = os.path.join('static', 'uploads', 'posts', filename)
 
         try:
             cursor.execute("INSERT INTO posts (user_id, post_content, media_path, media_type, visibility) VALUES (?, ?, ?, ?, ?)",
