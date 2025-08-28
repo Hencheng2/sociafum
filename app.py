@@ -4,22 +4,23 @@ from datetime import datetime, timedelta, timezone
 import random
 import string
 import json
-import uuid # Import uuid for generating unique IDs
-import base64 # Needed for base64 decoding camera/voice note data
-import re # Needed for process_mentions_and_links
+import uuid  # Import uuid for generating unique IDs
+import base64  # Needed for base64 decoding camera/voice note data
+import re  # Needed for process_mentions_and_links
+from pathlib import Path
 
 # Removed: import google.generativeai as genai
 import firebase_admin
-from firebase_admin import credentials, firestore, initialize_app # initialize_app is needed if credentials path exists
+from firebase_admin import credentials, firestore, initialize_app  # initialize_app is needed if credentials path exists
 
 from flask import Flask, render_template, Blueprint, request, redirect, url_for, g, flash, session, abort, jsonify, send_from_directory
 from werkzeug.utils import secure_filename
-from werkzeug.security import generate_password_hash, check_password_hash # Corrected: Removed extra 'werk'
+from werkzeug.security import generate_password_hash, check_password_hash  # Corrected: Removed extra 'werk'
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from flask_moment import Moment
-from functools import wraps # For admin_required decorator
+from functools import wraps  # For admin_required decorator
 
-import config # Your configuration file
+import config  # Your configuration file
 
 app = Flask(__name__)
 
@@ -30,7 +31,7 @@ app.config['SECRET_KEY'] = os.getenv('FLASK_SECRET_KEY', config.SECRET_KEY)
 DATABASE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'family_tree.db')
 
 # Upload folders configuration
-app.config['UPLOAD_FOLDER'] = os.path.join('static', 'uploads') # General upload folder
+app.config['UPLOAD_FOLDER'] = os.path.join('static', 'uploads')  # General upload folder
 app.config['PROFILE_PHOTOS_FOLDER'] = os.path.join(app.config['UPLOAD_FOLDER'], 'profile_photos')
 app.config['POSTS_FOLDER'] = os.path.join(app.config['UPLOAD_FOLDER'], 'posts')
 app.config['REEL_MEDIA_FOLDER'] = os.path.join(app.config['UPLOAD_FOLDER'], 'reel_media')
@@ -49,26 +50,26 @@ for folder in [
     app.config['CHAT_MEDIA_FOLDER'],
     app.config['CHAT_BACKGROUND_FOLDER']
 ]:
-    os.makedirs(folder, exist_ok=True)
+    Path(folder).mkdir(exist_ok=True)
 
 
 # Allowed extensions for uploads
 ALLOWED_IMAGE_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
-ALLOWED_VIDEO_EXTENSIONS = {'mp4', 'mov', 'avi', 'mkv'}
-ALLOWED_AUDIO_EXTENSIONS = {'mp3', 'wav', 'ogg'}
+ALLOWED_VIDEO_EXTENSIONS = {'mp4', 'mov', 'avi', 'mkv', 'webm'} # Added webm for camera capture
+ALLOWED_AUDIO_EXTENSIONS = {'mp3', 'wav', 'ogg', 'webm'} # Added webm for voice notes
 
 # Initialize Flask-Login
 login_manager = LoginManager()
 login_manager.init_app(app)
-login_manager.login_view = 'login' # Redirect to login page if user is not authenticated
+login_manager.login_view = 'login'  # Redirect to login page if user is not authenticated
 
 # Initialize Flask-Moment for date/time formatting
-moment = Moment(app) # Use Moment object
+moment = Moment(app)  # Use Moment object
 
 # --- Firebase Admin SDK Initialization ---
 # Only initialize if firebase_admin_key.json exists and is valid.
 # No active Firestore/Storage operations are implemented in user-facing routes as per user's request.
-db_firestore = None # Initialize to None by default
+db_firestore = None  # Initialize to None by default
 if config.FIREBASE_ADMIN_CREDENTIALS_PATH and os.path.exists(config.FIREBASE_ADMIN_CREDENTIALS_PATH):
     try:
         # Check if Firebase app is already initialized to prevent re-initialization
@@ -94,7 +95,7 @@ else:
 def get_db():
     if 'db' not in g:
         g.db = sqlite3.connect(DATABASE)
-        g.db.row_factory = sqlite3.Row # Return rows as dict-like objects
+        g.db.row_factory = sqlite3.Row  # Return rows as dict-like objects
     return g.db
 
 def close_db(e=None):
@@ -111,6 +112,12 @@ def generate_unique_key():
     random.shuffle(key_chars)
     return "".join(key_chars)
 
+# Helper function to generate a unique filename
+def generate_unique_filename(filename):
+    ext = os.path.splitext(filename)[1]
+    unique_name = str(uuid.uuid4()) + ext
+    return unique_name
+
 
 def init_db():
     with app.app_context():
@@ -125,17 +132,17 @@ def init_db():
 
         if not admin_exists:
             # Generate a unique key for the admin
-            admin_unique_key = generate_unique_key() # Reusing the helper for consistency
+            admin_unique_key = generate_unique_key()  # Reusing the helper for consistency
             
             # Hash the admin password from config.py
-            hashed_admin_password = generate_password_hash(config.ADMIN_PASSWORD_RAW) # Corrected to config.ADMIN_PASSWORD_RAW
+            hashed_admin_password = generate_password_hash(config.ADMIN_PASSWORD_RAW)  # Corrected to config.ADMIN_PASSWORD_RAW
 
             cursor.execute(
                 """
                 INSERT INTO users (username, originalName, password_hash, unique_key, is_admin)
                 VALUES (?, ?, ?, ?, ?)
                 """,
-                (config.ADMIN_USERNAME, "SociaFam Admin", hashed_admin_password, admin_unique_key, 1) # is_admin = 1
+                (config.ADMIN_USERNAME, "SociaFam Admin", hashed_admin_password, admin_unique_key, 1)  # is_admin = 1
             )
             admin_user_id = cursor.lastrowid
             
@@ -145,13 +152,13 @@ def init_db():
                 INSERT INTO members (user_id, fullName, gender)
                 VALUES (?, ?, ?)
                 """,
-                (admin_user_id, "SociaFam Admin", "Prefer not to say") # Default gender for admin
+                (admin_user_id, "SociaFam Admin", "Prefer not to say")  # Default gender for admin
             )
             app.logger.info(f"Admin user '{config.ADMIN_USERNAME}' created with unique key '{admin_unique_key}'.")
         else:
             app.logger.info(f"Admin user '{config.ADMIN_USERNAME}' already exists.")
 
-        db.commit() # Commit all changes after script and admin creation
+        db.commit()  # Commit all changes after script and admin creation
     app.logger.info("Database initialized/updated from schema.sql.")
 
 # Register close_db with the app context
@@ -165,12 +172,12 @@ with app.app_context():
     cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='users';")
     if not cursor.fetchone():
         init_db()
-    else: # If tables exist, still ensure admin is present, useful for existing databases
+    else:  # If tables exist, still ensure admin is present, useful for existing databases
         # This handles cases where a database exists but the admin user might have been manually deleted
         # or wasn't created in previous versions.
         cursor.execute("SELECT id FROM users WHERE username = ?", (config.ADMIN_USERNAME,))
         if not cursor.fetchone():
-            init_db() # Call init_db to create admin even if tables exist
+            init_db()  # Call init_db to create admin even if tables exist
     db.close()
 
 
@@ -180,7 +187,7 @@ class User(UserMixin):
         self.id = id
         self.username = username
         self.password_hash = password_hash
-        self.is_admin = bool(is_admin) # Convert to boolean
+        self.is_admin = bool(is_admin)  # Convert to boolean
         self.theme_preference = theme_preference
         self.chat_background_image_path = chat_background_image_path
         self.unique_key = unique_key
@@ -189,7 +196,7 @@ class User(UserMixin):
         self.last_login_at = last_login_at
         self.last_seen_at = last_seen_at
         self.original_name = original_name
-        self.email = email # Allow email to be stored for login
+        self.email = email  # Allow email to be stored for login
 
     def get_id(self):
         return str(self.id)
@@ -247,7 +254,7 @@ def save_uploaded_file(file, upload_folder):
         file.save(file_path)
         # Store relative path for database, correctly structured
         relative_path = os.path.join('static', 'uploads', os.path.basename(upload_folder), unique_filename)
-        return relative_path.replace("\\", "/") # Ensure forward slashes for URLs
+        return relative_path.replace("\\", "/")  # Ensure forward slashes for URLs
     return None
 
 
@@ -291,7 +298,7 @@ def process_mentions_and_links(text):
         user = db.execute("SELECT id FROM users WHERE username = ?", (username,)).fetchone()
         if user:
             return f'<a href="{url_for("profile", username=username)}">@{username}</a>'
-        return match.group(0) # If username not found, keep original text
+        return match.group(0)  # If username not found, keep original text
     
     processed_text = re.sub(r'@([a-zA-Z0-9_]+)', replace_mention, text)
 
@@ -508,7 +515,7 @@ def api_get_posts():
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
-    form_data = request.form.to_dict() # Capture form data for re-populating on error
+    form_data = request.form.to_dict()  # Capture form data for re-populating on error
     if request.method == 'POST':
         username = request.form['username'].strip()
         original_name = request.form['originalName'].strip()
@@ -543,7 +550,7 @@ def register():
             return render_template('register.html', form_data=form_data)
 
         hashed_password = generate_password_hash(password)
-        unique_key = generate_unique_key() # Generate unique key
+        unique_key = generate_unique_key()  # Generate unique key
 
         try:
             cursor = db.execute(
@@ -636,10 +643,10 @@ def logout():
     return redirect(url_for('login'))
 
 
-@app.route('/forgot_password', methods=['GET', 'POST']) # Updated to handle POST
+@app.route('/forgot_password', methods=['GET', 'POST'])  # Updated to handle POST
 def forgot_password():
     current_year = datetime.now(timezone.utc).year
-    form_data = request.form.to_dict() # Capture form data for repopulation
+    form_data = request.form.to_dict()  # Capture form data for repopulation
 
     if request.method == 'POST':
         username = request.form.get('username')
@@ -661,7 +668,7 @@ def forgot_password():
             flash('Invalid username or unique key.', 'danger')
             return render_template('forgot_password.html', current_year=current_year, form_data=form_data)
 
-    return render_template('forgot_password.html', current_year=current_year, form_data=None) # GET request
+    return render_template('forgot_password.html', current_year=current_year, form_data=None)  # GET request
 
 
 @app.route('/set_new_password/<int:unique_id>', methods=['GET', 'POST'])
@@ -675,11 +682,11 @@ def set_new_password(unique_id):
     user_data = db.execute('SELECT username, originalName FROM users WHERE id = ?', (unique_id,)).fetchone()
     if not user_data:
         flash('User not found.', 'danger')
-        session.pop('password_reset_user_id', None) # Clear session
+        session.pop('password_reset_user_id', None)  # Clear session
         return redirect(url_for('login'))
 
     username = user_data['username']
-    current_year = datetime.now(timezone.utc).year # Pass current year
+    current_year = datetime.now(timezone.utc).year  # Pass current year
 
     if request.method == 'POST':
         new_password = request.form['new_password']
@@ -702,7 +709,7 @@ def set_new_password(unique_id):
         db.execute('UPDATE users SET password_hash = ?, password_reset_pending = 0, reset_request_timestamp = NULL WHERE id = ?', (hashed_password, unique_id))
         db.commit()
 
-        session.pop('password_reset_user_id', None) # Clear session after successful reset
+        session.pop('password_reset_user_id', None)  # Clear session after successful reset
         flash('Your password has been changed successfully! Please log in with your new password.', 'success')
         return redirect(url_for('login'))
 
@@ -741,7 +748,7 @@ def change_password():
         db.execute('UPDATE users SET password_hash = ? WHERE id = ?', (hashed_password, current_user.id))
         db.commit()
         flash('Your password has been changed successfully!', 'success')
-        return redirect(url_for('my_profile')) # Redirect to profile or settings
+        return redirect(url_for('my_profile'))  # Redirect to profile or settings
 
     return render_template('change_password.html', current_year=current_year)
 
@@ -767,18 +774,18 @@ def my_profile():
         'bio': member['bio'],
         'dob': member['dateOfBirth'],
         'gender': member['gender'],
-        'pronouns': member['pronouns'], # Assuming 'pronouns' column exists or add it
-        'work_info': member['workInfo'], # Assuming 'workInfo' column exists or add it
-        'university': member['university'], # Assuming 'university' column exists or add it
-        'secondary': member['secondary'], # Assuming 'secondary' column exists or add it
-        'location': member['location'], # Assuming 'location' column exists or add it
+        'pronouns': member['pronouns'],  # Assuming 'pronouns' column exists or add it
+        'work_info': member['workInfo'],  # Assuming 'workInfo' column exists or add it
+        'university': member['university'],  # Assuming 'university' column exists or add it
+        'secondary': member['secondary'],  # Assuming 'secondary' column exists or add it
+        'location': member['location'],  # Assuming 'location' column exists or add it
         'phone': member['contact'],
         'email': member['email'],
-        'social_link': member['socialLink'], # Assuming 'socialLink' column exists or add it
-        'website_link': member['websiteLink'], # Assuming 'websiteLink' column exists or add it
+        'social_link': member['socialLink'],  # Assuming 'socialLink' column exists or add it
+        'website_link': member['websiteLink'],  # Assuming 'websiteLink' column exists or add it
         'relationship_status': member['maritalStatus'],
         'spouse_fiancee_name': member['maritalStatus'] in ['Married', 'Engaged'] and (member['spouseNames'] or member['girlfriendNames']) or None,
-        'personal_relationship_description': member['personalRelationshipDescription'], # Added this line for the new field
+        'personal_relationship_description': member['personalRelationshipDescription'],  # Added this line for the new field
         
         # Placeholder counts - Replace with actual database queries
         'friends_count': 0, 
@@ -793,7 +800,7 @@ def my_profile():
             member['university'], member['secondary'], member['location'],
             member['contact'], member['email'], member['socialLink'], member['websiteLink'],
             member['maritalStatus'], member['spouseNames'], member['girlfriendNames'],
-            member['personalRelationshipDescription'] # Added for consistency
+            member['personalRelationshipDescription']  # Added for consistency
         ])
     }
     
@@ -812,9 +819,9 @@ def my_profile():
     current_year = datetime.now(timezone.utc).year
     return render_template(
         'my_profile.html',
-        member=member, # Still pass the raw member data for backward compatibility or direct use if needed
-        current_user_profile=current_user_profile, # The comprehensive profile dict
-        unique_key=user_details['unique_key'] if user_details else None, # Duplicated for clarity, can be removed if profile dict is used
+        member=member,  # Still pass the raw member data for backward compatibility or direct use if needed
+        current_user_profile=current_user_profile,  # The comprehensive profile dict
+        unique_key=user_details['unique_key'] if user_details else None,  # Duplicated for clarity, can be removed if profile dict is used
         current_year=current_year,
         my_posts=my_posts,
         my_locked_posts=my_locked_posts,
@@ -851,18 +858,18 @@ def edit_my_details():
         'website_link': member['websiteLink'] if member else '',
         'relationship_status': member['maritalStatus'] if member else '',
         'spouse_fiancee_name': member['maritalStatus'] in ['Married', 'Engaged'] and (member['spouseNames'] or member['girlfriendNames']) or (member['maritalStatus'] == 'Dating' and member['girlfriendNames']) or '',
-        'personal_relationship_description': member['personalRelationshipDescription'] if member else '', # Added
+        'personal_relationship_description': member['personalRelationshipDescription'] if member else '',  # Added
     }
 
     form_data = {}
 
     if member:
-        form_data = dict(member) # Pre-populate form with existing data
+        form_data = dict(member)  # Pre-populate form with existing data
         # Ensure date format is YYYY-MM-DD for HTML input
         # The database stores it as 'YYYY-MM-DD' directly from HTML input type="date"
         # So, we just need to ensure it's a string. No complex parsing/reformatting is needed for display.
         if form_data.get('dateOfBirth'):
-            form_data['dateOfBirth'] = str(form_data['dateOfBirth']) # Ensure it's a string, already YYYY-MM-DD
+            form_data['dateOfBirth'] = str(form_data['dateOfBirth'])  # Ensure it's a string, already YYYY-MM-DD
             
     # Pass the current year to the template
     current_year = datetime.now(timezone.utc).year
@@ -876,7 +883,7 @@ def edit_my_details():
         personalRelationshipDescription = request.form['personalRelationshipDescription'].strip()
         maritalStatus = request.form['maritalStatus']
         spouseNames = request.form.get('spouseNames', '').strip()
-        girlfriendNames = request.form.get('girlfriendNames', '').strip() # For Engaged
+        girlfriendNames = request.form.get('girlfriendNames', '').strip()  # For Engaged
         
         # New fields from schema for edit_my_details
         pronouns = request.form.get('pronouns', '').strip()
@@ -888,7 +895,7 @@ def edit_my_details():
         websiteLink = request.form.get('websiteLink', '').strip()
 
 
-        profile_photo_file = request.files.get('profilePhotoFile') # Changed to profilePhotoFile for clarity in HTML
+        profile_photo_file = request.files.get('profilePhotoFile')  # Changed to profilePhotoFile for clarity in HTML
         profilePhoto_path = member['profilePhoto'] if member else None
 
         if profile_photo_file and profile_photo_file.filename != '':
@@ -945,7 +952,7 @@ def profile(username):
     profile_user = db.execute('SELECT id, username, originalName, is_admin FROM users WHERE username = ?', (username,)).fetchone()
     if not profile_user:
         flash("User not found.", "danger")
-        return redirect(url_for('home')) # Redirect to home if user not found
+        return redirect(url_for('home'))  # Redirect to home if user not found
 
     # Get member details for the requested profile
     member = db.execute('SELECT * FROM members WHERE user_id = ?', (profile_user['id'],)).fetchone()
@@ -956,8 +963,8 @@ def profile(username):
 
     # Check friendship status
     is_friend = False
-    is_pending_request = False # True if request sent by current_user to profile_user
-    is_received_request = False # True if request sent by profile_user to current_user
+    is_pending_request = False  # True if request sent by current_user to profile_user
+    is_received_request = False  # True if request sent by profile_user to current_user
 
     friendship = db.execute(
         "SELECT * FROM friendships WHERE (user1_id = ? AND user2_id = ?) OR (user1_id = ? AND user2_id = ?)",
@@ -969,9 +976,9 @@ def profile(username):
             is_friend = True
         elif friendship['status'] == 'pending':
             if friendship['user1_id'] == current_user.id:
-                is_pending_request = True # Current user sent request
+                is_pending_request = True  # Current user sent request
             else:
-                is_received_request = True # Profile user sent request to current user
+                is_received_request = True  # Profile user sent request to current user
 
     # Check if current user has blocked this profile user
     is_blocked = db.execute(
@@ -992,7 +999,7 @@ def profile(username):
         is_pending_request=is_pending_request,
         is_received_request=is_received_request,
         is_blocked=is_blocked,
-        temp_video=temp_video, # Will be None
+        temp_video=temp_video,  # Will be None
         current_user_is_admin=current_user.is_admin,
         current_year=current_year
     )
@@ -1100,7 +1107,7 @@ def api_decline_friend_request(request_id):
     try:
         db.execute("DELETE FROM friendships WHERE id = ?", (request_id,))
         db.commit()
-        flash('Friend request declined.', 'info') # Flash message for the user who declined
+        flash('Friend request declined.', 'info')  # Flash message for the user who declined
         return jsonify({'success': True, 'message': 'Friend request declined.'})
     except Exception as e:
         db.rollback()
@@ -1339,9 +1346,9 @@ def inbox():
             # For groups, you might want to show group name or a generic group icon
             group_details = db.execute("SELECT name, profilePhoto FROM groups WHERE chat_room_id = ?", (conv_dict['chat_room_id'],)).fetchone()
             if group_details:
-                conv_dict['other_user'] = { # Reusing structure for display
+                conv_dict['other_user'] = {  # Reusing structure for display
                     'id': conv_dict['chat_room_id'],
-                    'username': group_details['name'], # Display group name as "username" for simplicity
+                    'username': group_details['name'],  # Display group name as "username" for simplicity
                     'originalName': group_details['name'],
                     'profilePhoto': group_details['profilePhoto'] or url_for('static', filename='img/default_group.png')
                 }
@@ -1390,7 +1397,7 @@ def message_member():
         receiver_user_id = request.form['receiver_user_id']
         # This route is now primarily for displaying the list.
         # Starting a chat will redirect to view_chat
-        return redirect(url_for('view_chat', chat_room_id=receiver_user_id)) # Redirect to start/view conversation
+        return redirect(url_for('view_chat', chat_room_id=receiver_user_id))  # Redirect to start/view conversation
 
     # Pass the current year to the template
     current_year = datetime.now(timezone.utc).year
@@ -1412,7 +1419,7 @@ def view_chat(chat_room_id):
     if not is_member:
         # Assume chat_room_id here might be a target user_id if initiating a new chat
         # Try to find an existing 1-on-1 chat with this user_id
-        target_user_id = chat_room_id # Temporarily assume chat_room_id is user_id
+        target_user_id = chat_room_id  # Temporarily assume chat_room_id is user_id
         existing_chat_room = db.execute(
             """
             SELECT cr.id FROM chat_rooms cr
@@ -1425,7 +1432,7 @@ def view_chat(chat_room_id):
 
         if existing_chat_room:
             chat_room_id = existing_chat_room['id']
-            is_member = True # Now we are a member of an existing chat
+            is_member = True  # Now we are a member of an existing chat
         else:
             # Create a new 1-on-1 chat room
             try:
@@ -1439,9 +1446,9 @@ def view_chat(chat_room_id):
             except Exception as e:
                 flash(f'Error starting new conversation: {e}', 'danger')
                 db.rollback()
-                return redirect(url_for('inbox')) # Fallback to inbox
+                return redirect(url_for('inbox'))  # Fallback to inbox
 
-    if not is_member: # Should not happen if logic above is correct
+    if not is_member:  # Should not happen if logic above is correct
         flash('You are not a member of this chat room.', 'danger')
         return redirect(url_for('inbox'))
 
@@ -1494,7 +1501,7 @@ def view_chat(chat_room_id):
     # Pass the current year to the template
     current_year = datetime.now(timezone.utc).year
     return render_template(
-        'view_chat.html', # Changed to view_chat.html
+        'view_chat.html',  # Changed to view_chat.html
         chat_room_id=chat_room_id,
         other_user=other_user,
         chat_messages=messages,
@@ -1700,14 +1707,14 @@ def create_group():
             # Add current user as member and admin of the chat room
             db.execute(
                 "INSERT INTO chat_room_members (chat_room_id, user_id, is_admin) VALUES (?, ?, ?)",
-                (chat_room_id, current_user.id, 1) # Creator is admin
+                (chat_room_id, current_user.id, 1)  # Creator is admin
             )
 
             # Add selected friends to chat room members
             for friend_id in selected_friends_ids:
                 db.execute(
                     "INSERT INTO chat_room_members (chat_room_id, user_id, is_admin) VALUES (?, ?, ?)",
-                    (chat_room_id, friend_id, 0) # Friends are regular members
+                    (chat_room_id, friend_id, 0)  # Friends are regular members
                 )
                 # Send notification to invited friends
                 friend_user = load_user(friend_id)
@@ -1738,7 +1745,7 @@ def view_group_profile(group_id):
     group = db.execute("SELECT * FROM groups WHERE id = ?", (group_id,)).fetchone()
     if not group:
         flash("Group not found.", "danger")
-        return redirect(url_for('inbox')) # Redirect to inbox if group not found
+        return redirect(url_for('inbox'))  # Redirect to inbox if group not found
 
     is_admin_view = request.args.get('admin_view', 'false').lower() == 'true'
 
@@ -1750,7 +1757,7 @@ def view_group_profile(group_id):
 
     if not is_member and not (current_user.is_admin and is_admin_view):
         flash('You are not a member of this group.', 'danger')
-        return redirect(url_for('inbox')) # Or a more appropriate page
+        return redirect(url_for('inbox'))  # Or a more appropriate page
 
     group_members_data = db.execute(
         """
@@ -1785,7 +1792,7 @@ def view_group_profile(group_id):
         group_members=group_members,
         is_member=is_member,
         current_user_is_group_admin=current_user_is_group_admin,
-        admin_view=is_admin_view, # Pass this flag to template
+        admin_view=is_admin_view,  # Pass this flag to template
         current_year=current_year
     )
 
@@ -1872,7 +1879,7 @@ def create_post():
         db = get_db()
         cursor = db.cursor()
 
-        post_content = request.form.get('description') # Renamed from post_content to description to match schema
+        post_content = request.form.get('description')  # Renamed from post_content to description to match schema
         visibility = request.form.get('visibility')
         media_path = None
         media_type = None
@@ -1882,7 +1889,7 @@ def create_post():
         if not os.path.exists(posts_folder):
             os.makedirs(posts_folder)
 
-        if 'mediaFile' in request.files: # Changed from media_file to mediaFile to match HTML form
+        if 'mediaFile' in request.files:  # Changed from media_file to mediaFile to match HTML form
             file = request.files['mediaFile']
             if file and file.filename != '':
                 # Using the save_uploaded_file helper for consistency
@@ -1928,7 +1935,7 @@ def create_post():
     return render_template('create_post.html', title='Create Post', current_year=current_year)
 
 
-@app.route('/create_reel', methods=['GET', 'POST']) # Changed URL path to avoid conflict
+@app.route('/create_reel', methods=['GET', 'POST'])  # Changed URL path to avoid conflict
 @login_required
 def create_reel():
     # Pass the current year to the template
@@ -1938,7 +1945,7 @@ def create_reel():
         # Visibility is fixed to public for reels as per requirements
         visibility = 'public'
         media_file = request.files.get('mediaFile')
-        audio_file = request.files.get('audioFile') # For photo reels
+        audio_file = request.files.get('audioFile')  # For photo reels
 
         media_path = None
         media_type = None
@@ -1960,7 +1967,7 @@ def create_reel():
 
         # If it's an image reel, handle optional audio
         if media_type == 'image' and audio_file and audio_file.filename != '':
-            audio_path = save_uploaded_file(audio_file, app.config['VOICE_NOTES_FOLDER']) # Reusing folder
+            audio_path = save_uploaded_file(audio_file, app.config['VOICE_NOTES_FOLDER'])  # Reusing folder
             if not audio_path:
                 flash('Invalid audio file type for reel.', 'danger')
                 return render_template('create_reel.html', form_data=request.form.to_dict(), current_year=current_year)
@@ -1976,7 +1983,7 @@ def create_reel():
             )
             db.commit()
             flash('Reel created successfully!', 'success')
-            return redirect(url_for('home')) # Redirect to reels feed
+            return redirect(url_for('home'))  # Redirect to reels feed
         except Exception as e:
             flash(f'An error occurred while creating your reel: {e}', 'danger')
             db.rollback()
@@ -1985,7 +1992,7 @@ def create_reel():
     return render_template('create_reel.html', current_year=current_year)
 
 
-@app.route('/reels') # This is now exclusively for viewing reels
+@app.route('/reels')  # This is now exclusively for viewing reels
 @login_required
 def reels():
     db = get_db()
@@ -2011,7 +2018,7 @@ def reels():
         
         # Determine if current_user is following the reel's poster
         is_following_poster = False
-        if current_user.id != reel_dict['user_id']: # Cannot follow yourself
+        if current_user.id != reel_dict['user_id']:  # Cannot follow yourself
             friendship_status = db.execute(
                 """
                 SELECT status FROM friendships
@@ -2033,73 +2040,87 @@ def reels():
 @app.route('/create_story', methods=['GET', 'POST'])
 @login_required
 def create_story():
-    # Pass the current year to the template
     current_year = datetime.now(timezone.utc).year
     if request.method == 'POST':
         description = request.form.get('description', '').strip()
-        # Visibility is fixed to friends for stories
-        visibility = 'friends'
+        visibility = request.form.get('visibility', 'friends')
 
         media_path = None
-        media_type = None # 'image', 'video', 'audio' (for voice note)
-        background_audio_path = None # For photos with separate audio
+        media_type = None
+        background_audio_path = None
 
-        # Prioritize camera captures, then uploaded files, then voice notes
-        camera_captured_data = request.form.get('cameraCapturedData')
-        camera_captured_media_type = request.form.get('cameraCapturedMediaType')
-        voice_note_data = request.form.get('voiceNoteData')
-        media_file = request.files.get('mediaFile') # Uploaded file
-        audio_file = request.files.get('audioFile') # Background audio for photo story
+        file = request.files.get('file') # This handles uploaded photo/video/audio
+        audio_file = request.files.get('audioFile') # This handles background audio for photo stories
 
-        # 1. Handle camera captured data (photo or video)
-        if camera_captured_data:
-            header, encoded = camera_captured_data.split(",", 1)
-            decoded_data = base64.b64decode(encoded)
-            file_extension = 'png' if 'image' in camera_captured_media_type else 'webm'
-            unique_filename = f"{uuid.uuid4()}.{file_extension}"
-            file_path = os.path.join(app.config['STORY_MEDIA_FOLDER'], unique_filename)
-            full_path_for_db = os.path.join('static', 'uploads', os.path.basename(app.config['STORY_MEDIA_FOLDER']), unique_filename)
-
-            with open(file_path, 'wb') as f:
-                f.write(decoded_data)
-            media_path = full_path_for_db
-            media_type = 'image' if 'image' in camera_captured_media_type else 'video'
-
-        # 2. Handle uploaded media file (if no camera data)
-        elif media_file and media_file.filename != '':
-            media_path = save_uploaded_file(media_file, app.config['STORY_MEDIA_FOLDER'])
+        if file and file.filename != '':
+            media_path = save_uploaded_file(file, app.config['STORY_MEDIA_FOLDER'])
             if media_path:
-                if media_file.filename.rsplit('.', 1)[1].lower() in ALLOWED_IMAGE_EXTENSIONS:
+                file_extension = file.filename.rsplit('.', 1)[1].lower()
+                if file_extension in ALLOWED_IMAGE_EXTENSIONS:
                     media_type = 'image'
-                elif media_file.filename.rsplit('.', 1)[1].lower() in ALLOWED_VIDEO_EXTENSIONS:
+                elif file_extension in ALLOWED_VIDEO_EXTENSIONS:
                     media_type = 'video'
+                elif file_extension in ALLOWED_AUDIO_EXTENSIONS:
+                    media_type = 'audio' # For standalone voice notes
             else:
                 flash('Invalid uploaded media file type for story.', 'danger')
                 return render_template('create_story.html', form_data=request.form.to_dict(), current_year=current_year)
-
-        # 3. Handle voice note (if no other media)
-        elif voice_note_data:
-            # Voice note data is also base64 (or data URL from frontend)
-            header, encoded = voice_note_data.split(",", 1)
-            decoded_data = base64.b64decode(encoded)
-            unique_filename = f"{uuid.uuid4()}.webm" # Assuming webm format
-            file_path = os.path.join(app.config['VOICE_NOTES_FOLDER'], unique_filename)
-            full_path_for_db = os.path.join('static', 'uploads', os.path.basename(app.config['VOICE_NOTES_FOLDER']), unique_filename)
-
-            with open(file_path, 'wb') as f:
-                f.write(decoded_data)
-            media_path = full_path_for_db
-            media_type = 'audio'
-        else:
-            flash('Story requires a photo, video, or voice note.', 'danger')
-            return render_template('create_story.html', form_data=request.form.to_dict(), current_year=current_year)
-
-        # Handle background audio if main media is an image
+        
+        # Handle background audio for image stories
         if media_type == 'image' and audio_file and audio_file.filename != '':
             background_audio_path = save_uploaded_file(audio_file, app.config['VOICE_NOTES_FOLDER'])
             if not background_audio_path:
                 flash('Invalid background audio file type for story.', 'danger')
                 return render_template('create_story.html', form_data=request.form.to_dict(), current_year=current_year)
+        
+        # Handle camera-captured photo/video or voice note data sent as base64
+        # These are now handled by the 'file' input thanks to the JS changes making them blobs.
+        # So the below logic for cameraCapturedData/voiceNoteData should mostly be redundant
+        # IF the JS correctly assigns them to the 'file' input before submission.
+        # If not, this fallback is crucial.
+
+        # Fallback for camera-captured media not processed by 'file' input
+        if not media_path:
+            camera_captured_media_data = request.form.get('cameraCapturedMedia')
+            camera_captured_media_type = request.form.get('cameraCapturedMediaType')
+            if camera_captured_media_data and camera_captured_media_type:
+                try:
+                    header, encoded = camera_captured_media_data.split(",", 1)
+                    decoded_data = base64.b64decode(encoded)
+                    file_extension = 'png' if 'image' in camera_captured_media_type else 'webm'
+                    unique_filename = f"{uuid.uuid4()}.{file_extension}"
+                    file_path = os.path.join(app.config['STORY_MEDIA_FOLDER'], unique_filename)
+                    with open(file_path, 'wb') as f:
+                        f.write(decoded_data)
+                    media_path = os.path.join('static', 'uploads', os.path.basename(app.config['STORY_MEDIA_FOLDER']), unique_filename).replace("\\", "/")
+                    media_type = 'image' if 'image' in camera_captured_media_type else 'video'
+                except Exception as e:
+                    app.logger.error(f"Error decoding camera media: {e}")
+                    flash('Failed to process camera media.', 'danger')
+                    return render_template('create_story.html', form_data=request.form.to_dict(), current_year=current_year)
+
+        # Fallback for voice note data not processed by 'file' input
+        if not media_path:
+            voice_note_blob_data = request.form.get('voiceNoteBlob')
+            if voice_note_blob_data:
+                try:
+                    header, encoded = voice_note_blob_data.split(",", 1)
+                    decoded_data = base64.b64decode(encoded)
+                    unique_filename = f"{uuid.uuid4()}.wav" # Assuming wav as per JS or webm
+                    file_path = os.path.join(app.config['VOICE_NOTES_FOLDER'], unique_filename)
+                    with open(file_path, 'wb') as f:
+                        f.write(decoded_data)
+                    media_path = os.path.join('static', 'uploads', os.path.basename(app.config['VOICE_NOTES_FOLDER']), unique_filename).replace("\\", "/")
+                    media_type = 'audio'
+                except Exception as e:
+                    app.logger.error(f"Error decoding voice note: {e}")
+                    flash('Failed to process voice note.', 'danger')
+                    return render_template('create_story.html', form_data=request.form.to_dict(), current_year=current_year)
+
+
+        if not media_path:
+            flash('Story requires a photo, video, or voice note.', 'danger')
+            return render_template('create_story.html', form_data=request.form.to_dict(), current_year=current_year)
 
 
         db = get_db()
@@ -2115,7 +2136,7 @@ def create_story():
             )
             db.commit()
             flash('Story created successfully! It will expire in 24 hours.', 'success')
-            return redirect(url_for('home')) # Redirect to home/stories feed
+            return redirect(url_for('home'))  # Redirect to home/stories feed
         except Exception as e:
             flash(f'An error occurred while creating your story: {e}', 'danger')
             app.logger.error(f"Error creating story: {e}")
@@ -2259,7 +2280,7 @@ def account_status():
     ).fetchall()
 
     # Removed 'strikes' as it's not explicitly in the schema or document.
-    strikes = [] # Placeholder if not implemented yet
+    strikes = []  # Placeholder if not implemented yet
 
     # Check for active bans
     user_data = db.execute("SELECT ban_status, ban_ends_at, ban_reason FROM users WHERE id = ?", (current_user.id,)).fetchone()
@@ -2373,7 +2394,7 @@ def api_send_support_message_user(chat_id):
     try:
         cursor = db.execute(
             "INSERT INTO chat_messages (chat_room_id, sender_id, content, timestamp, is_ai_message) VALUES (?, ?, ?, ?, ?)",
-            (chat_id, current_user.id, content, datetime.now(timezone.utc), 0) # This message is from user, not AI
+            (chat_id, current_user.id, content, datetime.now(timezone.utc), 0)  # This message is from user, not AI
         )
         message_id = cursor.lastrowid
         db.commit()
@@ -2437,7 +2458,7 @@ def settings():
     else:
         # Convert 0/1 to False/True for boolean fields
         user_settings_dict = dict(user_settings)
-        user_settings_dict['theme'] = user_settings_dict['theme_preference'] # Map theme_preference to 'theme'
+        user_settings_dict['theme'] = user_settings_dict['theme_preference']  # Map theme_preference to 'theme'
         boolean_fields = [
             'profile_locking', 'allow_post_sharing', 'allow_post_comments',
             'allow_reel_sharing', 'allow_reel_comments', 'notify_friend_requests',
@@ -2483,7 +2504,7 @@ def blocked_users():
     for user in blocked_list:
         user_dict = dict(user)
         user_dict['profile_pic'] = get_member_profile_pic(user_dict['blocked_id'])
-        user_dict['id'] = user_dict['blocked_id'] # Map blocked_id to id for convenience in template
+        user_dict['id'] = user_dict['blocked_id']  # Map blocked_id to id for convenience in template
         display_blocked_users.append(user_dict)
 
     # Pass the current year to the template
@@ -2651,7 +2672,7 @@ def admin_dashboard():
             WHERE cr.is_group = 0
             ORDER BY (SELECT MAX(timestamp) FROM chat_messages WHERE chat_room_id = cr.id) DESC
             """,
-            (admin_user_id, admin_user_id, admin_user_id, admin_user_id) # The subquery needs the admin_user_id for sender_id != ? and crm.user_id = ?
+            (admin_user_id, admin_user_id, admin_user_id, admin_user_id)  # The subquery needs the admin_user_id for sender_id != ? and crm.user_id = ?
         ).fetchall()
 
     support_chats_overview = []
@@ -2693,7 +2714,7 @@ def api_admin_send_support_message(chat_id):
             other_user_id = member['user_id']
             break
 
-    if not other_user_id: # Or if len(chat_room_members) != 2
+    if not other_user_id:  # Or if len(chat_room_members) != 2
         return jsonify({'success': False, 'message': 'Invalid support chat ID or missing user.'}), 403
 
     content = request.json.get('content')
@@ -2703,7 +2724,7 @@ def api_admin_send_support_message(chat_id):
     try:
         cursor = db.execute(
             "INSERT INTO chat_messages (chat_room_id, sender_id, content, timestamp, is_ai_message) VALUES (?, ?, ?, ?, ?)",
-            (chat_id, admin_user_id, content, datetime.now(timezone.utc), 0) # Admin is not AI
+            (chat_id, admin_user_id, content, datetime.now(timezone.utc), 0)  # Admin is not AI
         )
         message_id = cursor.lastrowid
         db.commit()
@@ -2720,7 +2741,7 @@ def api_admin_send_support_message(chat_id):
                 other_user_id,
                 message_text,
                 link=url_for('support_inbox'),
-                type='message_received' # Re-using type, could be 'admin_response'
+                type='message_received'  # Re-using type, could be 'admin_response'
             )
 
         return jsonify({'success': True, 'message': dict(new_message)})
@@ -2768,8 +2789,8 @@ def api_admin_warn_user(user_id):
 def api_admin_ban_user(user_id):
     db = get_db()
     reason = request.json.get('reason')
-    duration = request.json.get('duration') # 'temporary' or 'permanent'
-    days = request.json.get('days') # Only for temporary ban
+    duration = request.json.get('duration')  # 'temporary' or 'permanent'
+    days = request.json.get('days')  # Only for temporary ban
 
     if not reason:
         return jsonify({'success': False, 'message': 'Reason for ban is required.'}), 400
@@ -2801,7 +2822,7 @@ def api_admin_ban_user(user_id):
                 user_id,
                 notification_message,
                 link=url_for('account_status'),
-                type='danger' # Or 'ban_notification'
+                type='danger'  # Or 'ban_notification'
             )
         return jsonify({'success': True, 'message': 'User banned successfully.'})
     except Exception as e:
@@ -2828,7 +2849,7 @@ def api_admin_unban_user(user_id):
                 user_id,
                 notification_message,
                 link=url_for('home'),
-                type='info' # Or 'unban_notification'
+                type='info'  # Or 'unban_notification'
             )
         return jsonify({'success': True, 'message': 'User unbanned successfully.'})
     except Exception as e:
@@ -3043,7 +3064,7 @@ def api_admin_broadcast_message():
         return jsonify({'success': False, 'message': 'Broadcast message cannot be empty.'}), 400
 
     try:
-        all_users = db.execute("SELECT id FROM users WHERE is_admin = 0").fetchall() # Exclude admin users
+        all_users = db.execute("SELECT id FROM users WHERE is_admin = 0").fetchall()  # Exclude admin users
         for user in all_users:
             send_system_notification(
                 user['id'],
@@ -3051,7 +3072,7 @@ def api_admin_broadcast_message():
                 link=url_for('notifications'),
                 type='system_message'
             )
-        db.commit() # Commit all notifications
+        db.commit()  # Commit all notifications
         return jsonify({'success': True, 'message': 'Broadcast message sent to all users.'})
     except Exception as e:
         db.rollback()
@@ -3129,11 +3150,12 @@ if __name__ == '__main__':
         cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='users';")
         if not cursor.fetchone():
             init_db()
-        else: # If tables exist, still ensure admin is present, useful for existing databases
+        else:  # If tables exist, still ensure admin is present, useful for existing databases
             # This handles cases where a database exists but the admin user might have been manually deleted
             # or wasn't created in previous versions.
             cursor.execute("SELECT id FROM users WHERE username = ?", (config.ADMIN_USERNAME,))
             if not cursor.fetchone():
-                init_db() # Call init_db to create admin even if tables exist
+                init_db()  # Call init_db to create admin even if tables exist
     db.close()
-    app.run(debug=True) # Set debug=False in production
+    app.run(debug=True)  # Set debug=False in production
+
