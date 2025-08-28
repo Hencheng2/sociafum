@@ -3,86 +3,813 @@
 {% block title %}Home{% endblock %}
 
 {% block content %}
-{% if current_user.is_authenticated %}
-<div class="container mt-4">
-    {# Stories Section #}
-    <div class="mb-4">
-        <h3>Stories</h3>
-        <div class="d-flex flex-row overflow-auto">
-            {# Current user's story creation option #}
-            <div class="card me-3" style="width: 100px;">
-                <a href="{{ url_for('create_story') }}" class="text-decoration-none">
-                    <img src="{{ get_member_profile_pic(current_user.id) }}" class="card-img-top rounded-circle" alt="Your Profile">
-                    <div class="card-body text-center p-1">
-                        <p class="card-text">Your Story</p>
-                    </div>
-                </a>
+<style>
+    /* Custom CSS specific to the Home page for better control and aesthetics */
+    body {
+        background-color: var(--bg-light); /* Tailwind-like variable for light mode */
+        color: var(--text-light); /* Tailwind-like variable for light mode */
+    }
+    .dark body {
+        background-color: var(--bg-dark); /* Tailwind-like variable for dark mode */
+        color: var(--text-dark); /* Tailwind-like variable for dark mode */
+    }
+
+    /* Fixed Top Section for Stories and Search/Create Post */
+    .top-section-fixed {
+        position: sticky;
+        top: 0;
+        z-index: 30; /* Below main navbar, above scrollable content */
+        background-color: var(--bg-light);
+        padding-top: 1rem;
+        padding-bottom: 0.5rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        transition: background-color 0.3s ease;
+    }
+    .dark .top-section-fixed {
+        background-color: var(--bg-dark);
+        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+
+    /* What's on your mind / Create Post input */
+    .whats-on-mind-input {
+        background-color: #f0f2f5; /* Light gray */
+        border: 1px solid #e0e0e0;
+        border-radius: 20px;
+        padding: 8px 15px;
+        font-size: 0.95rem;
+        color: #333;
+        flex-grow: 1;
+        cursor: pointer;
+        transition: background-color 0.2s ease;
+    }
+    .dark .whats-on-mind-input {
+        background-color: #2d3748; /* Darker gray */
+        border-color: #4a5568;
+        color: #e2e8f0;
+    }
+    .whats-on-mind-input:hover {
+        background-color: #e2e8f0;
+    }
+    .dark .whats-on-mind-input:hover {
+        background-color: #4a5568;
+    }
+
+    /* Post Feed Styles */
+    .posts-container {
+        max-width: 600px;
+        margin: 20px auto;
+        padding: 0 15px;
+    }
+
+    .post-card {
+        background-color: var(--card-background);
+        border-radius: 12px;
+        box-shadow: 0 4px 15px var(--shadow-medium);
+        padding: 20px;
+        margin-bottom: 20px;
+        transition: background-color 0.3s ease;
+    }
+    .dark .post-card {
+        background-color: var(--card-background-dark);
+        box-shadow: 0 4px 15px var(--shadow-dark);
+    }
+
+    .post-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 15px;
+    }
+
+    .post-profile-pic {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        object-fit: cover;
+        margin-right: 10px;
+    }
+
+    .post-author-name {
+        font-weight: 600;
+        color: var(--primary-text);
+    }
+    .dark .post-author-name {
+        color: var(--primary-text-dark);
+    }
+
+    .post-timestamp {
+        font-size: 0.85em;
+        color: var(--secondary-text);
+    }
+    .dark .post-timestamp {
+        color: var(--secondary-text-dark);
+    }
+
+    .post-content p {
+        margin-bottom: 15px;
+        color: var(--primary-text);
+    }
+    .dark .post-content p {
+        color: var(--primary-text-dark);
+    }
+
+    .post-content img, .post-content video {
+        max-width: 100%;
+        border-radius: 8px;
+        margin-top: 10px;
+        display: block; /* Ensure no extra space below images/videos */
+    }
+
+    .post-actions {
+        display: flex;
+        justify-content: space-around; /* Distribute buttons evenly */
+        padding-top: 15px;
+        border-top: 1px solid var(--border-color-light);
+        margin-top: 15px;
+    }
+    .dark .post-actions {
+        border-top: 1px solid var(--border-color-dark);
+    }
+
+    .post-actions button {
+        background: none;
+        border: none;
+        color: var(--secondary-text);
+        font-size: 0.9em;
+        font-weight: 500;
+        cursor: pointer;
+        padding: 8px 12px;
+        border-radius: 6px;
+        transition: background-color 0.2s ease, color 0.2s ease;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+    .post-actions button i {
+        font-size: 1.1em;
+    }
+    .post-actions button:hover {
+        background-color: var(--hover-bg);
+        color: var(--primary-color);
+    }
+    .dark .post-actions button:hover {
+        background-color: var(--hover-bg-dark);
+        color: var(--primary-color-dark);
+    }
+    .post-actions button.active {
+        color: var(--primary-color); /* Highlight for active state, e.g., liked */
+    }
+
+    /* Loader */
+    .loader {
+        display: none; /* Hidden by default */
+        text-align: center;
+        padding: 20px;
+        font-size: 1.2em;
+        color: var(--secondary-text);
+    }
+
+    /* Stories Section */
+    .stories-section {
+        margin: 0 auto; /* Center the stories section */
+        max-width: 600px; /* Match posts container width */
+        padding: 0 15px;
+        margin-bottom: 20px;
+        overflow-x: auto; /* Enable horizontal scrolling */
+        -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+        scrollbar-width: none; /* Hide scrollbar for Firefox */
+        -ms-overflow-style: none;  /* Hide scrollbar for IE and Edge */
+    }
+    .stories-section::-webkit-scrollbar {
+        display: none; /* Hide scrollbar for Chrome, Safari, Opera */
+    }
+
+    .stories-container {
+        display: flex;
+        gap: 15px;
+        padding: 10px 0; /* Some vertical padding for story items */
+    }
+
+    .story-item {
+        flex-shrink: 0; /* Prevent items from shrinking */
+        width: 70px; /* Fixed width for story circles */
+        height: 70px; /* Fixed height */
+        border-radius: 50%;
+        background-color: var(--background-light); /* Default background */
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        cursor: pointer;
+        transition: transform 0.2s ease;
+        position: relative;
+        border: 2px solid var(--primary-color); /* Highlight border */
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        overflow: hidden; /* Ensure content doesn't overflow */
+    }
+    .dark .story-item {
+        background-color: var(--bg-dark);
+        border: 2px solid var(--primary-color-dark);
+    }
+
+    .story-item:hover {
+        transform: translateY(-3px);
+    }
+
+    .story-item img {
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        object-fit: cover;
+    }
+
+    .story-item .add-story-icon {
+        font-size: 2em;
+        color: var(--primary-color);
+    }
+    .dark .story-item .add-story-icon {
+        color: var(--primary-color-dark);
+    }
+
+    .story-username {
+        position: absolute;
+        bottom: -20px;
+        font-size: 0.75em;
+        color: var(--primary-text);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 100%;
+        text-align: center;
+    }
+    .dark .story-username {
+        color: var(--primary-text-dark);
+    }
+
+    /* Story Viewer Modal */
+    .story-viewer-modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background-color: rgba(0, 0, 0, 0.95);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        z-index: 1000;
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.3s ease, visibility 0.3s ease;
+    }
+    .story-viewer-modal.active {
+        opacity: 1;
+        visibility: visible;
+    }
+
+    .story-viewer-content {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .story-viewer-media {
+        max-width: 100%;
+        max-height: 100%;
+        object-fit: contain;
+    }
+
+    .story-viewer-close {
+        position: absolute;
+        top: 15px;
+        right: 15px;
+        background: none;
+        border: none;
+        color: white;
+        font-size: 2em;
+        cursor: pointer;
+        z-index: 1001;
+    }
+
+    .story-viewer-nav {
+        position: absolute;
+        top: 50%;
+        width: 100%;
+        display: flex;
+        justify-content: space-between;
+        transform: translateY(-50%);
+        z-index: 1000;
+        padding: 0 10px;
+    }
+
+    .story-viewer-nav button {
+        background: rgba(0,0,0,0.5);
+        border: none;
+        color: white;
+        font-size: 2em;
+        padding: 10px 15px;
+        cursor: pointer;
+        border-radius: 5px;
+        transition: background-color 0.2s ease;
+    }
+    .story-viewer-nav button:hover {
+        background-color: rgba(0,0,0,0.7);
+    }
+
+    .story-progress-bar-container {
+        position: absolute;
+        top: 10px;
+        left: 0;
+        width: 100%;
+        height: 5px;
+        background-color: rgba(255, 255, 255, 0.3);
+        display: flex;
+        padding: 0 10px; /* Match nav padding */
+        box-sizing: border-box;
+    }
+
+    .story-progress-bar {
+        flex-grow: 1;
+        height: 100%;
+        background-color: white;
+        transform: scaleX(0);
+        transform-origin: left;
+        transition: transform linear; /* Animation for progress */
+        border-radius: 2px;
+        margin: 0 2px; /* Small gap between progress segments */
+    }
+
+    .story-info {
+        position: absolute;
+        top: 50px; /* Below progress bar */
+        left: 15px;
+        display: flex;
+        align-items: center;
+        color: white;
+        z-index: 1001;
+    }
+
+    .story-owner-pic {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        object-fit: cover;
+        margin-right: 10px;
+        border: 2px solid white;
+    }
+
+    .story-owner-username {
+        font-weight: 600;
+        font-size: 1.1em;
+    }
+
+    .story-timestamp {
+        font-size: 0.8em;
+        margin-left: 10px;
+        opacity: 0.8;
+    }
+
+    .story-description-overlay {
+        position: absolute;
+        bottom: 50px;
+        left: 0;
+        width: 100%;
+        padding: 0 20px;
+        color: white;
+        text-align: center;
+        font-size: 1.1em;
+        text-shadow: 1px 1px 3px rgba(0,0,0,0.7);
+        z-index: 1001;
+    }
+
+    /* Placeholder for the "What's on your mind?" input */
+    .whats-on-mind {
+        display: flex;
+        align-items: center;
+        padding: 10px 15px;
+        gap: 10px;
+        background-color: var(--card-background);
+        border-radius: 12px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        margin-bottom: 20px;
+        max-width: 600px; /* Match posts container width */
+        margin-left: auto;
+        margin-right: auto;
+    }
+    .dark .whats-on-mind {
+        background-color: var(--card-background-dark);
+    }
+    .whats-on-mind img {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        object-fit: cover;
+    }
+</style>
+
+<div class="container mx-auto mt-4">
+    {# Fixed Top Section: Stories and Create Post/Search Bar #}
+    <div class="top-section-fixed">
+        {# Stories Section #}
+        <div class="stories-section">
+            <div class="stories-container" id="storiesContainer">
+                {# "Add Story" Button #}
+                <div class="story-item" id="addStoryButton" onclick="window.location.href='{{ url_for('create_story') }}'">
+                    <i class="fas fa-plus add-story-icon"></i>
+                    <span class="story-username">Add Story</span>
+                </div>
+                {# Stories will be loaded here dynamically by JavaScript #}
             </div>
-            {# Display friends' stories #}
-            {% for story in stories %}
-                {% if story.expires_at > now and story.visibility == 'friends' and (current_user.id == story.user_id or is_friend(current_user.id, story.user_id)) %}
-                    <div class="card me-3" style="width: 100px;">
-                        <a href="{{ url_for('view_story', story_id=story.id) }}" class="text-decoration-none">
-                            {% set creator = get_user_from_id(story.user_id) %}
-                            <img src="{{ get_member_profile_pic(story.user_id) }}" class="card-img-top rounded-circle" alt="{{ creator.username }}'s Profile">
-                            <div class="card-body text-center p-1">
-                                <p class="card-text">{{ creator.username }}</p>
-                            </div>
-                        </a>
-                    </div>
-                {% endif %}
-            {% endfor %}
+        </div>
+
+        <hr class="my-4 border-gray-200 dark:border-gray-700 max-w-xl mx-auto">
+
+        {# What's on your mind / Create Post input #}
+        <div class="whats-on-mind">
+            <img src="{{ navbar_profile_photo }}" alt="My Profile Picture" class="post-profile-pic">
+            <input type="text" placeholder="What's on your mind, {{ current_user.original_name or current_user.username }}?"
+                   class="whats-on-mind-input" readonly
+                   onclick="window.location.href='{{ url_for('create_post') }}'">
         </div>
     </div>
 
-    {# Posts Section #}
-    <div class="mb-4">
-        <div class="card">
-            <div class="card-body">
-                <form action="{{ url_for('create_post') }}" method="POST" enctype="multipart/form-data">
-                    <div class="mb-3">
-                        <textarea class="form-control" name="description" placeholder="What's on your mind?" rows="3"></textarea>
-                    </div>
-                    <div class="mb-3">
-                        <input type="file" class="form-control" name="media" accept="image/*,video/*">
-                    </div>
-                    <button type="submit" class="btn btn-primary">Post</button>
-                </form>
-            </div>
-        </div>
-    </div>
-
-    {# Posts Feed #}
-    <div id="postsFeed">
-        {% for post in posts %}
-            <div class="card mb-3">
-                <div class="card-header">
-                    <img src="{{ get_member_profile_pic(post.user_id) }}" alt="Profile" style="width: 40px; height: 40px;" class="rounded-circle me-2">
-                    {{ get_user_from_id(post.user_id).username }}
-                </div>
-                <div class="card-body">
-                    <p class="card-text">{{ post.description | safe }}</p>
-                    {% if post.media_path %}
-                        {% if post.media_type == 'image' %}
-                            <img src="{{ url_for('static', filename=post.media_path[7:]) }}" class="img-fluid" alt="Post Media">
-                        {% elif post.media_type == 'video' %}
-                            <video src="{{ url_for('static', filename=post.media_path[7:]) }}" controls class="img-fluid"></video>
-                        {% endif %}
-                    {% endif %}
-                </div>
-                <div class="card-footer">
-                    <button class="btn btn-sm btn-outline-primary">Like ({{ post.likes_count }})</button>
-                    <button class="btn btn-sm btn-outline-secondary">Comment ({{ post.comments_count }})</button>
-                </div>
-            </div>
-        {% endfor %}
-    </div>
-
-    {# Infinite Scroll Trigger #}
-    <div id="loading" class="text-center my-3" style="display: none;">
-        Loading more posts...
+    {# Post Feed #}
+    <div class="posts-container" id="postsContainer">
+        {# Posts will be loaded here dynamically by JavaScript #}
+        <div class="loader" id="postsLoader">Loading posts...</div>
     </div>
 </div>
-{% endif %}
+
+{# Story Viewer Modal #}
+<div class="story-viewer-modal" id="storyViewerModal">
+    <button class="story-viewer-close" id="storyViewerCloseBtn"><i class="fas fa-times"></i></button>
+    <div class="story-viewer-content">
+        <div class="story-progress-bar-container" id="storyProgressBarContainer"></div>
+        <div class="story-info">
+            <img src="" alt="Story Owner" class="story-owner-pic" id="storyOwnerPic">
+            <span class="story-owner-username" id="storyOwnerUsername"></span>
+            <span class="story-timestamp" id="storyTimestamp"></span>
+        </div>
+        <div class="story-description-overlay" id="storyDescriptionOverlay"></div>
+
+        <img id="storyViewerImage" class="story-viewer-media" style="display: none;">
+        <video id="storyViewerVideo" class="story-viewer-media" controls muted playsinline preload="metadata" style="display: none;"></video>
+        <audio id="storyViewerAudio" class="story-viewer-media" controls style="display: none;"></audio>
+        <audio id="storyViewerBackgroundAudio" class="story-viewer-media" controls loop style="display: none;"></audio>
+
+        <div class="story-viewer-nav">
+            <button id="storyViewerPrevBtn"><i class="fas fa-chevron-left"></i></button>
+            <button id="storyViewerNextBtn"><i class="fas fa-chevron-right"></i></button>
+        </div>
+    </div>
+</div>
+
+
+<script>
+    // Moment.js is crucial for date/time formatting. Ensure it's loaded in base.html or here.
+    // <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const postsContainer = document.getElementById('postsContainer');
+        const postsLoader = document.getElementById('postsLoader');
+        let postsPage = 1;
+        let loadingPosts = false;
+        let hasMorePosts = true;
+
+        // --- Infinite Scroll for Posts ---
+        window.addEventListener('scroll', () => {
+            if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 100 && !loadingPosts && hasMorePosts) {
+                postsPage++;
+                loadPosts();
+            }
+        });
+
+        function loadPosts() {
+            if (!hasMorePosts) return;
+            loadingPosts = true;
+            postsLoader.style.display = 'block';
+
+            fetch(`/api/get_posts?page=${postsPage}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    hasMorePosts = data.has_more;
+                    data.posts.forEach(post => {
+                        const postHtml = `
+                            <div class="post-card">
+                                <div class="post-header">
+                                    <img src="${post.profile_pic}" alt="${post.username} Profile" class="post-profile-pic">
+                                    <div>
+                                        <a href="/profile/${post.username}" class="post-author-name">${post.originalName || post.username}</a>
+                                        <br>
+                                        <small class="post-timestamp">${moment.utc(post.timestamp).local().fromNow()}</small>
+                                    </div>
+                                </div>
+                                <div class="post-content">
+                                    <p>${post.description}</p>
+                                    ${post.media_path ? (post.media_type === 'image' ? `<img src="/${post.media_path}" alt="Post Media">` : `<video src="/${post.media_path}" controls></video>`) : ''}
+                                </div>
+                                <div class="post-actions">
+                                    <button onclick="handleLike(${post.id})"><i class="fas fa-heart"></i> Like (${post.likes_count || 0})</button>
+                                    <button onclick="handleComment(${post.id})"><i class="fas fa-comment"></i> Comment (${post.comments_count || 0})</button>
+                                    <button onclick="handleShare(${post.id})"><i class="fas fa-share"></i> Share</button>
+                                </div>
+                            </div>`;
+                        postsContainer.insertAdjacentHTML('beforeend', postHtml);
+                    });
+                    postsLoader.style.display = 'none';
+                    loadingPosts = false;
+                })
+                .catch(error => {
+                    console.error('Error loading posts:', error);
+                    postsLoader.style.display = 'none';
+                    loadingPosts = false;
+                    // Optionally, show a user-friendly error message
+                });
+        }
+
+
+        // --- Placeholder functions for post actions (these will need backend API calls) ---
+        function handleLike(postId) { console.log(`Like post ${postId}`); /* Implement AJAX call */ }
+        function handleComment(postId) { console.log(`Comment on post ${postId}`); /* Redirect to post detail page with comment section active */ }
+        function handleShare(postId) { console.log(`Share post ${postId}`); /* Open share modal */ }
+        // function handleFollow(userId) { console.log(`Follow user ${userId}`); /* Implement AJAX call */ } // Not used on homepage posts
+        // function handleSave(postId) { console.log(`Save post ${postId}`); /* Implement AJAX call */ }
+        // function handleRepost(postId) { console.log(`Repost post ${postId}`); /* Implement AJAX call */ }
+        // function handleViewsAnalytics(postId) { console.log(`View analytics for post ${postId}`); /* Open analytics modal */ }
+        // function handleReport(itemId, itemType) { console.log(`Report ${itemType} ${itemId}`); /* Open report modal */ }
+        // function handleHide(postId) { console.log(`Hide post ${postId}`); /* Implement AJAX call */ }
+        // function handleNotifications(postId) { console.log(`Turn on notifications for post type ${postId}`); /* Implement AJAX call */ }
+        // function handleBlockProfile(userId) { console.log(`Block user profile ${userId}`); /* Implement AJAX call */ }
+
+
+        // --- Stories Functionality ---
+        const storiesContainer = document.getElementById('storiesContainer');
+        const storyViewerModal = document.getElementById('storyViewerModal');
+        const storyViewerCloseBtn = document.getElementById('storyViewerCloseBtn');
+        const storyViewerImage = document.getElementById('storyViewerImage');
+        const storyViewerVideo = document.getElementById('storyViewerVideo');
+        const storyViewerAudio = document.getElementById('storyViewerAudio');
+        const storyViewerBackgroundAudio = document.getElementById('storyViewerBackgroundAudio');
+        const storyViewerPrevBtn = document.getElementById('storyViewerPrevBtn');
+        const storyViewerNextBtn = document.getElementById('storyViewerNextBtn');
+        const storyProgressBarContainer = document.getElementById('storyProgressBarContainer');
+        const storyOwnerPic = document.getElementById('storyOwnerPic');
+        const storyOwnerUsername = document.getElementById('storyOwnerUsername');
+        const storyTimestamp = document.getElementById('storyTimestamp');
+        const storyDescriptionOverlay = document.getElementById('storyDescriptionOverlay');
+
+        let allStories = []; // Flat array of all stories from all users
+        let currentUserStories = []; // Stories for the currently viewed user
+        let currentStoryIndex = 0;
+        let storyProgressTimer;
+        let currentMediaElement;
+
+        function loadAllStories() {
+            fetch('/api/get_stories')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    allStories = []; // Clear previous stories
+                    const addStoryButton = document.getElementById('addStoryButton');
+                    // Clear existing dynamic story items, keep the "Add Story" button
+                    Array.from(storiesContainer.children).forEach(child => {
+                        if (child !== addStoryButton) {
+                            child.remove();
+                        }
+                    });
+
+                    // Organize stories by user
+                    const storiesByUser = {};
+                    data.stories.forEach(story => {
+                        if (!storiesByUser[story.user_id]) {
+                            storiesByUser[story.user_id] = {
+                                user_id: story.user_id,
+                                username: story.username,
+                                profile_pic: story.profile_pic,
+                                stories: []
+                            };
+                        }
+                        storiesByUser[story.user_id].stories.push(story);
+                        allStories.push(story); // Add to flat list for global navigation if needed
+                    });
+
+                    // Render story circles
+                    Object.values(storiesByUser).forEach(userStoryGroup => {
+                        const firstStory = userStoryGroup.stories[0]; // Use first story's media for thumbnail
+                        const storyCircleHtml = `
+                            <div class="story-item" data-user-id="${userStoryGroup.user_id}">
+                                <img src="${firstStory.profile_pic}" alt="${userStoryGroup.username} Profile">
+                                <span class="story-username">${userStoryGroup.username}</span>
+                            </div>
+                        `;
+                        storiesContainer.insertAdjacentHTML('beforeend', storyCircleHtml);
+                    });
+                })
+                .catch(error => {
+                    console.error('Error loading stories:', error);
+                    // Optionally, show a user-friendly error message
+                });
+        }
+
+        storiesContainer.addEventListener('click', function(event) {
+            const storyItem = event.target.closest('.story-item');
+            if (storyItem && storyItem.id !== 'addStoryButton') {
+                const userId = parseInt(storyItem.dataset.userId);
+                currentUserStories = allStories.filter(story => story.user_id === userId);
+                if (currentUserStories.length > 0) {
+                    currentStoryIndex = 0;
+                    showStoryViewer();
+                }
+            }
+        });
+
+        function showStoryViewer() {
+            storyViewerModal.classList.add('active');
+            displayCurrentStory();
+        }
+
+        function hideStoryViewer() {
+            storyViewerModal.classList.remove('active');
+            storyViewerImage.style.display = 'none';
+            storyViewerVideo.style.display = 'none';
+            storyViewerAudio.style.display = 'none';
+            storyViewerBackgroundAudio.style.display = 'none';
+            if (currentMediaElement) {
+                currentMediaElement.pause();
+                currentMediaElement.currentTime = 0;
+            }
+            storyViewerBackgroundAudio.pause();
+            clearInterval(storyProgressTimer);
+            storyProgressBarContainer.innerHTML = ''; // Clear progress bars
+        }
+
+        storyViewerCloseBtn.addEventListener('click', hideStoryViewer);
+
+        storyViewerPrevBtn.addEventListener('click', function() {
+            currentStoryIndex--;
+            if (currentStoryIndex < 0) {
+                currentStoryIndex = currentUserStories.length - 1; // Loop back to last story
+            }
+            displayCurrentStory();
+        });
+
+        storyViewerNextBtn.addEventListener('click', function() {
+            currentStoryIndex++;
+            if (currentStoryIndex >= currentUserStories.length) {
+                // If last story of current user, close viewer or go to next user's story group
+                hideStoryViewer();
+                // TODO: Implement logic to move to next user's story group if desired
+                return;
+            }
+            displayCurrentStory();
+        });
+
+        function displayCurrentStory() {
+            if (currentUserStories.length === 0) {
+                hideStoryViewer();
+                return;
+            }
+
+            const story = currentUserStories[currentStoryIndex];
+
+            // Reset media elements
+            storyViewerImage.style.display = 'none';
+            storyViewerVideo.style.display = 'none';
+            storyViewerAudio.style.display = 'none';
+            storyViewerBackgroundAudio.style.display = 'none';
+            storyViewerImage.src = '';
+            storyViewerVideo.src = '';
+            storyViewerAudio.src = '';
+            storyViewerBackgroundAudio.src = '';
+            if (currentMediaElement) {
+                currentMediaElement.pause();
+                currentMediaElement.currentTime = 0;
+            }
+            storyViewerBackgroundAudio.pause();
+            clearInterval(storyProgressTimer); // Clear any existing timer
+
+            // Update story info
+            storyOwnerPic.src = story.profile_pic;
+            storyOwnerUsername.textContent = story.username;
+            storyTimestamp.textContent = moment.utc(story.timestamp).local().fromNow();
+            storyDescriptionOverlay.innerHTML = story.description ? `<p>${story.description}</p>` : '';
+
+
+            // Set up media
+            if (story.media_type === 'image') {
+                storyViewerImage.src = `/${story.media_path}`;
+                storyViewerImage.style.display = 'block';
+                currentMediaElement = storyViewerImage;
+                // If there's background audio for an image story
+                if (story.background_audio_path) {
+                    storyViewerBackgroundAudio.src = `/${story.background_audio_path}`;
+                    storyViewerBackgroundAudio.style.display = 'block';
+                    storyViewerBackgroundAudio.play();
+                }
+            } else if (story.media_type === 'video') {
+                storyViewerVideo.src = `/${story.media_path}`;
+                storyViewerVideo.style.display = 'block';
+                currentMediaElement = storyViewerVideo;
+                storyViewerVideo.play();
+            } else if (story.media_type === 'audio') { // For voice notes
+                storyViewerAudio.src = `/${story.media_path}`;
+                storyViewerAudio.style.display = 'block';
+                currentMediaElement = storyViewerAudio;
+                storyViewerAudio.play();
+            }
+
+            // Set up progress bars
+            storyProgressBarContainer.innerHTML = '';
+            currentUserStories.forEach((_, idx) => {
+                const bar = document.createElement('div');
+                bar.classList.add('story-progress-bar');
+                bar.dataset.index = idx;
+                storyProgressBarContainer.appendChild(bar);
+            });
+            startStoryProgressBar();
+
+            // Auto-advance logic
+            if (currentMediaElement) {
+                currentMediaElement.onended = () => {
+                    storyViewerNextBtn.click();
+                };
+                // For images/audio-only, manually set a duration
+                if (story.media_type === 'image' || story.media_type === 'audio') {
+                    storyProgressTimer = setTimeout(() => {
+                        storyViewerNextBtn.click();
+                    }, 5000); // 5 seconds for static stories
+                }
+            } else {
+                 // Fallback if no media, still advance
+                storyProgressTimer = setTimeout(() => {
+                    storyViewerNextBtn.click();
+                }, 5000);
+            }
+        }
+
+        function startStoryProgressBar() {
+            const currentProgressBar = storyProgressBarContainer.querySelector(`.story-progress-bar[data-index="${currentStoryIndex}"]`);
+            if (!currentProgressBar) return;
+
+            // Reset all previous bars to full
+            for (let i = 0; i < currentStoryIndex; i++) {
+                const prevBar = storyProgressBarContainer.querySelector(`.story-progress-bar[data-index="${i}"]`);
+                if (prevBar) prevBar.style.transform = 'scaleX(1)';
+            }
+            // Reset all future bars to empty
+            for (let i = currentStoryIndex + 1; i < currentUserStories.length; i++) {
+                const futureBar = storyProgressBarContainer.querySelector(`.story-progress-bar[data-index="${i}"]`);
+                if (futureBar) futureBar.style.transform = 'scaleX(0)';
+            }
+
+
+            const story = currentUserStories[currentStoryIndex];
+            let duration = 5000; // Default for images/audio/no media
+            if (story.media_type === 'video' && storyViewerVideo.duration) {
+                duration = storyViewerVideo.duration * 1000; // Video actual duration
+            } else if (story.media_type === 'audio' && storyViewerAudio.duration) {
+                 duration = storyViewerAudio.duration * 1000; // Audio actual duration
+            }
+
+            currentProgressBar.style.transitionDuration = `${duration}ms`;
+            requestAnimationFrame(() => {
+                currentProgressBar.style.transform = 'scaleX(1)';
+            });
+
+            // If media is a video or audio, we can tie the progress bar to its playback
+            if (story.media_type === 'video' || story.media_type === 'audio') {
+                const mediaElement = story.media_type === 'video' ? storyViewerVideo : storyViewerAudio;
+                const updateProgress = () => {
+                    if (!mediaElement.paused && !mediaElement.ended && mediaElement.duration) {
+                        const progress = mediaElement.currentTime / mediaElement.duration;
+                        currentProgressBar.style.transform = `scaleX(${progress})`;
+                        requestAnimationFrame(updateProgress);
+                    }
+                };
+                mediaElement.addEventListener('play', () => requestAnimationFrame(updateProgress));
+            }
+
+            // Cleanup when this story's progress is done
+            clearTimeout(storyProgressTimer); // Clear any previous timer
+            storyProgressTimer = setTimeout(() => {
+                storyViewerNextBtn.click();
+            }, duration);
+        }
+
+        // --- Initial Load ---
+        loadAllPosts(); // Load all posts on initial page load
+        loadAllStories(); // Load stories on initial page load
+    });
+</script>
 {% endblock %}
-{% block footer %}{% endblock %}
