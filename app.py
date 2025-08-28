@@ -777,7 +777,7 @@ def my_profile():
         'social_link': member['socialLink'], # Assuming 'socialLink' column exists or add it
         'website_link': member['websiteLink'], # Assuming 'websiteLink' column exists or add it
         'relationship_status': member['maritalStatus'],
-        'spouse_fiancee_name': member['spouseNames'] if member['maritalStatus'] in ['Married', 'Engaged'] else member['girlfriendNames'] if member['maritalStatus'] == 'Dating' else None,
+        'spouse_fiancee_name': member['maritalStatus'] in ['Married', 'Engaged'] and (member['spouseNames'] or member['girlfriendNames']) or None,
         'personal_relationship_description': member['personalRelationshipDescription'], # Added this line for the new field
         
         # Placeholder counts - Replace with actual database queries
@@ -850,7 +850,7 @@ def edit_my_details():
         'social_link': member['socialLink'] if member else '',
         'website_link': member['websiteLink'] if member else '',
         'relationship_status': member['maritalStatus'] if member else '',
-        'spouse_fiancee_name': member['spouseNames'] if member and member['maritalStatus'] in ['Married', 'Engaged'] else (member['girlfriendNames'] if member and member['maritalStatus'] == 'Dating' else ''),
+        'spouse_fiancee_name': member['maritalStatus'] in ['Married', 'Engaged'] and (member['spouseNames'] or member['girlfriendNames']) or (member['maritalStatus'] == 'Dating' and member['girlfriendNames']) or '',
         'personal_relationship_description': member['personalRelationshipDescription'] if member else '', # Added
     }
 
@@ -1989,8 +1989,7 @@ def create_reel():
 @login_required
 def reels():
     db = get_db()
-    # Logic to fetch and display reels
-    # For now, a placeholder, but this would query the 'reels' table
+    
     all_reels_data = db.execute(
         """
         SELECT r.*, u.username, m.profilePhoto AS owner_profile_pic, u.originalName AS owner_original_name
@@ -2009,6 +2008,21 @@ def reels():
     for reel_item in all_reels_data:
         reel_dict = dict(reel_item)
         reel_dict['owner_profile_pic'] = get_member_profile_pic(reel_dict['user_id'])
+        
+        # Determine if current_user is following the reel's poster
+        is_following_poster = False
+        if current_user.id != reel_dict['user_id']: # Cannot follow yourself
+            friendship_status = db.execute(
+                """
+                SELECT status FROM friendships
+                WHERE (user1_id = ? AND user2_id = ?)
+                """,
+                (current_user.id, reel_dict['user_id'])
+            ).fetchone()
+            if friendship_status and friendship_status['status'] == 'accepted':
+                is_following_poster = True
+        
+        reel_dict['is_following_poster'] = is_following_poster
         reels_to_display.append(reel_dict)
 
     # Pass the current year to the template
