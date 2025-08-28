@@ -1811,6 +1811,7 @@ def add_to():
     return render_template('add_to.html', current_year=current_year)
 
 # Create Post
+# Create Post
 @app.route('/create_post', methods=['GET', 'POST'])
 @login_required
 def create_post():
@@ -1823,7 +1824,7 @@ def create_post():
         media_path = None
         media_type = None
 
-        # --- FIX: Ensure the correct directory exists using the correct variable name ---
+        # --- FIX: Ensure the correct directory exists with the correct variable name and casing ---
         post_media_folder = app.config['POST_MEDIA_FOLDER']
         if not os.path.exists(post_media_folder):
             os.makedirs(post_media_folder)
@@ -1834,7 +1835,7 @@ def create_post():
                 filename = secure_filename(file.filename)
                 media_type = file.mimetype.split('/')[0] # 'image' or 'video'
 
-                # --- FIX: Using the correctly defined folder ---
+                # --- FIX: Using the correctly defined folder and variable ---
                 file_path = os.path.join(post_media_folder, filename)
                 file.save(file_path)
 
