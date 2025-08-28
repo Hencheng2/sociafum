@@ -4,443 +4,818 @@
 
 {% block content %}
 <style>
-    .header-container {
+    /* Custom CSS specific to the Home page for better control and aesthetics */
+    body {
+        background-color: var(--bg-light); /* Tailwind-like variable for light mode */
+        color: var(--text-light); /* Tailwind-like variable for light mode */
+    }
+    .dark body {
+        background-color: var(--bg-dark); /* Tailwind-like variable for dark mode */
+        color: var(--text-dark); /* Tailwind-like variable for dark mode */
+    }
+
+    /* Fixed Top Section for Stories and Search/Create Post */
+    .top-section-fixed {
+        position: sticky;
+        top: 0;
+        z-index: 30; /* Below main navbar, above scrollable content */
+        background-color: var(--bg-light);
+        padding-top: 1rem;
+        padding-bottom: 0.5rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        transition: background-color 0.3s ease;
+    }
+    .dark .top-section-fixed {
+        background-color: var(--bg-dark);
+        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+
+    /* What's on your mind / Create Post input */
+    .whats-on-mind-input {
+        background-color: #f0f2f5; /* Light gray */
+        border: 1px solid #e0e0e0;
+        border-radius: 9999px; /* Full rounded */
+        padding: 0.75rem 1rem;
+        cursor: pointer;
+        font-size: 0.95rem;
+        color: #4a5568;
         display: flex;
         align-items: center;
-        justify-content: space-between;
-        padding: 10px;
-        background-color: #f8f9fa;
-        border-bottom: 1px solid #dee2e6;
+        width: 100%;
     }
-    .whats-on-mind {
-        flex: 1;
-        display: flex;
-        align-items: center;
-        cursor: pointer;
-        margin-right: 10px;
+    .dark .whats-on-mind-input {
+        background-color: #2d3748; /* Darker gray */
+        border-color: #4a5568;
+        color: #cbd5e0;
     }
-    .whats-on-mind img {
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
-        margin-right: 10px;
+    .whats-on-mind-input:focus {
+        outline: none;
+        border-color: var(--primary); /* Indigo */
     }
-    .whats-on-mind input {
-        flex: 1;
-        padding: 8px;
-        border: 1px solid #dee2e6;
-        border-radius: 20px;
-        background-color: #e9ecef;
-    }
-    .search-bar {
-        flex: 1;
-        margin-left: 10px;
-    }
-    .search-bar form {
-        display: flex;
-    }
-    .search-bar input {
-        flex: 1;
-        padding: 8px;
-        border: 1px solid #dee2e6;
-        border-radius: 20px;
-    }
-    .search-bar button {
-        padding: 8px 16px;
-        margin-left: 5px;
-        border: none;
-        background: #007bff;
-        color: white;
-        border-radius: 20px;
-        cursor: pointer;
-    }
-    .tab-container {
-        display: flex;
-        border-bottom: 1px solid #dee2e6;
-        margin-bottom: 10px;
-    }
-    .tab {
-        padding: 10px 20px;
-        cursor: pointer;
-        font-weight: bold;
-        color: #6c757d;
-    }
-    .tab.active {
-        color: #007bff;
-        border-bottom: 2px solid #007bff;
-    }
-    .tab-content {
-        display: none;
-    }
-    .tab-content.active {
-        display: block;
-    }
+
+    /* Stories Container */
     .stories-container {
         display: flex;
         overflow-x: auto;
-        padding: 10px 0;
-        border-bottom: 1px solid #dee2e6;
+        -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+        padding: 0.5rem 0;
+        margin-bottom: 1rem;
+        border-radius: 0.75rem;
+        scrollbar-width: none; /* Firefox */
+        -ms-overflow-style: none; /* IE 10+ */
+    }
+    .stories-container::-webkit-scrollbar {
+        display: none; /* Chrome, Safari, Opera */
     }
     .story-item {
+        flex-shrink: 0; /* Prevent shrinking */
+        width: 80px; /* Fixed width for each story */
+        margin: 0 0.5rem;
         text-align: center;
-        margin: 0 10px;
         cursor: pointer;
-    }
-    .story-item img {
-        width: 60px;
-        height: 60px;
-        border-radius: 50%;
-        border: 2px solid #007bff;
-    }
-    .story-item p {
-        margin: 5px 0 0;
-        font-size: 12px;
-    }
-    .add-story {
         position: relative;
     }
-    .add-story::after {
-        content: '+';
-        position: absolute;
-        bottom: 0;
-        right: 0;
-        background-color: #007bff;
-        color: white;
+    .story-ring {
+        width: 65px;
+        height: 65px;
         border-radius: 50%;
-        width: 20px;
-        height: 20px;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 16px;
+        margin: 0 auto 0.25rem;
+        background: linear-gradient(45deg, #f09433 0%,#e6683c 25%,#dc2743 50%,#cc2366 75%,#bc1888 100%); /* Instagram-like gradient */
+        padding: 2px; /* Ring thickness */
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
     }
-    .post {
-        border: 1px solid #dee2e6;
-        margin: 10px 0;
-        padding: 10px;
-        background-color: white;
+    .story-item img {
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 2px solid white; /* Inner border */
     }
-    .post-header {
+    .dark .story-item img {
+        border: 2px solid #1a202c; /* Inner border for dark mode */
+    }
+    .story-username {
+        font-size: 0.75rem;
+        color: #4a5568;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .dark .story-username {
+        color: #cbd5e0;
+    }
+    .add-story-icon {
+        position: absolute;
+        bottom: 15px;
+        right: 15px;
+        background-color: var(--primary);
+        color: white;
+        border-radius: 50%;
+        width: 24px;
+        height: 24px;
         display: flex;
         align-items: center;
+        justify-content: center;
+        font-size: 0.9rem;
+        border: 2px solid white;
     }
-    .post-header img {
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
-        margin-right: 10px;
+    .dark .add-story-icon {
+        border: 2px solid #1a202c;
     }
-    .post-header div {
-        flex: 1;
+
+    /* Post Card Styling */
+    .post-card {
+        background-color: white;
+        border-radius: 0.75rem;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+        margin-bottom: 1.5rem;
+        padding: 1rem;
+        transition: background-color 0.3s ease, box-shadow 0.3s ease;
     }
-    .post-header h3 {
-        margin: 0;
-        font-size: 16px;
+    .dark .post-card {
+        background-color: #1f2937; /* Darker gray for cards */
+        box-shadow: 0 1px 4px rgba(0,0,0,0.3);
     }
-    .post-header small {
-        font-size: 12px;
-        color: #999;
-    }
-    .post-content p {
-        margin: 10px 0;
-    }
-    .post-actions {
+    .post-card .post-header {
         display: flex;
-        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
     }
-    .post-actions button {
-        background: none;
+    .post-card .post-header .profile-pic {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        object-fit: cover;
+        margin-right: 0.75rem;
+        border: 2px solid var(--primary);
+    }
+    .post-card .post-header .username-realname {
+        font-weight: 600;
+        color: #1a202c;
+    }
+    .dark .post-card .post-header .username-realname {
+        color: #e2e8f0;
+    }
+    .post-card .post-header .post-meta {
+        font-size: 0.85rem;
+        color: #718096;
+    }
+    .dark .post-card .post-header .post-meta {
+        color: #a0aec0;
+    }
+    .post-card .post-content img,
+    .post-card .post-content video {
+        max-width: 100%;
+        height: auto;
+        border-radius: 0.5rem;
+        margin-top: 1rem;
+    }
+    .post-card .post-description {
+        line-height: 1.5;
+        color: #2d3748;
+    }
+    .dark .post-card .post-description {
+        color: #cbd5e0;
+    }
+    .post-card .post-actions {
+        display: flex;
+        flex-wrap: wrap; /* Allow wrapping on small screens */
+        gap: 0.5rem;
+        margin-top: 1rem;
+        padding-top: 0.75rem;
+        border-top: 1px solid #e2e8f0;
+    }
+    .dark .post-card .post-actions {
+        border-top-color: #4a5568;
+    }
+    .post-card .post-actions button {
+        background-color: #edf2f7;
+        color: #4a5568;
+        padding: 0.5rem 1rem;
+        border-radius: 9999px;
+        font-size: 0.85rem;
+        font-weight: 500;
         border: none;
         cursor: pointer;
+        transition: background-color 0.2s ease, color 0.2s ease;
+        display: flex;
+        align-items: center;
+        white-space: nowrap; /* Prevent text wrapping */
     }
-    .loader {
-        text-align: center;
-        padding: 20px;
+    .dark .post-card .post-actions button {
+        background-color: #4a5568;
+        color: #e2e8f0;
     }
-    .modal {
-        display: none;
+    .post-card .post-actions button:hover {
+        background-color: #e2e8f0; /* Lighter hover for dark mode buttons */
+        color: #2d3748;
+    }
+    .dark .post-card .post-actions button:hover {
+        background-color: #6366f1; /* Accent hover for dark mode buttons */
+        color: white;
+    }
+    .post-card .post-actions button i {
+        margin-right: 0.5rem;
+    }
+
+    /* Story Modal */
+    .story-modal {
         position: fixed;
-        z-index: 1000;
-        left: 0;
         top: 0;
+        left: 0;
         width: 100%;
         height: 100%;
         background-color: black;
+        z-index: 1000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.3s ease, visibility 0.3s ease;
     }
-    .modal-content {
+    .story-modal.active {
+        opacity: 1;
+        visibility: visible;
+    }
+    .story-modal-content {
         position: relative;
         width: 100%;
         height: 100%;
         display: flex;
+        flex-direction: column;
         align-items: center;
         justify-content: center;
+        overflow: hidden; /* Important for swipe effect */
     }
-    .modal-content img, .modal-content video, .modal-content audio {
+    .story-modal-media {
         max-width: 100%;
         max-height: 100%;
+        object-fit: contain;
     }
-    .progress-bar {
+    .story-modal-progress-bar {
         position: absolute;
         top: 10px;
         left: 10px;
         right: 10px;
         height: 3px;
         background-color: rgba(255,255,255,0.3);
+        border-radius: 1.5px;
+        display: flex;
+        gap: 2px;
     }
-    .progress {
+    .story-modal-progress-segment {
+        flex-grow: 1;
+        background-color: rgba(255,255,255,0.6);
+        border-radius: 1.5px;
+        position: relative;
+        overflow: hidden;
+    }
+    .story-modal-progress-fill {
+        width: 0%;
         height: 100%;
         background-color: white;
-        width: 0;
+        transition: width 0.1s linear; /* Smooth fill */
+    }
+    .story-modal-progress-segment.active .story-modal-progress-fill {
+        transition: width linear; /* Controlled by JS for animation */
+    }
+    .story-modal-header {
+        position: absolute;
+        top: 20px;
+        left: 20px;
+        right: 20px;
+        display: flex;
+        align-items: center;
+        color: white;
+        z-index: 1010;
+        text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+    }
+    .story-modal-header .profile-pic {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        object-fit: cover;
+        margin-right: 0.75rem;
+        border: 1px solid white;
+    }
+    .story-modal-header .username {
+        font-weight: 600;
+        font-size: 1.1rem;
+    }
+    .story-modal-header .timestamp {
+        font-size: 0.8rem;
+        margin-left: 0.5rem;
+        opacity: 0.8;
+    }
+    .story-modal-close-btn {
+        background: none;
+        border: none;
+        color: white;
+        font-size: 1.8rem;
+        margin-left: auto;
+        cursor: pointer;
+        opacity: 0.8;
+    }
+    .story-modal-description {
+        position: absolute;
+        bottom: 20px;
+        left: 20px;
+        right: 20px;
+        color: white;
+        text-align: center;
+        z-index: 1010;
+        text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+        background: rgba(0,0,0,0.3);
+        padding: 0.5rem 1rem;
+        border-radius: 0.5rem;
+        max-height: 30%; /* Limit height */
+        overflow-y: auto;
+    }
+
+    /* Loader for infinite scroll */
+    #infinite-scroll-loader {
+        text-align: center;
+        padding: 20px;
+        display: none; /* Hidden by default */
     }
 </style>
 
 {% if current_user.is_authenticated %}
-    <div class="header-container">
-        <div class="whats-on-mind" onclick="window.location.href='{{ url_for('create_post') }}'">
-            <img src="{{ current_user.get_member_profile().profilePhoto | default('/static/img/default_profile.png') }}" alt="Profile">
-            <input type="text" placeholder="What's on your mind?" readonly>
-        </div>
-        <div class="search-bar">
-            <form action="{{ url_for('search') }}" method="GET">
-                <input type="text" name="q" placeholder="Search SociaFam">
-                <button type="submit">Search</button>
-            </form>
-        </div>
-    </div>
-
-    <div class="tab-container">
-        <div class="tab active" onclick="showTab('home')">Home</div>
-        <div class="tab" onclick="window.location.href='{{ url_for('search') }}'">Search</div>
-    </div>
-
-    <div id="home" class="tab-content active">
-        <div class="stories-container">
-            <div class="story-item add-story" onclick="addStory()">
-                <img src="{{ current_user.get_member_profile().profilePhoto | default('/static/img/default_profile.png') }}" alt="Your Story">
-                <p>Your Story</p>
+<div class="container mx-auto p-4 sm:px-6 lg:px-8">
+    
+    <!-- Fixed Top Section (Stories + Create Post/Search) -->
+    <div class="top-section-fixed rounded-lg">
+        <div class="mb-4 px-2">
+            <div class="flex items-center space-x-3">
+                <img src="{{ current_user.get_member_profile().profilePhoto | default(url_for('static', filename='img/default_profile.png')) }}" alt="Profile" class="w-10 h-10 rounded-full object-cover">
+                <input type="text" placeholder="What's on your mind?" class="whats-on-mind-input" readonly onclick="window.location.href='{{ url_for('create_post') }}'">
+                <a href="{{ url_for('search') }}" class="text-gray-700 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400">
+                    <i class="fas fa-search text-xl"></i>
+                </a>
             </div>
-            {% for story in stories %}
-            <div class="story-item" onclick="openStoryModal({{ loop.index0 }})" data-id="{{ story.id }}" data-type="{{ story.media_type }}" data-path="{{ story.media_path }}" data-username="{{ story.username }}">
-                <img src="{{ story.media_path if story.media_type == 'image' else '/static/img/default_story.png' }}" alt="Story">
-                <p>{{ story.username }}</p>
-            </div>
-            {% endfor %}
         </div>
 
-        <div id="posts-container">
-            {% for post in posts %}
-            <div class="post">
-                <div class="post-header">
-                    <img src="{{ post.user_profile_photo | default('/static/img/default_profile.png') }}" alt="Profile">
-                    <div>
-                        <h3>{{ post.user_real_name }} <small>@{{ post.username }}</small></h3>
-                        <small>{{ moment(post.timestamp).fromNow() }}</small>
-                    </div>
+        <!-- Stories Container -->
+        <div id="stories-container" class="stories-container bg-gray-50 dark:bg-gray-800 shadow-inner rounded-xl px-2">
+            <div class="story-item" onclick="addStory()">
+                <div class="story-ring bg-gray-200 dark:bg-gray-700">
+                    <img src="{{ current_user.get_member_profile().profilePhoto | default(url_for('static', filename='img/default_profile.png')) }}" alt="Your Story" class="border-white dark:border-gray-900">
                 </div>
-                <div class="post-content">
-                    <p>{{ post.description }}</p>
-                    {% if post.media_path %}
-                    {% if post.media_type == 'image' %}
-                    <img src="{{ post.media_path }}" alt="Post Media" style="width:100%;">
-                    {% elif post.media_type == 'video' %}
-                    <video src="{{ post.media_path }}" controls style="width:100%;"></video>
-                    {% endif %}
-                    {% endif %}
-                </div>
-                <div class="post-actions">
-                    <button>Like ({{ post.likes_count }})</button>
-                    <button>Comment ({{ post.comments_count }})</button>
-                    <button>Share</button>
-                    <button>Follow</button>
-                    <button>Save</button>
-                    <button>Repost</button>
-                    <button>Report</button>
-                    <button>Hide</button>
-                    <button>Notifications for this type</button>
-                    <button>Block {{ post.username }}</button>
-                </div>
+                <div class="add-story-icon"><i class="fas fa-plus"></i></div>
+                <p class="story-username dark:text-gray-300">Your Story</p>
             </div>
-            {% endfor %}
-        </div>
-        <div class="loader" id="loader" style="display:none;">
-            <p>Loading more posts...</p>
+            <!-- Stories will be loaded here by JavaScript -->
         </div>
     </div>
 
-    <div id="storyModal" class="modal">
-        <div class="modal-content">
-            <div class="progress-bar"><div class="progress"></div></div>
-            <div id="storyContent"></div>
-        </div>
+    <!-- Main Posts Section (no tabs) -->
+    <div id="posts-container" class="mt-4">
+        <!-- All posts will be loaded here by JavaScript -->
     </div>
+    <div id="infinite-scroll-loader" class="text-center py-4 hidden">
+        <i class="fas fa-spinner fa-spin text-2xl text-indigo-500"></i>
+        <p class="text-gray-600 dark:text-gray-400">Loading more posts...</p>
+    </div>
+</div>
+
+<!-- Story Viewer Modal -->
+<div id="story-viewer-modal" class="story-modal">
+    <div class="story-modal-content">
+        <div class="story-modal-progress-bar" id="story-progress-bar"></div>
+        <div class="story-modal-header">
+            <img id="story-modal-profile-pic" src="" alt="Profile" class="profile-pic">
+            <span id="story-modal-username" class="username"></span>
+            <span id="story-modal-timestamp" class="timestamp"></span>
+            <button class="story-modal-close-btn" onclick="closeStoryModal()">&times;</button>
+        </div>
+        <div id="story-modal-media-content" class="w-full h-full flex items-center justify-center">
+            <!-- Story media (image/video/audio) will be loaded here -->
+        </div>
+        <p id="story-modal-description" class="story-modal-description hidden"></p>
+    </div>
+</div>
+
 {% endif %}
 
 <script>
-    function showTab(tabId) {
-        document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
-        document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-        document.querySelector(`[onclick="showTab('${tabId}')"]`).classList.add('active');
-        document.getElementById(tabId).classList.add('active');
-    }
+    // Flask Moment.js configuration (if not already in base.html)
+    // Assuming Moment.js is included in base.html via {{ moment.include_moment() }}
+    // And locale is set via {{ moment.locale('en') }}
 
-    let currentStoryIndex = 0;
-    let storyTimer;
-    let isPaused = false;
-    let touchStartX = 0;
-    let touchEndX = 0;
-    let touchStartY = 0;
-    let touchEndY = 0;
-
-    function openStoryModal(index) {
-        currentStoryIndex = index;
-        loadStory();
-        document.getElementById('storyModal').style.display = 'flex';
-        startProgress();
-        document.addEventListener('touchstart', handleTouchStart);
-        document.addEventListener('touchend', handleTouchEnd);
-        document.addEventListener('mousedown', pauseStory);
-        document.addEventListener('mouseup', resumeStory);
-    }
-
-    function closeStoryModal() {
-        document.getElementById('storyModal').style.display = 'none';
-        clearTimeout(storyTimer);
-        document.querySelector('.progress').style.width = '0%';
-        document.removeEventListener('touchstart', handleTouchStart);
-        document.removeEventListener('touchend', handleTouchEnd);
-        document.removeEventListener('mousedown', pauseStory);
-        document.removeEventListener('mouseup', resumeStory);
-    }
-
-    function loadStory() {
-        let stories = document.querySelectorAll('.story-item:not(.add-story)');
-        let story = stories[currentStoryIndex];
-        let type = story.dataset.type;
-        let path = story.dataset.path;
-        let content = '';
-        if (type === 'image') {
-            content = `<img src="${path}" alt="Story">`;
-        } else if (type === 'video') {
-            content = `<video src="${path}" autoplay loop></video>`;
-        } else if (type === 'audio') {
-            content = `<audio src="${path}" autoplay></audio>`;
-        }
-        document.getElementById('storyContent').innerHTML = content;
-    }
-
-    function startProgress(duration = 5000) {
-        let progress = document.querySelector('.progress');
-        progress.style.width = '0%';
-        progress.style.transition = `width ${duration/1000}s linear`;
-        setTimeout(() => { progress.style.width = '100%'; }, 10);
-        storyTimer = setTimeout(nextStory, duration);
-    }
-
-    function nextStory() {
-        let stories = document.querySelectorAll('.story-item:not(.add-story)');
-        currentStoryIndex = (currentStoryIndex + 1) % stories.length;
-        loadStory();
-        startProgress();
-    }
-
-    function prevStory() {
-        let stories = document.querySelectorAll('.story-item:not(.add-story)');
-        currentStoryIndex = (currentStoryIndex - 1 + stories.length) % stories.length;
-        loadStory();
-        startProgress();
-    }
-
-    function handleTouchStart(e) {
-        touchStartX = e.changedTouches[0].screenX;
-        touchStartY = e.changedTouches[0].screenY;
-        pauseStory();
-    }
-
-    function handleTouchEnd(e) {
-        touchEndX = e.changedTouches[0].screenX;
-        touchEndY = e.changedTouches[0].screenY;
-        let deltaX = touchEndX - touchStartX;
-        let deltaY = touchEndY - touchStartY;
-        if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 50) {
-            if (deltaX > 0) {
-                prevStory();
-            } else {
-                nextStory();
-            }
-        } else if (deltaY > 50) {
-            closeStoryModal();
+    document.addEventListener('DOMContentLoaded', () => {
+        // --- Dark Mode Initialization (if not handled by base.html) ---
+        // This is usually handled in base.html now. Remove if redundant.
+        if (localStorage.getItem('theme') === 'dark' || (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
         } else {
-            resumeStory();
+            document.documentElement.classList.remove('dark');
         }
-    }
 
-    function pauseStory() {
-        isPaused = true;
-        clearTimeout(storyTimer);
-        document.querySelector('.progress').style.transition = 'none';
-    }
+        // --- Stories Section Logic ---
+        const storiesContainer = document.getElementById('stories-container');
+        const storyViewerModal = document.getElementById('story-viewer-modal');
+        const storyModalMediaContent = document.getElementById('story-modal-media-content');
+        const storyModalProfilePic = document.getElementById('story-modal-profile-pic');
+        const storyModalUsername = document.getElementById('story-modal-username');
+        const storyModalTimestamp = document.getElementById('story-modal-timestamp');
+        const storyModalDescription = document.getElementById('story-modal-description');
+        const storyProgressBar = document.getElementById('story-progress-bar');
 
-    function resumeStory() {
-        isPaused = false;
-        let progress = document.querySelector('.progress');
-        let remaining = (100 - parseFloat(progress.style.width)) / 100 * 5000;
-        startProgress(remaining);
-    }
+        let currentStoryIndex = 0;
+        let activeStoriesData = []; // To store fetched stories
+        let storyInterval; // For progress bar animation
+        let storyTimeout; // For auto-advancing story
+        let isStoryPaused = false;
+        let startTime;
+        let elapsedTime = 0;
+        const storyDuration = 5000; // 5 seconds per story
 
-    function addStory() {
-        window.location.href = '{{ url_for('create_story') }}';
-    }
+        // Dummy Stories Data (Replace with API call to /api/stories)
+        // Ensure this matches the structure expected by the rendering logic
+        const dummyStoriesData = [
+            { id: 1, user_id: 1, username: 'user1', profile_pic: "{{ url_for('static', filename='img/default_profile.png') }}", media_path: "https://placehold.co/600x800/A3B8FF/4F46E5?text=Story%201", media_type: 'image', timestamp: moment().subtract(2, 'hours').toISOString(), description: "Enjoying the view!" },
+            { id: 2, user_id: 2, username: 'user2', profile_pic: "{{ url_for('static', filename='img/default_profile.png') }}", media_path: "https://www.learningcontainer.com/wp-content/uploads/2020/05/sample-mp4-file.mp4", media_type: 'video', timestamp: moment().subtract(4, 'hours').toISOString(), description: "My latest adventure!" },
+            { id: 3, user_id: 1, username: 'user1', profile_pic: "{{ url_for('static', filename='img/default_profile.png') }}", media_path: "https://placehold.co/600x800/C3E6CB/155724?text=Story%203", media_type: 'image', timestamp: moment().subtract(1, 'hour').toISOString(), description: "Good morning!" },
+            { id: 4, user_id: 3, username: 'user3', profile_pic: "https://placehold.co/65x65/E0E7FF/4F46E5?text=U3", media_path: "https://placehold.co/600x800/94A3B8/FFFFFF?text=Story%204", media_type: 'image', timestamp: moment().subtract(10, 'minutes').toISOString(), description: "Just chillin' 😎" },
+        ];
+        
+        // This will group stories by user
+        let groupedStories = {};
+        dummyStoriesData.forEach(story => {
+            if (!groupedStories[story.user_id]) {
+                groupedStories[story.user_id] = {
+                    username: story.username,
+                    profile_pic: story.profile_pic,
+                    stories: []
+                };
+            }
+            groupedStories[story.user_id].stories.push(story);
+        });
 
-    window.addEventListener('scroll', () => {
-        if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 100) {
-            loadMorePosts();
-        }
-    });
+        // Convert grouped stories to an array for easy iteration
+        activeStoriesData = Object.values(groupedStories);
 
-    let page = 1;
-    function loadMorePosts() {
-        let loader = document.getElementById('loader');
-        loader.style.display = 'block';
-        fetch(`/api/posts?page=${++page}`)
-            .then(response => response.json())
-            .then(data => {
-                let container = document.getElementById('posts-container');
-                data.posts.forEach(post => {
-                    let postHtml = `
-                    <div class="post">
-                        <div class="post-header">
-                            <img src="${post.user_profile_photo || '/static/img/default_profile.png'}" alt="Profile">
-                            <div>
-                                <h3>${post.user_real_name} <small>@${post.username}</small></h3>
-                                <small>${new Date(post.timestamp).toLocaleString()}</small>
-                            </div>
-                        </div>
-                        <div class="post-content">
-                            <p>${post.description}</p>
-                            ${post.media_path ? (post.media_type === 'image' ? `<img src="${post.media_path}" alt="Post Media" style="width:100%;">` : `<video src="${post.media_path}" controls style="width:100%;"></video>`) : ''}
-                        </div>
-                        <div class="post-actions">
-                            <button>Like (${post.likes_count || 0})</button>
-                            <button>Comment (${post.comments_count || 0})</button>
-                            <button>Share</button>
-                            <button>Follow</button>
-                            <button>Save</button>
-                            <button>Repost</button>
-                            <button>Report</button>
-                            <button>Hide</button>
-                            <button>Notifications for this type</button>
-                            <button>Block ${post.username}</button>
-                        </div>
-                    </div>`;
-                    container.insertAdjacentHTML('beforeend', postHtml);
+        function renderStories() {
+            // Clear existing stories first, then re-add 'Your Story' and fetched ones
+            storiesContainer.innerHTML = `
+                <div class="story-item" onclick="addStory()">
+                    <div class="story-ring bg-gray-200 dark:bg-gray-700">
+                        <img src="{{ current_user.get_member_profile().profilePhoto | default(url_for('static', filename='img/default_profile.png')) }}" alt="Your Story" class="border-white dark:border-gray-900">
+                    </div>
+                    <div class="add-story-icon"><i class="fas fa-plus"></i></div>
+                    <p class="story-username dark:text-gray-300">Your Story</p>
+                </div>
+            `; 
+            activeStoriesData.forEach((userStories, userIndex) => {
+                const latestStory = userStories.stories[userStories.stories.length - 1]; // Use latest for preview
+                const storyItem = document.createElement('div');
+                storyItem.classList.add('story-item');
+                storyItem.dataset.userIndex = userIndex; // To identify which user's stories to open
+                storyItem.innerHTML = `
+                    <div class="story-ring">
+                        <img src="${latestStory.profile_pic}" alt="${latestStory.username} Story">
+                    </div>
+                    <p class="story-username dark:text-gray-300">${latestStory.username}</p>
+                `;
+                storiesContainer.appendChild(storyItem);
+
+                storyItem.addEventListener('click', (e) => {
+                    openStoryModal(userIndex, 0); // Open the first story of this user
                 });
-                loader.style.display = 'none';
-            })
-            .catch(error => {
-                console.error('Error loading posts:', error);
-                loader.style.display = 'none';
             });
-    }
-    loadPosts();
+        }
+
+        function addStory() {
+            window.location.href = '{{ url_for('create_story') }}';
+        }
+
+        function openStoryModal(userIndex, storyLocalIndex) {
+            currentStoryIndex = { user: userIndex, story: storyLocalIndex };
+            
+            const userStories = activeStoriesData[userIndex];
+            const story = userStories.stories[storyLocalIndex];
+
+            storyModalProfilePic.src = story.profile_pic;
+            storyModalUsername.textContent = story.username;
+            storyModalTimestamp.textContent = moment(story.timestamp).fromNow();
+            storyModalDescription.textContent = story.description || '';
+            storyModalDescription.classList.toggle('hidden', !story.description);
+
+            storyModalMediaContent.innerHTML = ''; // Clear previous media
+
+            let mediaElement;
+            if (story.media_type === 'image') {
+                mediaElement = document.createElement('img');
+                mediaElement.src = story.media_path;
+                mediaElement.classList.add('story-modal-media');
+            } else if (story.media_type === 'video') {
+                mediaElement = document.createElement('video');
+                mediaElement.src = story.media_path;
+                mediaElement.classList.add('story-modal-media');
+                mediaElement.autoplay = true;
+                mediaElement.loop = true; // Auto-loop videos
+                mediaElement.muted = false; // Videos typically start muted in stories
+                mediaElement.playsInline = true; // For iOS compatibility
+                mediaElement.volume = 0.8; // Set default volume
+            } else if (story.media_type === 'audio') {
+                mediaElement = document.createElement('audio');
+                mediaElement.src = story.media_path;
+                mediaElement.autoplay = true;
+                mediaElement.controls = true; // Show controls for audio-only stories
+            }
+
+            if (mediaElement) {
+                storyModalMediaContent.appendChild(mediaElement);
+            }
+            
+            renderProgressBar(userStories.stories.length, storyLocalIndex);
+            startStoryTimer();
+
+            storyViewerModal.classList.add('active');
+            // Add touch/mouse listeners for navigation and pause
+            storyViewerModal.addEventListener('touchstart', handleStoryTouchStart);
+            storyViewerModal.addEventListener('touchend', handleStoryTouchEnd);
+            storyViewerModal.addEventListener('mousedown', handleStoryMouseDown);
+            storyViewerModal.addEventListener('mouseup', handleStoryMouseUp);
+        }
+
+        function closeStoryModal() {
+            storyViewerModal.classList.remove('active');
+            clearTimeout(storyTimeout);
+            clearInterval(storyInterval);
+            storyModalMediaContent.innerHTML = ''; // Clear media
+            // Remove listeners
+            storyViewerModal.removeEventListener('touchstart', handleStoryTouchStart);
+            storyViewerModal.removeEventListener('touchend', handleStoryTouchEnd);
+            storyViewerModal.removeEventListener('mousedown', handleStoryMouseDown);
+            storyViewerModal.removeEventListener('mouseup', handleStoryMouseUp);
+        }
+
+        function renderProgressBar(totalSegments, activeSegmentIndex) {
+            storyProgressBar.innerHTML = '';
+            for (let i = 0; i < totalSegments; i++) {
+                const segment = document.createElement('div');
+                segment.classList.add('story-modal-progress-segment');
+                segment.innerHTML = '<div class="story-modal-progress-fill"></div>';
+                if (i < activeSegmentIndex) {
+                    segment.querySelector('.story-modal-progress-fill').style.width = '100%';
+                    segment.classList.add('active');
+                } else if (i === activeSegmentIndex) {
+                    segment.classList.add('active');
+                }
+                storyProgressBar.appendChild(segment);
+            }
+        }
+
+        function startStoryTimer() {
+            clearTimeout(storyTimeout);
+            clearInterval(storyInterval);
+            isStoryPaused = false;
+            elapsedTime = 0;
+            startTime = Date.now();
+
+            const currentSegmentFill = storyProgressBar.children[currentStoryIndex.story].querySelector('.story-modal-progress-fill');
+            currentSegmentFill.style.width = '0%'; // Reset for new story
+            currentSegmentFill.style.transition = `width ${storyDuration}ms linear`; // Set transition for animation
+
+            // This starts the CSS animation
+            setTimeout(() => {
+                currentSegmentFill.style.width = '100%';
+            }, 50); // Small delay to ensure transition is applied
+
+            storyTimeout = setTimeout(() => {
+                goToNextStory(true); // Automatically go to next story
+            }, storyDuration);
+        }
+
+        function pauseStoryTimer() {
+            if (!isStoryPaused) {
+                isStoryPaused = true;
+                clearTimeout(storyTimeout);
+                const currentSegmentFill = storyProgressBar.children[currentStoryIndex.story].querySelector('.story-modal-progress-fill');
+                // Stop CSS animation by setting width to current computed width and removing transition
+                const computedWidth = window.getComputedStyle(currentSegmentFill).width;
+                currentSegmentFill.style.transition = 'none';
+                currentSegmentFill.style.width = computedWidth;
+                elapsedTime = Date.now() - startTime;
+            }
+        }
+
+        function resumeStoryTimer() {
+            if (isStoryPaused) {
+                isStoryPaused = false;
+                startTime = Date.now() - elapsedTime; // Adjust start time
+                const remainingDuration = storyDuration - elapsedTime;
+                if (remainingDuration > 0) {
+                    const currentSegmentFill = storyProgressBar.children[currentStoryIndex.story].querySelector('.story-modal-progress-fill');
+                    currentSegmentFill.style.transition = `width ${remainingDuration}ms linear`;
+                    currentSegmentFill.style.width = '100%';
+                    storyTimeout = setTimeout(() => {
+                        goToNextStory(true);
+                    }, remainingDuration);
+                } else {
+                    goToNextStory(true); // If already past duration, go to next story
+                }
+            }
+        }
+
+        function goToNextStory(autoAdvance = false) {
+            const userStories = activeStoriesData[currentStoryIndex.user].stories;
+            if (currentStoryIndex.story < userStories.length - 1) {
+                // Next story in the same user's sequence
+                currentStoryIndex.story++;
+                openStoryModal(currentStoryIndex.user, currentStoryIndex.story);
+            } else {
+                // No more stories for this user, go to next user's first story
+                if (currentStoryIndex.user < activeStoriesData.length - 1) {
+                    currentStoryIndex.user++;
+                    currentStoryIndex.story = 0;
+                    openStoryModal(currentStoryIndex.user, currentStoryIndex.story);
+                } else {
+                    // All stories viewed, close modal
+                    closeStoryModal();
+                }
+            }
+        }
+
+        function goToPreviousStory() {
+            if (currentStoryIndex.story > 0) {
+                // Previous story in the same user's sequence
+                currentStoryIndex.story--;
+                openStoryModal(currentStoryIndex.user, currentStoryIndex.story);
+            } else {
+                // First story of current user, go to previous user's last story
+                if (currentStoryIndex.user > 0) {
+                    currentStoryIndex.user--;
+                    currentStoryIndex.story = activeStoriesData[currentStoryIndex.user].stories.length - 1;
+                    openStoryModal(currentStoryIndex.user, currentStoryIndex.story);
+                } else {
+                    // Already at the very first story, do nothing or loop
+                    // For now, do nothing
+                }
+            }
+        }
+
+        let touchStartX = 0;
+        let touchStartY = 0;
+
+        function handleStoryTouchStart(e) {
+            touchStartX = e.touches[0].clientX;
+            touchStartY = e.touches[0].clientY;
+            pauseStoryTimer();
+        }
+
+        function handleStoryTouchEnd(e) {
+            const touchEndX = e.changedTouches[0].clientX;
+            const touchEndY = e.changedTouches[0].clientY;
+            const deltaX = touchEndX - touchStartX;
+            const deltaY = touchEndY - touchStartY;
+
+            const horizontalSwipeThreshold = 50;
+            const verticalSwipeThreshold = 80;
+
+            if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > horizontalSwipeThreshold) {
+                // Horizontal swipe
+                if (deltaX < 0) { // Swiped left (next story)
+                    goToNextStory();
+                } else { // Swiped right (previous story)
+                    goToPreviousStory();
+                }
+            } else if (Math.abs(deltaY) > Math.abs(deltaX) && Math.abs(deltaY) > verticalSwipeThreshold) {
+                // Vertical swipe (swipe down to close)
+                if (deltaY > 0) { // Swiped down
+                    closeStoryModal();
+                } else { // Swiped up (no action for now)
+                    resumeStoryTimer();
+                }
+            } else {
+                // Tap or small movement, resume story
+                resumeStoryTimer();
+            }
+        }
+
+        function handleStoryMouseDown(e) {
+            // Only pause if not clicking on close button
+            if (!e.target.closest('.story-modal-close-btn')) {
+                pauseStoryTimer();
+            }
+        }
+
+        function handleStoryMouseUp(e) {
+            if (!e.target.closest('.story-modal-close-btn')) {
+                resumeStoryTimer();
+            }
+        }
+
+        renderStories(); // Initial render of stories on page load
+
+        // --- Posts Loading Logic (Consolidated) ---
+        let currentPage = 1;
+        const postsPerPage = 10; // Number of posts to load per request
+        let isFetchingPosts = false;
+
+        async function loadAllPosts() {
+            const container = document.getElementById('posts-container');
+            const loader = document.getElementById('infinite-scroll-loader');
+
+            if (currentPage === 1) { // Clear posts only for the first page load
+                container.innerHTML = '';
+            }
+            loader.classList.remove('hidden');
+
+            try {
+                const apiUrl = `/api/get_posts?page=${currentPage}&per_page=${postsPerPage}`;
+                const response = await fetch(apiUrl);
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch posts: ${response.statusText}`);
+                }
+                const data = await response.json();
+                const posts = data.posts || []; // API should return { posts: [...], has_more: true/false }
+
+                if (posts.length === 0 && currentPage === 1) {
+                    container.innerHTML = `<p class="text-center text-gray-500 mt-8 dark:text-gray-400">No posts to display.</p>`;
+                } else {
+                    posts.forEach(post => {
+                        const postElement = document.createElement('div');
+                        postElement.classList.add('post-card');
+                        postElement.innerHTML = `
+                            <div class="post-header">
+                                <img src="${post.profile_pic}" alt="${post.username}" class="profile-pic">
+                                <div class="flex-grow">
+                                    <a href="{{ url_for('profile', username='PLACEHHOLDER_USERNAME') | replace('PLACEHOLDER_USERNAME', '') }}${post.username}" class="username-realname block">${post.originalName || post.username}</a>
+                                    <small class="post-meta">@${post.username} &middot; ${moment(post.timestamp).fromNow()}</small>
+                                </div>
+                            </div>
+                            <div class="post-content">
+                                <p class="post-description">${post.description}</p>
+                                ${post.media_path ? (post.media_type === 'image' ? `<img src="${post.media_path}" alt="Post Media" class="rounded-lg mt-2">` : `<video src="${post.media_path}" controls class="rounded-lg mt-2"></video>`) : ''}
+                            </div>
+                            <div class="post-actions">
+                                <button onclick="handleLike(${post.id})"><i class="fas fa-heart"></i> Like (${post.likes_count || 0})</button>
+                                <button onclick="handleComment(${post.id})"><i class="fas fa-comment"></i> Comment (${post.comments_count || 0})</button>
+                                <button onclick="handleShare(${post.id})"><i class="fas fa-share-alt"></i> Share</button>
+                                <button onclick="handleFollow(${post.user_id})"><i class="fas fa-user-plus"></i> Follow</button>
+                                <button onclick="handleSave(${post.id})"><i class="fas fa-bookmark"></i> Save Post</button>
+                                <button onclick="handleRepost(${post.id})"><i class="fas fa-retweet"></i> Repost</button>
+                                <button onclick="handleViewsAnalytics(${post.id})"><i class="fas fa-chart-bar"></i> Views (${post.views_count || 0})</button>
+                                <button onclick="handleReport(${post.id}, 'post')"><i class="fas fa-flag"></i> Report Post</button>
+                                <button onclick="handleHide(${post.id})"><i class="fas fa-eye-slash"></i> Hide Post</button>
+                                <button onclick="handleNotifications(${post.id})"><i class="fas fa-bell"></i> Notifications</button>
+                                <button onclick="handleBlockProfile(${post.user_id})"><i class="fas fa-ban"></i> Block ${post.username}</button>
+                            </div>
+                        `;
+                        container.appendChild(postElement);
+                    });
+                }
+                
+                // If there's more data, increment page, otherwise hide loader permanently
+                if (data.has_more) {
+                    currentPage++;
+                } else {
+                    loader.classList.add('hidden');
+                }
+
+            } catch (error) {
+                console.error(`Error loading posts:`, error);
+                if (currentPage === 1) { // Only show error message if no posts were loaded initially
+                    container.innerHTML = `<div class="text-center text-red-500 mt-8 dark:text-red-400">Error loading posts. Please try again later.</div>`;
+                }
+            } finally {
+                loader.classList.add('hidden');
+                isFetchingPosts = false; // Reset fetching flag
+            }
+        }
+
+        // --- Infinite Scroll Logic ---
+        window.addEventListener('scroll', () => {
+            // Check if user is near the bottom of the page and not already fetching
+            if ((window.innerHeight + window.scrollY) >= (document.body.offsetHeight - 500) && !isFetchingPosts) {
+                isFetchingPosts = true;
+                loadAllPosts(); // Load more posts for the single feed
+            }
+        });
+
+
+        // --- Placeholder functions for post actions (these will need backend API calls) ---
+        function handleLike(postId) { console.log(`Like post ${postId}`); /* Implement AJAX call */ }
+        function handleComment(postId) { console.log(`Comment on post ${postId}`); /* Redirect to post detail page with comment section active */ }
+        function handleShare(postId) { console.log(`Share post ${postId}`); /* Open share modal */ }
+        function handleFollow(userId) { console.log(`Follow user ${userId}`); /* Implement AJAX call */ }
+        function handleSave(postId) { console.log(`Save post ${postId}`); /* Implement AJAX call */ }
+        function handleRepost(postId) { console.log(`Repost post ${postId}`); /* Implement AJAX call */ }
+        function handleViewsAnalytics(postId) { console.log(`View analytics for post ${postId}`); /* Open analytics modal */ }
+        function handleReport(itemId, itemType) { console.log(`Report ${itemType} ${itemId}`); /* Open report modal */ }
+        function handleHide(postId) { console.log(`Hide post ${postId}`); /* Implement AJAX call */ }
+        function handleNotifications(postId) { console.log(`Turn on notifications for post type ${postId}`); /* Implement AJAX call */ }
+        function handleBlockProfile(userId) { console.log(`Block user profile ${userId}`); /* Implement AJAX call */ }
+
+
+        // --- Initial Load ---
+        loadAllPosts(); // Load all posts on initial page load
+    });
 </script>
 {% endblock %}
