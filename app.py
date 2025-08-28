@@ -54,8 +54,8 @@ for folder in [
 
 # Allowed extensions for uploads
 ALLOWED_IMAGE_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
-ALLOWED_VIDEO_EXTENSIONS = {'mp4', 'mov', 'avi', 'mkv'}
-ALLOWED_AUDIO_EXTENSIONS = {'mp3', 'wav', 'ogg'}
+ALLOWED_VIDEO_EXTENSIONS = {'mp4', 'mov', 'avi', 'mkv', 'webm'} # Added webm for camera capture
+ALLOWED_AUDIO_EXTENSIONS = {'mp3', 'wav', 'ogg', 'webm'} # Added webm for voice notes
 
 # Initialize Flask-Login
 login_manager = LoginManager()
@@ -240,14 +240,16 @@ def allowed_file(filename, allowed_extensions):
            filename.rsplit('.', 1)[1].lower() in allowed_extensions
 
 def save_uploaded_file(file, upload_folder):
-    if file and allowed_file(file.filename, ALLOWED_IMAGE_EXTENSIONS.union(ALLOWED_VIDEO_EXTENSIONS).union(ALLOWED_AUDIO_EXTENSIONS)):
-        filename = secure_filename(file.filename)
-        unique_filename = str(uuid.uuid4()) + '_' + filename
-        file_path = os.path.join(upload_folder, unique_filename)
-        file.save(file_path)
-        # Store relative path for database, correctly structured
-        relative_path = os.path.join('static', 'uploads', os.path.basename(upload_folder), unique_filename)
-        return relative_path.replace("\\", "/") # Ensure forward slashes for URLs
+    if file and file.filename != '':
+        file_extension = file.filename.rsplit('.', 1)[1].lower()
+        if file_extension in ALLOWED_IMAGE_EXTENSIONS.union(ALLOWED_VIDEO_EXTENSIONS).union(ALLOWED_AUDIO_EXTENSIONS):
+            filename = secure_filename(file.filename)
+            unique_filename = str(uuid.uuid4()) + '_' + filename
+            file_path = os.path.join(upload_folder, unique_filename)
+            file.save(file_path)
+            # Store relative path for database, correctly structured
+            relative_path = os.path.join('static', 'uploads', os.path.basename(upload_folder), unique_filename)
+            return relative_path.replace("\\", "/") # Ensure forward slashes for URLs
     return None
 
 
@@ -1263,7 +1265,7 @@ def api_search_users():
         SELECT u.id, m.fullName AS realName, u.username, m.profilePhoto,
         CASE WHEN LOWER(m.fullName) LIKE ? THEN 0 ELSE 1 END AS sort_order
         FROM users u
-        JOIN members m ON m.user_id = u.id
+        JOIN members m ON m.id = u.id
         WHERE (LOWER(m.fullName) LIKE ? OR LOWER(u.username) LIKE ?) AND u.id != ?
             AND u.id NOT IN (SELECT blocked_id FROM blocked_users WHERE blocker_id = ?)
         ORDER BY sort_order, LOWER(m.fullName), LOWER(u.username)
@@ -2033,78 +2035,91 @@ def reels():
 @app.route('/create_story', methods=['GET', 'POST'])
 @login_required
 def create_story():
-    # Pass the current year to the template
     current_year = datetime.now(timezone.utc).year
     if request.method == 'POST':
         description = request.form.get('description', '').strip()
-        # Visibility is fixed to friends for stories
-        visibility = 'friends'
+        visibility = 'friends' # Stories are fixed to friends only
 
         media_path = None
-        media_type = None # 'image', 'video', 'audio' (for voice note)
-        background_audio_path = None # For photos with separate audio
+        media_type = None
+        background_audio_path = None
 
-        # Prioritize camera captures, then uploaded files, then voice notes
+        # --- Prioritize Camera Captured Data ---
         camera_captured_data = request.form.get('cameraCapturedData')
         camera_captured_media_type = request.form.get('cameraCapturedMediaType')
-        voice_note_data = request.form.get('voiceNoteData')
-        media_file = request.files.get('mediaFile') # Uploaded file
-        audio_file = request.files.get('audioFile') # Background audio for photo story
-
-        # 1. Handle camera captured data (photo or video)
         if camera_captured_data:
-            header, encoded = camera_captured_data.split(",", 1)
-            decoded_data = base64.b64decode(encoded)
-            file_extension = 'png' if 'image' in camera_captured_media_type else 'webm'
-            unique_filename = f"{uuid.uuid4()}.{file_extension}"
-            file_path = os.path.join(app.config['STORY_MEDIA_FOLDER'], unique_filename)
-            full_path_for_db = os.path.join('static', 'uploads', os.path.basename(app.config['STORY_MEDIA_FOLDER']), unique_filename)
+            try:
+                header, encoded = camera_captured_data.split(",", 1)
+                decoded_data = base64.b64decode(encoded)
+                file_extension = 'png' if 'image' in camera_captured_media_type else 'webm'
+                unique_filename = f"{uuid.uuid4()}.{file_extension}"
+                
+                # Full path on the server filesystem
+                server_file_path = os.path.join(app.config['STORY_MEDIA_FOLDER'], unique_filename)
+                # Relative path for the database and URL generation
+                media_path = os.path.join('static', 'uploads', os.path.basename(app.config['STORY_MEDIA_FOLDER']), unique_filename).replace("\\", "/")
 
-            with open(file_path, 'wb') as f:
-                f.write(decoded_data)
-            media_path = full_path_for_db
-            media_type = 'image' if 'image' in camera_captured_media_type else 'video'
-
-        # 2. Handle uploaded media file (if no camera data)
-        elif media_file and media_file.filename != '':
-            media_path = save_uploaded_file(media_file, app.config['STORY_MEDIA_FOLDER'])
-            if media_path:
-                if media_file.filename.rsplit('.', 1)[1].lower() in ALLOWED_IMAGE_EXTENSIONS:
-                    media_type = 'image'
-                elif media_file.filename.rsplit('.', 1)[1].lower() in ALLOWED_VIDEO_EXTENSIONS:
-                    media_type = 'video'
-            else:
-                flash('Invalid uploaded media file type for story.', 'danger')
+                with open(server_file_path, 'wb') as f:
+                    f.write(decoded_data)
+                
+                media_type = 'image' if 'image' in camera_captured_media_type else 'video'
+            except Exception as e:
+                app.logger.error(f"Error decoding camera data for story: {e}")
+                flash('Failed to process camera capture.', 'danger')
                 return render_template('create_story.html', form_data=request.form.to_dict(), current_year=current_year)
 
-        # 3. Handle voice note (if no other media)
-        elif voice_note_data:
-            # Voice note data is also base64 (or data URL from frontend)
-            header, encoded = voice_note_data.split(",", 1)
-            decoded_data = base64.b64decode(encoded)
-            unique_filename = f"{uuid.uuid4()}.webm" # Assuming webm format
-            file_path = os.path.join(app.config['VOICE_NOTES_FOLDER'], unique_filename)
-            full_path_for_db = os.path.join('static', 'uploads', os.path.basename(app.config['VOICE_NOTES_FOLDER']), unique_filename)
+        # --- Handle Voice Note Data (if no camera data) ---
+        elif request.form.get('voiceNoteData'):
+            try:
+                voice_note_data = request.form.get('voiceNoteData')
+                header, encoded = voice_note_data.split(",", 1)
+                decoded_data = base64.b64decode(encoded)
+                unique_filename = f"{uuid.uuid4()}.webm" # Assuming webm format
+                
+                server_file_path = os.path.join(app.config['VOICE_NOTES_FOLDER'], unique_filename)
+                media_path = os.path.join('static', 'uploads', os.path.basename(app.config['VOICE_NOTES_FOLDER']), unique_filename).replace("\\", "/")
 
-            with open(file_path, 'wb') as f:
-                f.write(decoded_data)
-            media_path = full_path_for_db
-            media_type = 'audio'
-        else:
-            flash('Story requires a photo, video, or voice note.', 'danger')
-            return render_template('create_story.html', form_data=request.form.to_dict(), current_year=current_year)
+                with open(server_file_path, 'wb') as f:
+                    f.write(decoded_data)
+                
+                media_type = 'audio'
+            except Exception as e:
+                app.logger.error(f"Error decoding voice note data for story: {e}")
+                flash('Failed to process voice note.', 'danger')
+                return render_template('create_story.html', form_data=request.form.to_dict(), current_year=current_year)
 
-        # Handle background audio if main media is an image
-        if media_type == 'image' and audio_file and audio_file.filename != '':
+        # --- Handle Uploaded Media File (if no camera or voice note data) ---
+        elif 'mediaFile' in request.files and request.files['mediaFile'].filename != '':
+            media_file = request.files['mediaFile']
+            media_path = save_uploaded_file(media_file, app.config['STORY_MEDIA_FOLDER'])
+            if media_path:
+                file_extension = media_file.filename.rsplit('.', 1)[1].lower()
+                if file_extension in ALLOWED_IMAGE_EXTENSIONS:
+                    media_type = 'image'
+                elif file_extension in ALLOWED_VIDEO_EXTENSIONS:
+                    media_type = 'video'
+                else:
+                    flash('Invalid uploaded media file type for story. Only images and videos are supported.', 'danger')
+                    return render_template('create_story.html', form_data=request.form.to_dict(), current_year=current_year)
+            else:
+                flash('Invalid uploaded media file or file not provided for story.', 'danger')
+                return render_template('create_story.html', form_data=request.form.to_dict(), current_year=current_year)
+        
+        # --- Handle Background Audio for Image Stories (if main media is an image) ---
+        if media_type == 'image' and 'audioFile' in request.files and request.files['audioFile'].filename != '':
+            audio_file = request.files['audioFile']
             background_audio_path = save_uploaded_file(audio_file, app.config['VOICE_NOTES_FOLDER'])
             if not background_audio_path:
                 flash('Invalid background audio file type for story.', 'danger')
                 return render_template('create_story.html', form_data=request.form.to_dict(), current_year=current_year)
 
+        # --- Final Validation before DB insertion ---
+        if not description and not media_path:
+            flash('Story requires a photo, video, voice note, or text.', 'danger')
+            return render_template('create_story.html', form_data=request.form.to_dict(), current_year=current_year)
 
         db = get_db()
         try:
-            # Stories expire in 24 hours
             expires_at = datetime.now(timezone.utc) + timedelta(hours=24)
             db.execute(
                 """
@@ -2115,7 +2130,7 @@ def create_story():
             )
             db.commit()
             flash('Story created successfully! It will expire in 24 hours.', 'success')
-            return redirect(url_for('home')) # Redirect to home/stories feed
+            return redirect(url_for('home'))
         except Exception as e:
             flash(f'An error occurred while creating your story: {e}', 'danger')
             app.logger.error(f"Error creating story: {e}")
@@ -2123,6 +2138,62 @@ def create_story():
             return render_template('create_story.html', form_data=request.form.to_dict(), current_year=current_year)
 
     return render_template('create_story.html', current_year=current_year)
+
+# --- API Route to Get Stories ---
+@app.route('/api/get_stories')
+@login_required
+def api_get_stories():
+    db = get_db()
+    
+    # Fetch stories that are not expired
+    # Filter by visibility: public, or private/friends if current_user is friend/owner
+    stories_data = db.execute(
+        """
+        SELECT
+            s.id,
+            s.user_id,
+            s.description,
+            s.media_path,
+            s.media_type,
+            s.background_audio_path,
+            s.timestamp,
+            s.expires_at,
+            s.is_sociafam_story,
+            u.username,
+            u.originalName,
+            m.profilePhoto AS owner_profile_pic
+        FROM stories s
+        JOIN users u ON s.user_id = u.id
+        LEFT JOIN members m ON u.id = m.user_id
+        WHERE s.expires_at > CURRENT_TIMESTAMP
+          AND (
+                s.visibility = 'public'
+                OR
+                (s.visibility = 'friends' AND EXISTS (
+                    SELECT 1 FROM friendships
+                    WHERE ((user1_id = ? AND user2_id = s.user_id) OR (user1_id = s.user_id AND user2_id = ?))
+                    AND status = 'accepted'
+                ))
+                OR
+                (s.user_id = ?) -- User can always see their own stories
+              )
+        ORDER BY s.timestamp DESC
+        """,
+        (current_user.id, current_user.id, current_user.id)
+    ).fetchall()
+
+    stories_list = []
+    for story in stories_data:
+        story_dict = dict(story)
+        story_dict['profile_pic'] = get_member_profile_pic(story_dict['user_id'])
+        # Ensure timestamps are ISO format for moment.js
+        if story_dict['timestamp']:
+            story_dict['timestamp'] = datetime.fromisoformat(story_dict['timestamp']).isoformat()
+        if story_dict['expires_at']:
+            story_dict['expires_at'] = datetime.fromisoformat(story_dict['expires_at']).isoformat()
+        stories_list.append(story_dict)
+
+    return jsonify({'stories': stories_list})
 
 # --- Search Route ---
 @app.route('/search', methods=['GET'])
