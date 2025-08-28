@@ -204,6 +204,40 @@
         gap: 15px;
     }
 
+    /* Message box for alerts */
+    .message-box {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background-color: #fff;
+        border: 1px solid #ccc;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        padding: 20px;
+        border-radius: 8px;
+        z-index: 10000;
+        display: none;
+        flex-direction: column;
+        align-items: center;
+        gap: 15px;
+    }
+
+    .message-box p {
+        margin: 0;
+        font-size: 1.1em;
+        color: #333;
+    }
+
+    .message-box button {
+        background-color: var(--primary-color);
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 1em;
+    }
+
     /* Responsive adjustments */
     @media (max-width: 768px) {
         .create-story-container {
@@ -289,7 +323,7 @@
     <div class="create-story-card">
         <h2>Create New Story</h2>
 
-        <form action="{{ url_for('create_story') }}" method="POST" enctype="multipart/form-data">
+        <form action="{{ url_for('create_story') }}" method="POST" enctype="multipart/form-data" id="createStoryForm">
             {# Media Upload Section #}
             <div class="media-upload-wrapper">
                 <div class="media-preview-area">
@@ -322,6 +356,7 @@
                     <span id="voiceNoteTimer">00:00</span>
                 </div>
                 <audio id="audioPreviewPlayer" controls></audio>
+                {# This input will hold the base64 data URL of the voice note #}
                 <input type="hidden" id="voiceNoteData" name="voiceNoteData">
                 <small class="form-text text-muted">Max 30 seconds.</small>
             </div>
@@ -343,6 +378,7 @@
                     <button type="button" class="btn btn-primary" id="startVideoCaptureBtn"><i class="fas fa-video"></i> Record Video</button>
                     <button type="button" class="btn btn-danger" id="stopVideoCaptureBtn" style="display: none;"><i class="fas fa-stop"></i> Stop Recording</button>
                 </div>
+                {# This input will hold the base64 data URL of the captured photo/video #}
                 <input type="hidden" id="cameraCapturedData" name="cameraCapturedData">
                 <input type="hidden" id="cameraCapturedMediaType" name="cameraCapturedMediaType">
                 <small class="form-text text-muted">Videos max 30 seconds.</small>
@@ -365,10 +401,16 @@
 
             <div class="d-grid gap-2 mt-5">
                 <button type="submit" class="btn btn-primary btn-submit">Create Story</button>
-                <a href="{{ url_for('add_to') }}" class="btn btn-secondary btn-cancel">Cancel</a>
+                <a href="{{ url_for('home') }}" class="btn btn-secondary btn-cancel">Cancel</a>
             </div>
         </form>
     </div>
+</div>
+
+{# Custom Message Box for alerts #}
+<div id="messageBox" class="message-box">
+    <p id="messageBoxText"></p>
+    <button id="messageBoxCloseBtn">OK</button>
 </div>
 
 <script>
@@ -399,7 +441,14 @@
         const cameraCapturedDataInput = document.getElementById('cameraCapturedData');
         const cameraCapturedMediaTypeInput = document.getElementById('cameraCapturedMediaType');
 
-        let currentActiveMediaType = null; // 'file-image', 'file-video', 'voice-note', 'camera-photo', 'camera-video'
+        const createStoryForm = document.getElementById('createStoryForm');
+        const descriptionInput = document.getElementById('description');
+
+        const messageBox = document.getElementById('messageBox');
+        const messageBoxText = document.getElementById('messageBoxText');
+        const messageBoxCloseBtn = document.getElementById('messageBoxCloseBtn');
+
+        let currentActiveMediaType = null; // 'file-image', 'file-video', 'voice-note', 'camera-photo', 'camera-video', 'text-only'
         let mediaRecorder;
         let audioChunks = [];
         let voiceNoteInterval;
@@ -412,6 +461,15 @@
 
         const MAX_STORY_VIDEO_DURATION = 30; // seconds
         const MAX_VOICE_NOTE_DURATION = 30; // seconds
+
+        function showMessageBox(message) {
+            messageBoxText.textContent = message;
+            messageBox.style.display = 'flex';
+        }
+
+        messageBoxCloseBtn.addEventListener('click', function() {
+            messageBox.style.display = 'none';
+        });
 
         function resetAllMediaInputs() {
             // Hide all media sections
@@ -441,12 +499,14 @@
             }
             clearInterval(voiceNoteInterval);
             voiceNoteSeconds = 0;
+            audioChunks = []; // Clear audio chunks too
 
             cameraCaptureSection.style.display = 'none';
             cameraLiveFeed.style.display = 'none';
             cameraLiveFeed.pause();
             if (cameraStream) {
                 cameraStream.getTracks().forEach(track => track.stop());
+                cameraStream = null;
             }
             takePhotoBtn.style.display = 'block';
             startVideoCaptureBtn.style.display = 'block';
@@ -458,10 +518,10 @@
             }
             clearInterval(videoCaptureTimer);
             videoCaptureSeconds = 0;
-            videoCaptureChunks = [];
+            videoCaptureChunks = []; // Clear video chunks too
 
             mediaFile.value = ''; // Clear file input
-            currentActiveMediaType = null;
+            currentActiveMediaType = null; // Reset the active media type
         }
 
         // --- Select Photo/Video File ---
@@ -484,8 +544,8 @@
                         tempVideo.onloadedmetadata = function() {
                             window.URL.revokeObjectURL(tempVideo.src);
                             if (tempVideo.duration > MAX_STORY_VIDEO_DURATION) {
-                                alert(`Video is too long (${Math.round(tempVideo.duration)}s). Max ${MAX_STORY_VIDEO_DURATION} seconds allowed.`);
-                                resetAllMediaInputs();
+                                showMessageBox(`Video is too long (${Math.round(tempVideo.duration)}s). Max ${MAX_STORY_VIDEO_DURATION} seconds allowed.`);
+                                resetAllMediaInputs(); // Reset if too long
                                 return;
                             }
                             videoPreview.src = e.target.result;
@@ -494,9 +554,14 @@
                             currentActiveMediaType = 'file-video';
                         };
                         tempVideo.src = URL.createObjectURL(file);
+                    } else {
+                        showMessageBox('Unsupported file type. Please select an image or video.');
+                        resetAllMediaInputs();
                     }
                 };
                 reader.readAsDataURL(file);
+            } else {
+                currentActiveMediaType = null; // No file selected
             }
         });
 
@@ -545,8 +610,13 @@
                     const audioUrl = URL.createObjectURL(audioBlob);
                     audioPreviewPlayer.src = audioUrl;
                     audioPreviewPlayer.style.display = 'block';
-                    voiceNoteDataInput.value = audioUrl; // Store data URL or send blob to backend
-
+                    // Convert blob to base64 for submission
+                    const reader = new FileReader();
+                    reader.readAsDataURL(audioBlob);
+                    reader.onloadend = function() {
+                        voiceNoteDataInput.value = reader.result;
+                    };
+                    
                     stream.getTracks().forEach(track => track.stop()); // Stop microphone
                     clearInterval(voiceNoteInterval);
                     startRecordingBtn.style.display = 'block';
@@ -555,7 +625,7 @@
 
                 mediaRecorder.start();
                 startRecordingBtn.style.display = 'none';
-                stopRecordingBtn.style.display = 'block';
+                    stopRecordingBtn.style.display = 'block';
 
                 voiceNoteInterval = setInterval(() => {
                     voiceNoteSeconds++;
@@ -565,13 +635,13 @@
 
                     if (voiceNoteSeconds >= MAX_VOICE_NOTE_DURATION) {
                         mediaRecorder.stop();
-                        alert(`Voice note reached max ${MAX_VOICE_NOTE_DURATION} seconds.`);
+                        showMessageBox(`Voice note reached max ${MAX_VOICE_NOTE_DURATION} seconds.`);
                     }
                 }, 1000);
 
             } catch (err) {
                 console.error('Error accessing microphone:', err);
-                alert('Could not access microphone. Please ensure permissions are granted.');
+                showMessageBox('Could not access microphone. Please ensure permissions are granted.');
                 resetAllMediaInputs();
             }
         });
@@ -591,11 +661,10 @@
                 cameraStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
                 cameraLiveFeed.srcObject = cameraStream;
                 cameraLiveFeed.style.display = 'block';
-                cameraLiveFeed.play();
-                currentActiveMediaType = 'camera-live'; // Temp state
+                currentActiveMediaType = 'camera-live'; // Indicate camera is active but no media captured yet
             } catch (err) {
                 console.error('Error accessing camera:', err);
-                alert('Could not access camera. Please ensure permissions are granted.');
+                showMessageBox('Could not access camera. Please ensure permissions are granted.');
                 resetAllMediaInputs();
             }
         });
@@ -605,33 +674,40 @@
                 const canvas = document.createElement('canvas');
                 canvas.width = cameraLiveFeed.videoWidth;
                 canvas.height = cameraLiveFeed.videoHeight;
-                canvas.getContext('2d').drawImage(cameraLiveFeed, 0, 0, canvas.width, canvas.height);
+                const context = canvas.getContext('2d');
+                context.drawImage(cameraLiveFeed, 0, 0, canvas.width, canvas.height);
                 const imageDataUrl = canvas.toDataURL('image/png');
 
+                // Display photo in preview area
+                noMediaText.style.display = 'none';
                 imagePreview.src = imageDataUrl;
                 imagePreview.classList.add('active');
-                noMediaText.style.display = 'none';
-                currentActiveMediaType = 'camera-photo';
-                cameraCapturedDataInput.value = imageDataUrl;
-                cameraCapturedMediaTypeInput.value = 'image/png';
+                videoPreview.classList.remove('active'); // Ensure video preview is off
+                videoPreview.src = ''; // Clear video src
 
-                // Stop camera stream after taking photo
+                // Stop camera stream and hide live feed
                 cameraStream.getTracks().forEach(track => track.stop());
                 cameraLiveFeed.srcObject = null;
-                cameraCaptureSection.style.display = 'none';
                 cameraLiveFeed.style.display = 'none';
-                audioUploadSection.style.display = 'block'; // Allow audio for captured photo
+                cameraCaptureSection.style.display = 'none'; // Hide the whole camera section
+                
+                // Store data URL and mime type in hidden inputs
+                cameraCapturedDataInput.value = imageDataUrl;
+                cameraCapturedMediaTypeInput.value = 'image/png';
+                currentActiveMediaType = 'camera-photo'; // Set active media type to captured photo
+                
+                // Reset file input to prevent accidental submission of old file
+                mediaFile.value = '';
+            } else {
+                showMessageBox('Camera not active.');
             }
         });
 
         startVideoCaptureBtn.addEventListener('click', function() {
             if (cameraStream) {
-                videoCaptureChunks = [];
                 videoCaptureRecorder = new MediaRecorder(cameraStream);
+                videoCaptureChunks = [];
                 videoCaptureSeconds = 0;
-                startVideoCaptureBtn.style.display = 'none';
-                takePhotoBtn.style.display = 'none';
-                stopVideoCaptureBtn.style.display = 'block';
 
                 videoCaptureRecorder.ondataavailable = event => {
                     videoCaptureChunks.push(event.data);
@@ -640,41 +716,73 @@
                 videoCaptureRecorder.onstop = () => {
                     const videoBlob = new Blob(videoCaptureChunks, { type: 'video/webm' });
                     const videoUrl = URL.createObjectURL(videoBlob);
-                    
+
+                    // Display video in preview area
+                    noMediaText.style.display = 'none';
                     videoPreview.src = videoUrl;
                     videoPreview.classList.add('active');
                     videoPreview.play();
-                    noMediaText.style.display = 'none';
-                    currentActiveMediaType = 'camera-video';
-                    cameraCapturedDataInput.value = videoUrl; // Store data URL or send blob to backend
-                    cameraCapturedMediaTypeInput.value = 'video/webm';
+                    imagePreview.classList.remove('active'); // Ensure image preview is off
+                    imagePreview.src = ''; // Clear image src
 
+                    // Convert blob to base64 for submission
+                    const reader = new FileReader();
+                    reader.readAsDataURL(videoBlob);
+                    reader.onloadend = function() {
+                        cameraCapturedDataInput.value = reader.result; // Send blob to backend
+                        cameraCapturedMediaTypeInput.value = 'video/webm';
+                    };
+                    
                     cameraStream.getTracks().forEach(track => track.stop()); // Stop camera
                     cameraLiveFeed.srcObject = null;
-                    cameraCaptureSection.style.display = 'none';
                     cameraLiveFeed.style.display = 'none';
+                    cameraCaptureSection.style.display = 'none'; // Hide the whole camera section
 
                     clearInterval(videoCaptureTimer);
                     startVideoCaptureBtn.style.display = 'block';
                     takePhotoBtn.style.display = 'block';
                     stopVideoCaptureBtn.style.display = 'none';
+                    currentActiveMediaType = 'camera-video'; // Set active media type to captured video
+
+                    // Reset file input to prevent accidental submission of old file
+                    mediaFile.value = '';
                 };
 
                 videoCaptureRecorder.start();
+                startVideoCaptureBtn.style.display = 'none';
+                takePhotoBtn.style.display = 'none';
+                stopVideoCaptureBtn.style.display = 'block';
+
                 videoCaptureTimer = setInterval(() => {
                     videoCaptureSeconds++;
                     if (videoCaptureSeconds >= MAX_STORY_VIDEO_DURATION) {
                         videoCaptureRecorder.stop();
-                        alert(`Video recording reached max ${MAX_STORY_VIDEO_DURATION} seconds.`);
+                        showMessageBox(`Video recording reached max ${MAX_STORY_VIDEO_DURATION} seconds.`);
                     }
                 }, 1000);
 
+            } else {
+                showMessageBox('Camera not active.');
             }
         });
 
         stopVideoCaptureBtn.addEventListener('click', function() {
             if (videoCaptureRecorder && videoCaptureRecorder.state !== 'inactive') {
                 videoCaptureRecorder.stop();
+            }
+        });
+
+        // --- Form Submission Validation ---
+        createStoryForm.addEventListener('submit', function(event) {
+            const descriptionText = descriptionInput.value.trim();
+            const mediaFileSelected = mediaFile.files.length > 0;
+            const voiceNoteRecorded = voiceNoteDataInput.value !== '';
+            const cameraCaptured = cameraCapturedDataInput.value !== '';
+
+            // If no media is selected/recorded AND no description is provided, prevent submission
+            if (!mediaFileSelected && !voiceNoteRecorded && !cameraCaptured && descriptionText === '') {
+                event.preventDefault(); // Stop the form from submitting
+                showMessageBox('Story requires a photo, video, voice note, or text.');
             }
         });
 
