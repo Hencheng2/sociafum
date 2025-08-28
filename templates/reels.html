@@ -12,28 +12,28 @@
     }
 
     .reels-container {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100vw;
-        height: 100vh; /* Takes full viewport height */
+        position: relative; /* Changed from fixed to relative */
+        /* Removed top, left as relative elements are in flow */
+        width: 100vw; /* Use viewport width */
+        /* Adjusted height to ensure it fits within the viewport and accounts for navbar */
+        min-height: calc(100vh - var(--navbar-height, 60px)); /* Default 60px if --navbar-height not defined */
+        max-height: calc(100vh - var(--navbar-height, 60px)); /* Ensure it doesn't exceed viewport */
         display: flex;
         flex-direction: column;
-        justify-content: center;
-        align-items: center;
-        background-color: black; /* Dark background for videos */
+        background-color: black;
         overflow-y: scroll; /* Vertical scroll for reels */
         scroll-snap-type: y mandatory; /* Ensures full-screen snapping */
         -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
         padding-top: 0; /* No top padding for full screen */
-        padding-bottom: var(--navbar-height); /* Ensure space for the fixed bottom navbar */
+        padding-bottom: 0; /* The reel-item itself will handle padding for navbar */
         box-sizing: border-box; /* Include padding in height calculation */
     }
 
     .reel-item {
         scroll-snap-align: start; /* Snap to the start of each item */
         width: 100vw;
-        height: calc(100vh - var(--navbar-height)); /* Full screen minus bottom navbar */
+        /* Calculate height to fit exactly one reel item in the visible area, accounting for navbar */
+        height: calc(100vh - var(--navbar-height, 60px)); /* Default 60px if --navbar-height not defined */
         display: flex;
         flex-direction: column;
         justify-content: center;
@@ -109,7 +109,7 @@
 
     .reel-actions-vertical {
         position: absolute;
-        bottom: calc(var(--navbar-height) + 20px); /* Position above bottom navbar + padding */
+        bottom: calc(var(--navbar-height, 60px) + 20px); /* Position above bottom navbar + padding */
         right: 20px;
         display: flex;
         flex-direction: column;
@@ -184,16 +184,17 @@
     /* Responsive Adjustments */
     @media (max-width: 768px) {
         .reels-container {
-            padding-bottom: var(--navbar-height); /* Keep space for bottom navbar */
+            min-height: calc(100vh - var(--navbar-height, 60px));
+            max-height: calc(100vh - var(--navbar-height, 60px));
         }
         .reel-item {
-            height: calc(100vh - var(--navbar-height));
+            height: calc(100vh - var(--navbar-height, 60px));
         }
         .reel-bottom-info {
             padding-right: 60px; /* Adjust for smaller action icons */
         }
         .reel-actions-vertical {
-            bottom: calc(var(--navbar-height) + 15px);
+            bottom: calc(var(--navbar-height, 60px) + 15px);
             right: 15px;
             gap: 12px;
         }
@@ -215,15 +216,19 @@
     }
 
     @media (max-width: 480px) {
+        .reel-container {
+            min-height: calc(100vh - var(--navbar-height, 60px));
+            max-height: calc(100vh - var(--navbar-height, 60px));
+        }
         .reel-item {
-            height: calc(100vh - var(--navbar-height));
+            height: calc(100vh - var(--navbar-height, 60px));
         }
         .reel-bottom-info {
             padding: 15px; /* More padding on small screens */
             padding-right: 50px;
         }
         .reel-actions-vertical {
-            bottom: calc(var(--navbar-height) + 10px);
+            bottom: calc(var(--navbar-height, 60px) + 10px);
             right: 10px;
             gap: 10px;
         }
@@ -248,7 +253,7 @@
 <div class="reels-container" id="reelsContainer">
     {% for reel in reels %}
     <div class="reel-item" data-reel-id="{{ reel.id }}">
-        <video class="reel-video" src="{{ reel.video_url }}" autoplay loop muted playsinline preload="auto"></video>
+        <video class="reel-video" src="{{ reel.media_path }}" autoplay loop muted playsinline preload="auto"></video>
         
         {# Play/Pause Icon Overlay (Invisible by default) #}
         <div class="play-pause-overlay" id="playPauseIcon_{{ reel.id }}">
@@ -258,12 +263,12 @@
         <div class="reel-overlay">
             <div class="reel-bottom-info">
                 <div class="reel-profile-pic-wrapper position-relative">
-                    <img src="{{ reel.profile_pic }}" alt="{{ reel.username }} Profile" class="reel-profile-pic">
-                    {% if not reel.is_following_poster %}
-                    <button class="reel-action-icon follow-btn position-absolute" data-user-id="{{ reel.poster_user_id }}" style="bottom: -5px; right: -10px; width: 25px; height: 25px; font-size: 0.8em; background-color: var(--primary-color); border: 1px solid white;">
+                    <img src="{{ reel.owner_profile_pic }}" alt="{{ reel.username }} Profile" class="reel-profile-pic">
+                    {# {% if not reel.is_following_poster %} #}
+                    <button class="reel-action-icon follow-btn position-absolute" data-user-id="{{ reel.user_id }}" style="bottom: -5px; right: -10px; width: 25px; height: 25px; font-size: 0.8em; background-color: var(--primary-color); border: 1px solid white;">
                         <i class="fas fa-plus"></i>
                     </button>
-                    {% endif %}
+                    {# {% endif %} #}
                 </div>
                 <div class="reel-user-details">
                     <p class="reel-username">@{{ reel.username }}</p>
@@ -297,7 +302,7 @@
                     <i class="fas fa-bookmark"></i>
                 </button>
                 {# Download Button #}
-                <button class="reel-action-icon download-btn" data-reel-id="{{ reel.id }}" data-video-url="{{ reel.video_url }}" data-username="{{ reel.username }}">
+                <button class="reel-action-icon download-btn" data-reel-id="{{ reel.id }}" data-video-url="{{ reel.media_path }}" data-username="{{ reel.username }}">
                     <i class="fas fa-download"></i>
                 </button>
             </div>
@@ -338,6 +343,15 @@
         let currentPlayingVideo = null;
         let playPauseTimeout;
 
+        // Ensure all videos start paused
+        reelItems.forEach(item => {
+            const video = item.querySelector('.reel-video');
+            if (video) {
+                video.pause();
+                video.currentTime = 0; // Reset video to start
+            }
+        });
+
         // Intersection Observer to play/pause videos based on visibility
         const observerOptions = {
             root: reelsContainer,
@@ -354,8 +368,12 @@
                     // If this reel is mostly visible, play it
                     if (currentPlayingVideo && currentPlayingVideo !== video) {
                         currentPlayingVideo.pause();
+                        // Reset the previously playing video's icon to 'play'
                         const prevIcon = document.getElementById(`playPauseIcon_${currentPlayingVideo.closest('.reel-item').dataset.reelId}`);
-                        if (prevIcon) prevIcon.classList.remove('visible'); // Hide old icon
+                        if (prevIcon) {
+                            prevIcon.querySelector('i').className = 'fas fa-play';
+                            prevIcon.classList.remove('visible'); // Hide old icon
+                        }
                     }
                     video.play().catch(error => console.error("Video autoplay failed:", error));
                     currentPlayingVideo = video;
@@ -420,18 +438,12 @@
                 const username = this.dataset.username;
                 const reelId = this.dataset.reelId;
 
-                // Example of how you might trigger a download
-                // This would ideally involve a Flask endpoint to handle watermarking
-                // and then serve the file. For client-side, it's simpler:
                 const a = document.createElement('a');
                 a.href = videoUrl;
                 a.download = `SociaFam_reel_${username}_${reelId}.mp4`; // Example filename
                 document.body.appendChild(a);
                 a.click();
                 document.body.removeChild(a);
-                // Flash message (requires Flask backend to receive AJAX and flash)
-                // fetch('/download-reel', { method: 'POST', body: JSON.stringify({ reel_id: reelId }), headers: { 'Content-Type': 'application/json' }});
-                // flash('Downloading reel with SociaFam watermark...', 'info');
             });
         });
 
@@ -453,7 +465,6 @@
                         countSpan.textContent = currentCount - 1;
                     }
                 }
-                // flash('Reel liked/unliked!', 'success');
             });
         });
 
@@ -462,7 +473,6 @@
                 event.stopPropagation();
                 const reelId = this.dataset.reelId;
                 // AJAX call to /repost-reel/<reelId>
-                // flash('Reel reposted!', 'success');
             });
         });
 
@@ -473,10 +483,6 @@
                 // Load comments into modal via AJAX
                 const reelCommentModalBody = document.getElementById('reelCommentModalBody');
                 reelCommentModalBody.innerHTML = `<p class="text-center text-muted">Loading comments for reel ${reelId}...</p>`;
-                // fetch(`/api/reel-comments/${reelId}`)
-                // .then(response => response.text())
-                // .then(html => reelCommentModalBody.innerHTML = html)
-                // .catch(error => reelCommentModalBody.innerHTML = `<p class="text-danger text-center">Failed to load comments.</p>`);
             });
         });
 
@@ -485,7 +491,6 @@
                 event.stopPropagation();
                 const reelId = this.dataset.reelId;
                 // Implement share logic (e.g., copy link, open share sheet)
-                // flash('Share options for reel...', 'info');
             });
         });
 
@@ -495,7 +500,6 @@
                 const reelId = this.dataset.reelId;
                 // AJAX call to /save-reel/<reelId>
                 this.classList.toggle('active');
-                // flash('Reel saved/unsaved!', 'success');
             });
         });
 
@@ -505,7 +509,6 @@
                 const userId = this.dataset.userId;
                 // AJAX call to /follow-user/<userId>
                 this.style.display = 'none'; // Hide follow button after clicking
-                // flash('Follow request sent!', 'success');
             });
         });
 
