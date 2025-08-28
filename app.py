@@ -1823,10 +1823,10 @@ def create_post():
         media_path = None
         media_type = None
 
-        # --- NEW CODE: Ensure the posts upload directory exists ---
-        posts_folder = app.config['POSTS_FOLDER']
-        if not os.path.exists(posts_folder):
-            os.makedirs(posts_folder)
+        # --- FIX: Ensure the correct directory exists using the correct variable name ---
+        post_media_folder = app.config['POST_MEDIA_FOLDER']
+        if not os.path.exists(post_media_folder):
+            os.makedirs(post_media_folder)
 
         if 'media_file' in request.files:
             file = request.files['media_file']
@@ -1834,12 +1834,12 @@ def create_post():
                 filename = secure_filename(file.filename)
                 media_type = file.mimetype.split('/')[0] # 'image' or 'video'
 
-                # --- NEW CODE: Using the correctly defined folder ---
-                file_path = os.path.join(posts_folder, filename)
+                # --- FIX: Using the correctly defined folder ---
+                file_path = os.path.join(post_media_folder, filename)
                 file.save(file_path)
-                
-                # Store relative path for database
-                media_path = os.path.join('static', 'uploads', 'posts', filename)
+
+                # Store the correct relative path for the database
+                media_path = os.path.join('static', 'uploads', 'post_media', filename)
 
         try:
             cursor.execute("INSERT INTO posts (user_id, post_content, media_path, media_type, visibility) VALUES (?, ?, ?, ?, ?)",
