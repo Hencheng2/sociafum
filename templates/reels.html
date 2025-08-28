@@ -5,7 +5,597 @@
 {% block content %}
 <style>
     /* Custom styles for the Reels page */
+    body {{% extends 'base.html' %}
+
+{% block title %}Reels{% endblock %}
+
+{% block content %}
+<style>
+    /* Custom styles for the Reels page */
     body {
+        padding-top: 0;
+        padding-bottom: 0; /* Reels takes full screen, no extra padding for fixed bottom navbar needed */
+        overflow: hidden; /* Prevent body scroll, scrolling handled by reels container */
+    }
+
+    /* Variables for consistent spacing/sizing, also respects base.html's --navbar-height */
+    :root {
+        --reel-profile-pic-size: 45px;
+        --reel-action-icon-size: 45px;
+        --reel-follow-btn-size: 25px;
+        --reel-overlay-padding: 20px;
+    }
+
+    .reels-container {
+        position: relative;
+        width: 100vw;
+        /* Adjusted height to ensure it fits within the viewport and accounts for navbar */
+        min-height: calc(100vh - var(--navbar-height, 60px)); /* Default 60px if --navbar-height not defined */
+        max-height: calc(100vh - var(--navbar-height, 60px)); /* Ensure it doesn't exceed viewport */
+        display: flex;
+        flex-direction: column;
+        background-color: black;
+        overflow-y: scroll; /* Vertical scroll for reels */
+        scroll-snap-type: y mandatory; /* Ensures full-screen snapping */
+        -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+        padding-top: 0;
+        padding-bottom: 0; /* The reel-item itself will handle padding for navbar */
+        box-sizing: border-box; /* Include padding in height calculation */
+    }
+
+    .reel-item {
+        scroll-snap-align: start; /* Snap to the start of each item */
+        width: 100vw;
+        /* Calculate height to fit exactly one reel item in the visible area, accounting for navbar */
+        height: calc(100vh - var(--navbar-height, 60px)); /* Default 60px if --navbar-height not defined */
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        position: relative;
+        background-color: black;
+        color: white; /* Ensure text is visible over dark background */
+        font-family: 'Poppins', sans-serif; /* A more modern font choice */
+    }
+
+    .reel-video {
+        width: 100%;
+        height: 100%;
+        object-fit: contain; /* Contain video within bounds, black bars if aspect ratio mismatch */
+        background-color: black;
+        display: block;
+    }
+
+    .reel-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end; /* Align content to the bottom */
+        padding: var(--reel-overlay-padding);
+        box-sizing: border-box;
+        background: linear-gradient(to top, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0) 30%); /* Gradient for text readability */
+        pointer-events: none; /* Allow interaction with video through overlay */
+    }
+
+    .reel-bottom-info {
+        pointer-events: auto; /* Re-enable pointer events for interactive elements */
+        display: flex;
+        align-items: flex-end; /* Align profile pic/text to the bottom */
+        width: 100%;
+        padding-right: calc(var(--reel-action-icon-size) + var(--reel-overlay-padding) + 10px); /* Space for action icons on the right */
+        margin-bottom: 10px; /* Space from bottom edge */
+        margin-top: auto; /* Pushes this div to the bottom of the reel-overlay */
+        max-width: 100%; /* Ensure it doesn't overflow horizontally */
+    }
+
+    .reel-profile-pic-wrapper {
+        position: relative;
+        flex-shrink: 0; /* Prevents the wrapper from shrinking */
+        margin-right: 10px; /* Space between profile pic and text */
+        display: flex; /* Use flex to align profile pic and follow button */
+        align-items: flex-end; /* Align the profile pic and follow button baseline */
+        height: var(--reel-profile-pic-size); /* Give it a defined height */
+        width: var(--reel-profile-pic-size); /* Give it a defined width */
+    }
+
+    .reel-profile-pic {
+        width: var(--reel-profile-pic-size);
+        height: var(--reel-profile-pic-size);
+        border-radius: 50%;
+        object-fit: cover;
+        border: 2px solid white;
+    }
+
+    .reel-user-details {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        color: white;
+        flex-grow: 1; /* Allows text to take available space */
+        min-width: 0; /* Prevents overflow of long text in flexbox */
+    }
+
+    .reel-username {
+        font-weight: 600;
+        font-size: 1.1em;
+        margin-bottom: 2px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .reel-description {
+        font-size: 0.9em;
+        color: rgba(255, 255, 255, 0.8);
+        max-width: 100%; /* Adjust to fill available space in .reel-user-details */
+        white-space: normal; /* Allow description to wrap if too long */
+        overflow: hidden;
+        text-overflow: ellipsis; /* Still add ellipsis for overflow */
+        display: -webkit-box; /* For multi-line ellipsis */
+        -webkit-line-clamp: 2; /* Limit to 2 lines */
+        -webkit-box-orient: vertical;
+    }
+
+    .reel-actions-vertical {
+        position: absolute;
+        bottom: calc(var(--navbar-height, 60px) + var(--reel-overlay-padding)); /* Position above bottom navbar + padding */
+        right: var(--reel-overlay-padding);
+        display: flex;
+        flex-direction: column;
+        gap: 15px; /* Space between icons */
+        align-items: center;
+        pointer-events: auto;
+        color: white; /* Default icon color */
+    }
+
+    .reel-action-icon {
+        background: rgba(0,0,0,0.4); /* Subtle background for visibility */
+        border-radius: 50%;
+        width: var(--reel-action-icon-size);
+        height: var(--reel-action-icon-size);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.3em;
+        cursor: pointer;
+        transition: background 0.2s ease, transform 0.2s ease;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+        pointer-events: auto;
+    }
+
+    .reel-action-icon:hover {
+        background: rgba(0,0,0,0.6);
+        transform: scale(1.05);
+    }
+    
+    .reel-action-icon i {
+        pointer-events: none; /* Allow click on parent button */
+    }
+
+    .reel-action-icon.like-btn.active .fa-heart {
+        color: var(--danger-color); /* Red heart when liked */
+    }
+
+    .reel-action-icon.follow-btn { /* Specific styling for the follow button itself */
+        position: absolute; /* Kept absolute for precise placement */
+        bottom: -5px; /* Adjust as needed, relative to .reel-profile-pic-wrapper */
+        right: -10px; /* Adjust as needed */
+        width: var(--reel-follow-btn-size);
+        height: var(--reel-follow-btn-size);
+        font-size: 0.8em;
+        background-color: var(--primary-color);
+        border: 1px solid white;
+        z-index: 2; /* Ensure it's above other elements if necessary */
+    }
+
+    .reel-action-icon span.count {
+        font-size: 0.7em;
+        margin-top: 2px; /* Space between icon and count */
+    }
+
+    /* Pause/Play Overlay Icon */
+    .play-pause-overlay {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 3em;
+        color: rgba(255,255,255,0.7);
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 0.3s ease-out;
+        z-index: 10;
+    }
+    .play-pause-overlay.visible {
+        opacity: 1;
+    }
+
+    /* Responsive Adjustments */
+    @media (max-width: 768px) {
+        :root {
+            --reel-profile-pic-size: 40px;
+            --reel-action-icon-size: 40px;
+            --reel-follow-btn-size: 22px;
+            --reel-overlay-padding: 15px;
+        }
+        .reel-bottom-info {
+            padding-right: calc(var(--reel-action-icon-size) + var(--reel-overlay-padding) + 10px);
+        }
+        .reel-actions-vertical {
+            bottom: calc(var(--navbar-height, 60px) + var(--reel-overlay-padding));
+            right: var(--reel-overlay-padding);
+            gap: 12px;
+        }
+        .reel-username {
+            font-size: 1em;
+        }
+        .reel-description {
+            font-size: 0.85em;
+        }
+        .reel-action-icon.follow-btn {
+            bottom: -5px;
+            right: -8px;
+        }
+    }
+
+    @media (max-width: 480px) {
+        :root {
+            --reel-profile-pic-size: 35px;
+            --reel-action-icon-size: 35px;
+            --reel-follow-btn-size: 20px;
+            --reel-overlay-padding: 10px;
+        }
+        .reel-bottom-info {
+            padding-right: calc(var(--reel-action-icon-size) + var(--reel-overlay-padding) + 10px);
+        }
+        .reel-actions-vertical {
+            bottom: calc(var(--navbar-height, 60px) + var(--reel-overlay-padding));
+            right: var(--reel-overlay-padding);
+            gap: 10px;
+        }
+        .reel-username {
+            font-size: 0.9em;
+        }
+        .reel-description {
+            font-size: 0.8em;
+        }
+        .reel-action-icon.follow-btn {
+            bottom: -3px;
+            right: -6px;
+        }
+    }
+</style>
+
+<div class="reels-container" id="reelsContainer">
+    {% for reel in reels %}
+    <div class="reel-item" data-reel-id="{{ reel.id }}">
+        {# Using 'preload="auto"' to hint browsers to load enough data to start playback #}
+        <video class="reel-video" src="{{ reel.media_path }}" autoplay loop muted playsinline preload="auto"></video>
+        
+        {# Play/Pause Icon Overlay (Invisible by default, appears on tap) #}
+        <div class="play-pause-overlay" id="playPauseIcon_{{ reel.id }}">
+            <i class="fas fa-play"></i>
+        </div>
+
+        <div class="reel-overlay">
+            <div class="reel-bottom-info">
+                {# Profile Picture and Follow Button Wrapper #}
+                <div class="reel-profile-pic-wrapper">
+                    <img src="{{ reel.owner_profile_pic }}" alt="{{ reel.username }} Profile" class="reel-profile-pic">
+                    {# Only show follow button if the user is not the poster and not already following #}
+                    {# Assuming reel.is_following_poster is passed from backend if applicable #}
+                    {% if current_user.id != reel.user_id and not reel.is_following_poster %}
+                    <button class="reel-action-icon follow-btn" data-user-id="{{ reel.user_id }}">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                    {% endif %}
+                </div>
+                {# User Details (Username and Description) #}
+                <div class="reel-user-details">
+                    <p class="reel-username">@{{ reel.username }}</p>
+                    {% if reel.description %}
+                        <p class="reel-description">{{ reel.description }}</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            {# Vertical Action Icons (Like, Comment, Share, etc.) #}
+            <div class="reel-actions-vertical">
+                {# Like Button #}
+                <button class="reel-action-icon like-btn {% if reel.is_liked_by_current_user %}active{% endif %}" data-reel-id="{{ reel.id }}">
+                    <i class="fas fa-heart"></i>
+                    <span class="count">{{ reel.likes_count }}</span>
+                </button>
+                {# Repost Button #}
+                <button class="reel-action-icon repost-btn" data-reel-id="{{ reel.id }}">
+                    <i class="fas fa-retweet"></i>
+                </button>
+                {# Comment Button #}
+                <button class="reel-action-icon comment-btn" data-reel-id="{{ reel.id }}" data-bs-toggle="modal" data-bs-target="#reelCommentModal">
+                    <i class="fas fa-comment"></i>
+                    <span class="count">{{ reel.comments_count }}</span>
+                </button>
+                {# Share Button #}
+                <button class="reel-action-icon share-btn" data-reel-id="{{ reel.id }}">
+                    <i class="fas fa-share"></i>
+                </button>
+                {# Save Button #}
+                <button class="reel-action-icon save-btn {% if reel.is_saved_by_current_user %}active{% endif %}" data-reel-id="{{ reel.id }}">
+                    <i class="fas fa-bookmark"></i>
+                </button>
+                {# Download Button #}
+                <button class="reel-action-icon download-btn" data-reel-id="{{ reel.id }}" data-video-url="{{ reel.media_path }}" data-username="{{ reel.username }}">
+                    <i class="fas fa-download"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    {# Message when no reels are available #}
+    <div class="text-center p-5">
+        <h2 class="text-white">No reels available yet.</h2>
+        <p class="text-white-50">Check back later for exciting short videos!</p>
+    </div>
+    {% endfor %}
+</div>
+
+{# Reel Comments Modal (using Bootstrap 5 syntax) #}
+<div class="modal fade" id="reelCommentModal" tabindex="-1" aria-labelledby="reelCommentModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="reelCommentModalLabel">Comments</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="reelCommentModalBody">
+                {# Comments will be loaded here via AJAX #}
+                <p class="text-center text-muted">Loading comments...</p>
+            </div>
+            <div class="modal-footer">
+                <input type="text" class="form-control me-2" placeholder="Add a comment...">
+                <button class="btn btn-primary">Post</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Ensure Moment.js is loaded if using it here, or remove if only for posts.
+    // If not in base.html: <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const reelsContainer = document.getElementById('reelsContainer');
+        const reelItems = document.querySelectorAll('.reel-item');
+        let currentPlayingVideo = null;
+        let playPauseTimeout;
+
+        // Ensure all videos start paused and at the beginning
+        reelItems.forEach(item => {
+            const video = item.querySelector('.reel-video');
+            if (video) {
+                video.pause();
+                video.currentTime = 0; // Reset video to start
+            }
+        });
+
+        // Intersection Observer to play/pause videos based on visibility
+        const observerOptions = {
+            root: reelsContainer,
+            rootMargin: '0px',
+            threshold: 0.7 // A video is "visible" when 70% of it is in view
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                const video = entry.target.querySelector('.reel-video');
+                const playPauseIcon = document.getElementById(`playPauseIcon_${entry.target.dataset.reelId}`);
+
+                if (entry.isIntersecting && entry.intersectionRatio >= 0.7) {
+                    // If this reel is mostly visible, play it
+                    if (currentPlayingVideo && currentPlayingVideo !== video) {
+                        currentPlayingVideo.pause();
+                        // Reset the previously playing video's icon to 'play' and hide it
+                        const prevIcon = document.getElementById(`playPauseIcon_${currentPlayingVideo.closest('.reel-item').dataset.reelId}`);
+                        if (prevIcon) {
+                            prevIcon.querySelector('i').className = 'fas fa-play';
+                            prevIcon.classList.remove('visible');
+                        }
+                    }
+                    video.play().catch(error => console.error("Video autoplay failed:", error));
+                    currentPlayingVideo = video; // Update currently playing video
+                    if (playPauseIcon) {
+                        playPauseIcon.querySelector('i').className = 'fas fa-pause';
+                    }
+                } else {
+                    // If it's not visible enough, pause it
+                    if (video && !video.paused) {
+                        video.pause();
+                        if (playPauseIcon) {
+                            playPauseIcon.querySelector('i').className = 'fas fa-play';
+                        }
+                    }
+                }
+            });
+        }, observerOptions);
+
+        reelItems.forEach(item => {
+            observer.observe(item);
+        });
+
+        // Tap anywhere on the reel to play/pause video
+        reelsContainer.addEventListener('click', function(event) {
+            const reelItem = event.target.closest('.reel-item');
+            if (reelItem) {
+                const video = reelItem.querySelector('.reel-video');
+                const playPauseIcon = document.getElementById(`playPauseIcon_${reelItem.dataset.reelId}`);
+
+                // Check if the click was on an action button, if so, don't toggle play/pause
+                const isActionButton = event.target.closest('.reel-action-icon') || event.target.closest('.modal');
+                if (isActionButton) {
+                    return;
+                }
+
+                if (video) {
+                    if (video.paused) {
+                        video.play();
+                        if (playPauseIcon) {
+                            playPauseIcon.querySelector('i').className = 'fas fa-pause';
+                            playPauseIcon.classList.add('visible');
+                            clearTimeout(playPauseTimeout);
+                            playPauseTimeout = setTimeout(() => {
+                                playPauseIcon.classList.remove('visible');
+                            }, 1000); // Hide icon after 1 second
+                        }
+                    } else {
+                        video.pause();
+                        if (playPauseIcon) {
+                            playPauseIcon.querySelector('i').className = 'fas fa-play';
+                            playPauseIcon.classList.add('visible');
+                            clearTimeout(playPauseTimeout);
+                            playPauseTimeout = setTimeout(() => {
+                                playPauseIcon.classList.remove('visible');
+                            }, 1000); // Hide icon after 1 second
+                        }
+                    }
+                }
+            }
+        });
+
+
+        // Handle download button click
+        document.querySelectorAll('.download-btn').forEach(button => {
+            button.addEventListener('click', function(event) {
+                event.stopPropagation(); // Prevent play/pause of video
+                const videoUrl = this.dataset.videoUrl;
+                const username = this.dataset.username;
+                const reelId = this.dataset.reelId;
+
+                const a = document.createElement('a');
+                a.href = videoUrl;
+                a.download = `SociaFam_reel_${username}_${reelId}.mp4`; // Example filename
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                flash('Downloading reel...', 'info'); // Provide user feedback
+            });
+        });
+
+        // Other action buttons (Like, Repost, Comment, Share, Save, Follow)
+        // These would typically send AJAX requests to your Flask backend
+        document.querySelectorAll('.like-btn').forEach(button => {
+            button.addEventListener('click', function(event) {
+                event.stopPropagation();
+                const reelId = this.dataset.reelId;
+                // Example AJAX call (needs actual Flask route for /api/like_reel)
+                // fetch(`/api/like_reel/${reelId}`, { method: 'POST' })
+                // .then(response => response.json())
+                // .then(data => {
+                //     if (data.success) {
+                            this.classList.toggle('active');
+                            let countSpan = this.querySelector('.count');
+                            if (countSpan) {
+                                let currentCount = parseInt(countSpan.textContent);
+                                if (this.classList.contains('active')) {
+                                    countSpan.textContent = currentCount + 1;
+                                } else {
+                                    countSpan.textContent = currentCount - 1;
+                                }
+                            }
+                //         } else {
+                //             flash(data.message, 'danger');
+                //         }
+                // })
+                // .catch(error => console.error('Error liking reel:', error));
+            });
+        });
+
+        document.querySelectorAll('.repost-btn').forEach(button => {
+            button.addEventListener('click', function(event) {
+                event.stopPropagation();
+                const reelId = this.dataset.reelId;
+                // AJAX call to /api/repost_reel/<reelId>
+                // fetch(`/api/repost_reel/${reelId}`, { method: 'POST' })
+                // .then(response => response.json())
+                // .then(data => {
+                //     if (data.success) {
+                //         flash('Reel reposted!', 'success');
+                //     } else {
+                //         flash(data.message, 'danger');
+                //     }
+                // })
+                // .catch(error => console.error('Error reposting reel:', error));
+            });
+        });
+
+        document.querySelectorAll('.comment-btn').forEach(button => {
+            button.addEventListener('click', function(event) {
+                event.stopPropagation();
+                const reelId = this.dataset.reelId;
+                // Load comments into modal via AJAX
+                const reelCommentModalBody = document.getElementById('reelCommentModalBody');
+                reelCommentModalBody.innerHTML = `<p class="text-center text-muted">Loading comments for reel ${reelId}...</p>`;
+                // Example AJAX call (needs actual Flask route for /api/get_reel_comments)
+                // fetch(`/api/get_reel_comments/${reelId}`)
+                //     .then(response => response.text()) // Get as text, then set innerHTML
+                //     .then(html => reelCommentModalBody.innerHTML = html)
+                //     .catch(error => reelCommentModalBody.innerHTML = `<p class="text-danger text-center">Failed to load comments.</p>`);
+            });
+        });
+
+        document.querySelectorAll('.share-btn').forEach(button => {
+            button.addEventListener('click', function(event) {
+                event.stopPropagation();
+                const reelId = this.dataset.reelId;
+                // Implement share logic (e.g., copy link, open share sheet)
+                flash('Share options for reel...', 'info');
+            });
+        });
+
+        document.querySelectorAll('.save-btn').forEach(button => {
+            button.addEventListener('click', function(event) {
+                event.stopPropagation();
+                const reelId = this.dataset.reelId;
+                // AJAX call to /api/save_reel/<reelId>
+                this.classList.toggle('active');
+                flash('Reel saved/unsaved!', 'success');
+            });
+        });
+
+        document.querySelectorAll('.follow-btn').forEach(button => {
+            button.addEventListener('click', function(event) {
+                event.stopPropagation();
+                const userId = this.dataset.userId;
+                // AJAX call to /api/follow_user/<userId>
+                this.style.display = 'none'; // Hide follow button after clicking
+                flash('Follow request sent!', 'success');
+            });
+        });
+
+        // Function to show flash messages (if not already defined in base.html)
+        function flash(message, category) {
+            // This is a simplified client-side flash.
+            // For a full implementation, you'd likely use a dedicated div in base.html
+            // and append messages to it.
+            console.log(`Flash message (${category}): ${message}`);
+            // Example:
+            // const flashContainer = document.querySelector('.flash-messages-container');
+            // if (flashContainer) {
+            //     const msgDiv = document.createElement('div');
+            //     msgDiv.className = `flash-message ${category} p-3 mb-3 rounded-lg`;
+            //     msgDiv.innerHTML = `<i class="fas fa-${category === 'success' ? 'check-circle' : 'exclamation-triangle'} me-2"></i>${message}`;
+            //     flashContainer.appendChild(msgDiv);
+            //     setTimeout(() => msgDiv.remove(), 5000);
+            // }
+        }
+
+    });
+</script>
+{% endblock %}
+
         padding-top: 0;
         padding-bottom: 0; /* Reels takes full screen, no extra padding for fixed bottom navbar needed */
         overflow: hidden; /* Prevent body scroll, scrolling handled by reels container */
