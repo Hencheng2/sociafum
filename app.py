@@ -245,7 +245,9 @@ def save_uploaded_file(file, upload_folder):
         unique_filename = str(uuid.uuid4()) + '_' + filename
         file_path = os.path.join(upload_folder, unique_filename)
         file.save(file_path)
-        return os.path.join('static', 'uploads', os.path.basename(upload_folder), unique_filename)
+        # Store relative path for database, correctly structured
+        relative_path = os.path.join('static', 'uploads', os.path.basename(upload_folder), unique_filename)
+        return relative_path.replace("\\", "/") # Ensure forward slashes for URLs
     return None
 
 
@@ -417,40 +419,89 @@ def get_admin_user_id():
 @app.route('/home')
 @login_required
 def home():
-    # Placeholder for posts and stories data
-    stories = [] # Fetch actual stories
-    for_you_posts = [] # Fetch actual 'for you' posts
-    following_posts = [] # Fetch actual 'following' posts
-    explore_posts = [] # Fetch actual 'explore' posts
-
-    background_image = url_for('static', filename='img/default_background.jpg') # Default background
-    member = None
-    if current_user.is_authenticated:
-        member = current_user.get_member_profile()
-        # You could also load a user-specific background here
-        if current_user.chat_background_image_path:
-            background_image = current_user.chat_background_image_path
-        
-        # Populate dummy data for now
-        # You'll replace these with actual database queries
-        # Example structure for stories
-        stories = [
-            {'id': 1, 'type': 'image', 'media_url': url_for('static', filename='img/post1.jpg'), 'profile_pic': url_for('static', filename='img/default_profile.png'), 'username': 'user1'},
-            {'id': 2, 'type': 'video', 'media_url': url_for('static', filename='videos/reel1.mp4'), 'profile_pic': url_for('static', filename='img/default_profile.png'), 'username': 'user2'},
-        ]
-        # Example structure for posts
-        for_you_posts = [
-            {'id': 1, 'profile_pic': url_for('static', filename='img/default_profile.png'), 'username': 'user3', 'real_name': 'User Three', 'timestamp': datetime.now(timezone.utc) - timedelta(hours=1), 'media_url': url_for('static', filename='img/post2.jpg'), 'description': 'Beautiful day out!', 'likes_count': 10, 'comments_count': 2, 'views_count': 50},
-            {'id': 2, 'profile_pic': url_for('static', filename='img/default_profile.png'), 'username': 'user4', 'real_name': 'User Four', 'timestamp': datetime.now(timezone.utc) - timedelta(hours=3), 'media_url': None, 'description': 'Just thinking about life...', 'likes_count': 5, 'comments_count': 1, 'views_count': 20},
-        ]
-        following_posts = for_you_posts # Same for now
-        explore_posts = for_you_posts # Same for now
-
-    
     # Pass the current year to the template
     current_year = datetime.now(timezone.utc).year
-    return render_template('index.html', background_image=background_image, member=member, current_year=current_year,
-                           stories=stories, for_you_posts=for_you_posts, following_posts=following_posts, explore_posts=explore_posts)
+    # Removed dummy post data here as it will be fetched by AJAX
+    return render_template('index.html', current_year=current_year)
+
+
+# --- API Route to Get Posts ---
+@app.route('/api/get_posts')
+@login_required
+def api_get_posts():
+    db = get_db()
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 10, type=int)
+    offset = (page - 1) * per_page
+
+    posts_query = """
+        SELECT
+            p.id,
+            p.user_id,
+            p.description,
+            p.media_path,
+            p.media_type,
+            p.timestamp,
+            p.likes_count,
+            p.comments_count,
+            u.username,
+            u.originalName,
+            m.profilePhoto AS author_profile_pic
+        FROM posts p
+        JOIN users u ON p.user_id = u.id
+        LEFT JOIN members m ON u.id = m.user_id
+        WHERE (
+            p.visibility = 'public'
+            OR
+            (p.visibility = 'friends' AND EXISTS (
+                SELECT 1 FROM friendships
+                WHERE ((user1_id = ? AND user2_id = p.user_id) OR (user1_id = p.user_id AND user2_id = ?))
+                AND status = 'accepted'
+            ))
+            OR
+            (p.visibility = 'private' AND p.user_id = ?)
+        )
+        ORDER BY p.timestamp DESC
+        LIMIT ? OFFSET ?
+    """
+    
+    # Execute the query to get posts for the current page
+    posts_data = db.execute(posts_query, (current_user.id, current_user.id, current_user.id, per_page, offset)).fetchall()
+
+    posts_list = []
+    for post in posts_data:
+        post_dict = dict(post)
+        post_dict['profile_pic'] = get_member_profile_pic(post_dict['user_id'])
+        # Ensure timestamp is ISO format for moment.js
+        if post_dict['timestamp']:
+            post_dict['timestamp'] = datetime.fromisoformat(post_dict['timestamp']).isoformat()
+        posts_list.append(post_dict)
+
+    # Check if there are more posts for the next page
+    has_more_query = """
+        SELECT COUNT(*)
+        FROM posts p
+        JOIN users u ON p.user_id = u.id
+        LEFT JOIN members m ON u.id = m.user_id
+        WHERE (
+            p.visibility = 'public'
+            OR
+            (p.visibility = 'friends' AND EXISTS (
+                SELECT 1 FROM friendships
+                WHERE ((user1_id = ? AND user2_id = p.user_id) OR (user1_id = p.user_id AND user2_id = ?))
+                AND status = 'accepted'
+            ))
+            OR
+            (p.visibility = 'private' AND p.user_id = ?)
+        )
+    """
+    total_posts = db.execute(has_more_query, (current_user.id, current_user.id, current_user.id)).fetchone()[0]
+    has_more = (offset + per_page) < total_posts
+
+    return jsonify({
+        'posts': posts_list,
+        'has_more': has_more
+    })
 
 
 # --- Authentication Routes ---
@@ -1811,15 +1862,17 @@ def add_to():
     return render_template('add_to.html', current_year=current_year)
 
 # Create Post
-# Create Post
 @app.route('/create_post', methods=['GET', 'POST'])
 @login_required
 def create_post():
+    # Pass the current year to the template
+    current_year = datetime.now(timezone.utc).year
+
     if request.method == 'POST':
         db = get_db()
         cursor = db.cursor()
 
-        post_content = request.form.get('post_content')
+        post_content = request.form.get('description') # Renamed from post_content to description to match schema
         visibility = request.form.get('visibility')
         media_path = None
         media_type = None
@@ -1829,18 +1882,27 @@ def create_post():
         if not os.path.exists(posts_folder):
             os.makedirs(posts_folder)
 
-        if 'media_file' in request.files:
-            file = request.files['media_file']
+        if 'mediaFile' in request.files: # Changed from media_file to mediaFile to match HTML form
+            file = request.files['mediaFile']
             if file and file.filename != '':
-                filename = secure_filename(file.filename)
-                media_type = file.mimetype.split('/')[0] # 'image' or 'video'
+                # Using the save_uploaded_file helper for consistency
+                media_path = save_uploaded_file(file, app.config['POSTS_FOLDER'])
+                if media_path:
+                    # Determine media_type based on file extension
+                    file_extension = file.filename.rsplit('.', 1)[1].lower()
+                    if file_extension in ALLOWED_IMAGE_EXTENSIONS:
+                        media_type = 'image'
+                    elif file_extension in ALLOWED_VIDEO_EXTENSIONS:
+                        media_type = 'video'
+                    # No else for audio, as posts typically don't directly embed audio for main media
+                else:
+                    flash('Invalid media file type.', 'danger')
+                    return render_template('create_post.html', title='Create Post', current_year=current_year)
+            
+        if not post_content and not media_path:
+            flash('Post cannot be empty. Please add text or media.', 'danger')
+            return render_template('create_post.html', title='Create Post', current_year=current_year)
 
-                # Using the correctly defined folder
-                file_path = os.path.join(posts_folder, filename)
-                file.save(file_path)
-                
-                # Store relative path for database
-                media_path = os.path.join('static', 'uploads', 'posts', filename)
 
         try:
             # Insert the post into the database
@@ -1849,71 +1911,21 @@ def create_post():
             db.commit()
             flash('Post uploaded successfully!', 'success')
             
-            # --- FIX: Redirect to the home page after success ---
+            # Redirect to the home page after success
             return redirect(url_for('home'))
 
         except sqlite3.IntegrityError as e:
             db.rollback()
             app.logger.error(f"Integrity Error while posting: {e}")
-            return jsonify({'success': False, 'message': 'Database error. Post could not be created.'}), 500
+            flash('Database error. Post could not be created.', 'danger')
+            return render_template('create_post.html', title='Create Post', current_year=current_year)
         except Exception as e:
             db.rollback()
             app.logger.error(f"Error creating post: {e}")
-            return jsonify({'success': False, 'message': 'Failed to create post.'}), 500
+            flash('Failed to create post.', 'danger')
+            return render_template('create_post.html', title='Create Post', current_year=current_year)
 
-        except sqlite3.IntegrityError as e:
-            db.rollback()
-            app.logger.error(f"Integrity Error while posting: {e}")
-            return jsonify({'success': False, 'message': 'Database error. Post could not be created.'}), 500
-        except Exception as e:
-            db.rollback()
-            app.logger.error(f"Error creating post: {e}")
-            return jsonify({'success': False, 'message': 'Failed to create post.'}), 500
-
-    return render_template('create_post.html', title='Create Post')
-
-# ... (your existing create_post route) ...
-
-# API Endpoint to get posts for the home feed
-@app.route('/api/get_posts', methods=['GET'])
-@login_required
-def get_posts():
-    db = get_db()
-    cursor = db.cursor()
-    
-    # Query to get all public posts, plus any posts by the current user
-    try:
-        query = """
-        SELECT 
-            p.id, p.description, p.media_path, p.media_type, p.timestamp, 
-            u.username, u.originalName, u.profile_pic
-        FROM posts p
-        JOIN users u ON p.user_id = u.id
-        WHERE p.visibility = 'public' OR p.user_id = ?
-        ORDER BY p.timestamp DESC;
-        """
-        posts = cursor.execute(query, (current_user.id,)).fetchall()
-        
-        posts_list = []
-        for post in posts:
-            posts_list.append({
-                'id': post['id'],
-                'description': post['description'],
-                'media_path': post['media_path'],
-                'media_type': post['media_type'],
-                'timestamp': post['timestamp'],
-                'username': post['username'],
-                'originalName': post['originalName'],
-                'profile_pic': url_for('static', filename=f"uploads/profile_photos/{post['profile_pic']}") if post['profile_pic'] else url_for('static', filename='img/default_profile.jpg')
-            })
-            
-        return jsonify(posts_list)
-
-    except Exception as e:
-        app.logger.error(f"Error fetching posts: {e}")
-        return jsonify({'error': 'Failed to fetch posts'}), 500
-
-# ... (the rest of your app.py code) ...
+    return render_template('create_post.html', title='Create Post', current_year=current_year)
 
 
 @app.route('/create_reel', methods=['GET', 'POST']) # Changed URL path to avoid conflict
@@ -2807,8 +2819,8 @@ def api_admin_unban_user(user_id):
         return jsonify({'success': True, 'message': 'User unbanned successfully.'})
     except Exception as e:
         db.rollback()
-        app.logger.error(f"Error unbanning user: {e}")
-        return jsonify({'success': False, 'message': 'Failed to unban user.'}), 500
+        app.logger.error(f"Error unblocking user: {e}")
+        return jsonify({'success': False, 'message': 'Failed to unblock user.'}), 500
 
 
 @app.route('/api/admin/delete_user/<int:user_id>', methods=['POST'])
