@@ -406,7 +406,7 @@
     // Assuming Moment.js is included in base.html via {{ moment.include_moment() }}
     // And locale is set via {{ moment.locale('en') }}
 
-    document.addEventListener('DOMContentLoaded', (event) => { // <-- FIXED THIS LINE
+    document.addEventListener('DOMContentLoaded', (event) => { 
         // --- Dark Mode Initialization (if not handled by base.html) ---
         // This is usually handled in base.html now. Remove if redundant.
         if (localStorage.getItem('theme') === 'dark' || (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
@@ -461,26 +461,27 @@
 
         function renderStories() {
             // Clear existing stories first, then re-add 'Your Story' and fetched ones
-            storiesContainer.innerHTML = `
-                <div class="story-item" onclick="addStory()">
-                    <div class="story-ring bg-gray-200 dark:bg-gray-700">
-                        <img src="{{ current_user.get_member_profile().profilePhoto | default(url_for('static', filename='img/default_profile.png')) }}" alt="Your Story" class="border-white dark:border-gray-900">
-                    </div>
-                    <div class="add-story-icon"><i class="fas fa-plus"></i></div>
-                    <p class="story-username dark:text-gray-300">Your Story</p>
-                </div>
-            `; 
+            // FIX: Using standard string concatenation to avoid Jinja2 template literal conflicts
+            storiesContainer.innerHTML =
+                '<div class="story-item" onclick="addStory()">' +
+                    '<div class="story-ring bg-gray-200 dark:bg-gray-700">' +
+                        '<img src="{{ current_user.get_member_profile().profilePhoto | default(url_for('static', filename='img/default_profile.png')) }}" alt="Your Story" class="border-white dark:border-gray-900">' +
+                    '</div>' +
+                    '<div class="add-story-icon"><i class="fas fa-plus"></i></div>' +
+                    '<p class="story-username dark:text-gray-300">Your Story</p>' +
+                '</div>';
+            
             activeStoriesData.forEach((userStories, userIndex) => {
                 const latestStory = userStories.stories[userStories.stories.length - 1]; // Use latest for preview
                 const storyItem = document.createElement('div');
                 storyItem.classList.add('story-item');
                 storyItem.dataset.userIndex = userIndex; // To identify which user's stories to open
-                storyItem.innerHTML = `
-                    <div class="story-ring">
-                        <img src="${latestStory.profile_pic}" alt="${latestStory.username} Story">
-                    </div>
-                    <p class="story-username dark:text-gray-300">${latestStory.username}</p>
-                `;
+                // FIX: Using standard string concatenation here as well
+                storyItem.innerHTML =
+                    '<div class="story-ring">' +
+                        '<img src="' + latestStory.profile_pic + '" alt="' + latestStory.username + ' Story">' +
+                    '</div>' +
+                    '<p class="story-username dark:text-gray-300">' + latestStory.username + '</p>';
                 storiesContainer.appendChild(storyItem);
 
                 storyItem.addEventListener('click', (e) => {
@@ -742,6 +743,8 @@
                     posts.forEach(post => {
                         const postElement = document.createElement('div');
                         postElement.classList.add('post-card');
+                        // No changes needed here, as this template literal interpolation does not involve Jinja2 directly
+                        // and is handled correctly by the browser's JavaScript engine.
                         postElement.innerHTML = `
                             <div class="post-header">
                                 <img src="${post.profile_pic}" alt="${post.username}" class="profile-pic">
