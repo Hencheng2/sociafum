@@ -406,7 +406,7 @@
     // Assuming Moment.js is included in base.html via {{ moment.include_moment() }}
     // And locale is set via {{ moment.locale('en') }}
 
-    document.addEventListener('DOMContentLoaded', () => {
+    document.addEventListener('DOMContentLoaded', (event) => { // <-- FIXED THIS LINE
         // --- Dark Mode Initialization (if not handled by base.html) ---
         // This is usually handled in base.html now. Remove if redundant.
         if (localStorage.getItem('theme') === 'dark' || (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
