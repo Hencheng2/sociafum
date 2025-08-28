@@ -746,7 +746,7 @@
                                 <img src="${post.profile_pic}" alt="${post.username}" class="profile-pic">
                                 <div class="flex-grow">
                                     <a href="{{ url_for('profile', username='PLACEHHOLDER_USERNAME') | replace('PLACEHOLDER_USERNAME', '') }}${post.username}" class="username-realname block">${post.originalName || post.username}</a>
-                                    <small class="post-meta">@${post.username} &middot; ${moment(post.timestamp).fromNow()}</small>
+                                    <small class="post-meta">@${post.username} &middot; ${moment.utc(post.timestamp).fromNow()}</small>
                                 </div>
                             </div>
                             <div class="post-content">
