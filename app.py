@@ -307,7 +307,7 @@ def process_mentions_and_links(text):
             url = 'http://' + url
         return f'<a href="{url}" target="_blank" rel="noopener noreferrer">{url}</a>'
     
-    processed_text = re.sub(url_pattern, replace_url, processed_text)
+    processed_text = re.sub(url_pattern, replace_text, processed_text)
     
     return processed_text
 
@@ -326,7 +326,7 @@ def get_relationship_status(current_id, other_id):
         if friendship['status'] == 'accepted':
             return 'friend'
         elif friendship['status'] == 'pending':
-            if friendship['user1_id'] == current_id:
+            if friendship['user1_id'] == current_user.id:
                 return 'pending_sent'
             else:
                 return 'pending_received'
@@ -2044,74 +2044,70 @@ def create_story():
         media_type = None
         background_audio_path = None
 
-        # --- Prioritize Camera Captured Data ---
-        camera_captured_data = request.form.get('cameraCapturedData')
-        camera_captured_media_type = request.form.get('cameraCapturedMediaType')
-        if camera_captured_data:
+        # --- Handle Hidden Media Data (from camera, voice note, or file input JS processing) ---
+        hidden_media_data = request.form.get('mediaData')
+        hidden_media_type = request.form.get('mediaType')
+        hidden_background_audio_data = request.form.get('backgroundAudioData')
+
+        if hidden_media_data and hidden_media_type:
             try:
-                header, encoded = camera_captured_data.split(",", 1)
-                decoded_data = base64.b64decode(encoded)
-                file_extension = 'png' if 'image' in camera_captured_media_type else 'webm'
+                # Extract base64 part (data:image/png;base64,...)
+                header, encoded_data = hidden_media_data.split(",", 1)
+                decoded_data = base64.b64decode(encoded_data)
+                
+                # Determine file extension based on MIME type
+                file_extension_map = {
+                    'image/png': 'png',
+                    'image/jpeg': 'jpeg',
+                    'image/gif': 'gif',
+                    'video/webm': 'webm',
+                    'video/mp4': 'mp4',
+                    'audio/webm': 'webm',
+                    'audio/mpeg': 'mp3',
+                    'audio/wav': 'wav',
+                    'audio/ogg': 'ogg'
+                }
+                file_extension = file_extension_map.get(hidden_media_type.lower(), 'bin')
+
                 unique_filename = f"{uuid.uuid4()}.{file_extension}"
                 
-                # Full path on the server filesystem
-                server_file_path = os.path.join(app.config['STORY_MEDIA_FOLDER'], unique_filename)
-                # Relative path for the database and URL generation
-                media_path = os.path.join('static', 'uploads', os.path.basename(app.config['STORY_MEDIA_FOLDER']), unique_filename).replace("\\", "/")
-
-                with open(server_file_path, 'wb') as f:
-                    f.write(decoded_data)
-                
-                media_type = 'image' if 'image' in camera_captured_media_type else 'video'
-            except Exception as e:
-                app.logger.error(f"Error decoding camera data for story: {e}")
-                flash('Failed to process camera capture.', 'danger')
-                return render_template('create_story.html', form_data=request.form.to_dict(), current_year=current_year)
-
-        # --- Handle Voice Note Data (if no camera data) ---
-        elif request.form.get('voiceNoteData'):
-            try:
-                voice_note_data = request.form.get('voiceNoteData')
-                header, encoded = voice_note_data.split(",", 1)
-                decoded_data = base64.b64decode(encoded)
-                unique_filename = f"{uuid.uuid4()}.webm" # Assuming webm format
-                
-                server_file_path = os.path.join(app.config['VOICE_NOTES_FOLDER'], unique_filename)
-                media_path = os.path.join('static', 'uploads', os.path.basename(app.config['VOICE_NOTES_FOLDER']), unique_filename).replace("\\", "/")
-
-                with open(server_file_path, 'wb') as f:
-                    f.write(decoded_data)
-                
-                media_type = 'audio'
-            except Exception as e:
-                app.logger.error(f"Error decoding voice note data for story: {e}")
-                flash('Failed to process voice note.', 'danger')
-                return render_template('create_story.html', form_data=request.form.to_dict(), current_year=current_year)
-
-        # --- Handle Uploaded Media File (if no camera or voice note data) ---
-        elif 'mediaFile' in request.files and request.files['mediaFile'].filename != '':
-            media_file = request.files['mediaFile']
-            media_path = save_uploaded_file(media_file, app.config['STORY_MEDIA_FOLDER'])
-            if media_path:
-                file_extension = media_file.filename.rsplit('.', 1)[1].lower()
-                if file_extension in ALLOWED_IMAGE_EXTENSIONS:
-                    media_type = 'image'
-                elif file_extension in ALLOWED_VIDEO_EXTENSIONS:
-                    media_type = 'video'
+                # Determine folder based on media type
+                if hidden_media_type.startswith('audio/'):
+                    server_folder = app.config['VOICE_NOTES_FOLDER']
                 else:
-                    flash('Invalid uploaded media file type for story. Only images and videos are supported.', 'danger')
-                    return render_template('create_story.html', form_data=request.form.to_dict(), current_year=current_year)
-            else:
-                flash('Invalid uploaded media file or file not provided for story.', 'danger')
+                    server_folder = app.config['STORY_MEDIA_FOLDER']
+
+                server_file_path = os.path.join(server_folder, unique_filename)
+                media_path = os.path.join('static', 'uploads', os.path.basename(server_folder), unique_filename).replace("\\", "/")
+
+                with open(server_file_path, 'wb') as f:
+                    f.write(decoded_data)
+                
+                media_type = hidden_media_type.split('/')[0] # 'image', 'video', 'audio'
+
+            except Exception as e:
+                app.logger.error(f"Error decoding hidden media data for story: {e}")
+                flash('Failed to process media content.', 'danger')
                 return render_template('create_story.html', form_data=request.form.to_dict(), current_year=current_year)
         
-        # --- Handle Background Audio for Image Stories (if main media is an image) ---
-        if media_type == 'image' and 'audioFile' in request.files and request.files['audioFile'].filename != '':
-            audio_file = request.files['audioFile']
-            background_audio_path = save_uploaded_file(audio_file, app.config['VOICE_NOTES_FOLDER'])
-            if not background_audio_path:
-                flash('Invalid background audio file type for story.', 'danger')
+        # --- Handle Background Audio (only for image stories) ---
+        if media_type == 'image' and hidden_background_audio_data:
+            try:
+                header, encoded_data = hidden_background_audio_data.split(",", 1)
+                decoded_data = base64.b64decode(encoded_data)
+                unique_filename = f"{uuid.uuid4()}.webm" # Assuming audio is webm from JS
+                
+                server_file_path = os.path.join(app.config['VOICE_NOTES_FOLDER'], unique_filename)
+                background_audio_path = os.path.join('static', 'uploads', os.path.basename(app.config['VOICE_NOTES_FOLDER']), unique_filename).replace("\\", "/")
+
+                with open(server_file_path, 'wb') as f:
+                    f.write(decoded_data)
+                
+            except Exception as e:
+                app.logger.error(f"Error decoding hidden background audio data for story: {e}")
+                flash('Failed to process background audio.', 'danger')
                 return render_template('create_story.html', form_data=request.form.to_dict(), current_year=current_year)
+
 
         # --- Final Validation before DB insertion ---
         if not description and not media_path:
@@ -2720,7 +2716,7 @@ def admin_dashboard():
             JOIN users u_other ON crm_user.user_id = u_other.id
             LEFT JOIN members m_other ON u_other.id = m_other.user_id
             WHERE cr.is_group = 0
-            ORDER BY (SELECT MAX(timestamp) FROM chat_messages WHERE chat_room_id = cr.id) DESC
+            ORDER BY (SELECT MAX(timestamp) FROM chat_messages WHERE cr.id = cr.id) DESC
             """,
             (admin_user_id, admin_user_id, admin_user_id, admin_user_id) # The subquery needs the admin_user_id for sender_id != ? and crm.user_id = ?
         ).fetchall()
