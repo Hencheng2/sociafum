@@ -1810,50 +1810,54 @@ def add_to():
     current_year = datetime.now(timezone.utc).year
     return render_template('add_to.html', current_year=current_year)
 
+# Create Post
 @app.route('/create_post', methods=['GET', 'POST'])
 @login_required
 def create_post():
-    # Pass the current year to the template
-    current_year = datetime.now(timezone.utc).year
     if request.method == 'POST':
-        description = request.form.get('description', '').strip()
-        visibility = request.form.get('visibility', 'public') # Default to public
-        media_file = request.files.get('mediaFile')
+        db = get_db()
+        cursor = db.cursor()
+
+        post_content = request.form.get('post_content')
+        visibility = request.form.get('visibility')
         media_path = None
         media_type = None
 
-        if media_file and media_file.filename != '':
-            media_path = save_uploaded_file(media_file, app.config['POST_MEDIA_FOLDER'])
-            if media_path:
-                if media_file.filename.rsplit('.', 1)[1].lower() in ALLOWED_IMAGE_EXTENSIONS:
-                    media_type = 'image'
-                elif media_file.filename.rsplit('.', 1)[1].lower() in ALLOWED_VIDEO_EXTENSIONS:
-                    media_type = 'video'
-            else:
-                flash('Invalid media file type for post.', 'danger')
-                return render_template('create_post.html', form_data=request.form.to_dict(), current_year=current_year)
-        elif not description:
-            flash('Post cannot be empty. Please add media or a description.', 'danger')
-            return render_template('create_post.html', form_data=request.form.to_dict(), current_year=current_year)
+        # --- NEW CODE: Ensure the posts upload directory exists ---
+        posts_folder = app.config['POSTS_FOLDER']
+        if not os.path.exists(posts_folder):
+            os.makedirs(posts_folder)
 
-        db = get_db()
+        if 'media_file' in request.files:
+            file = request.files['media_file']
+            if file and file.filename != '':
+                filename = secure_filename(file.filename)
+                media_type = file.mimetype.split('/')[0] # 'image' or 'video'
+
+                # --- NEW CODE: Using the correctly defined folder ---
+                file_path = os.path.join(posts_folder, filename)
+                file.save(file_path)
+                
+                # Store relative path for database
+                media_path = os.path.join('static', 'uploads', 'posts', filename)
+
         try:
-            db.execute(
-                """
-                INSERT INTO posts (user_id, description, media_path, media_type, visibility, timestamp)
-                VALUES (?, ?, ?, ?, ?, ?)
-                """,
-                (current_user.id, description, media_path, media_type, visibility, datetime.now(timezone.utc))
-            )
+            cursor.execute("INSERT INTO posts (user_id, post_content, media_path, media_type, visibility) VALUES (?, ?, ?, ?, ?)",
+                           (current_user.id, post_content, media_path, media_type, visibility))
             db.commit()
-            flash('Post created successfully!', 'success')
-            return redirect(url_for('home')) # Redirect to home/feed
-        except Exception as e:
-            flash(f'An error occurred while creating your post: {e}', 'danger')
-            db.rollback()
-            return render_template('create_post.html', form_data=request.form.to_dict(), current_year=current_year)
+            flash('Post uploaded successfully!', 'success')
+            return jsonify({'success': True, 'message': 'Post uploaded successfully!'})
 
-    return render_template('create_post.html', current_year=current_year)
+        except sqlite3.IntegrityError as e:
+            db.rollback()
+            app.logger.error(f"Integrity Error while posting: {e}")
+            return jsonify({'success': False, 'message': 'Database error. Post could not be created.'}), 500
+        except Exception as e:
+            db.rollback()
+            app.logger.error(f"Error creating post: {e}")
+            return jsonify({'success': False, 'message': 'Failed to create post.'}), 500
+
+    return render_template('create_post.html', title='Create Post')
 
 
 @app.route('/create_reel', methods=['GET', 'POST']) # Changed URL path to avoid conflict
