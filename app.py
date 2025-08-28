@@ -3025,6 +3025,12 @@ def api_admin_post_sociafam_story():
         app.logger.error(f"Error posting SociaFam Story: {e}")
         return jsonify({'success': False, 'message': 'Failed to post SociaFam Story.'}), 500
 
+# --- New Route for Terms and Policies ---
+@app.route('/terms_and_policies')
+def terms_and_policies():
+    current_year = datetime.now(timezone.utc).year
+    return render_template('terms_and_policies.html', current_year=current_year)
+
 
 # --- Catch-all for undefined routes ---
 # Redirect to home page with a flash message if an unlisted or non-existent page is accessed.
