@@ -300,7 +300,7 @@ def process_mentions_and_links(text):
             return f'<a href="{url_for("profile", username=username)}">@{username}</a>'
         return match.group(0)  # If username not found, keep original text
     
-    processed_text = re.sub(r'@([a-zA-Z0-9_]+)', replace_mention, text)
+    processed_text = re.sub(r'@([a-zA-Z0-9_]+)', replace_mention, processed_text)
 
     # 2. Process URLs
     # Regular expression to find URLs
