@@ -471,6 +471,11 @@
         let activeTab = 'all'; // Keep track of the currently active tab
         let debounceTimer;
 
+        // Base URLs for dynamic navigation (Jinja2 renders these once)
+        const profileBaseUrl = "{{ url_for('profile', username='USER_PLACEHOLDER') }}".replace('USER_PLACEHOLDER', '');
+        const viewGroupProfileBaseUrl = "{{ url_for('view_group_profile', group_id='GROUP_PLACEHOLDER') }}".replace('GROUP_PLACEHOLDER', '');
+        const viewChatBaseUrl = "{{ url_for('view_chat', chat_room_id='CHAT_ROOM_ID_PLACEHOLDER') }}".replace('CHAT_ROOM_ID_PLACEHOLDER', '');
+
         // --- Tab Switching Logic ---
         window.showTab = function(tabId) {
             document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
@@ -496,7 +501,8 @@
                 // Clear all tabs and show initial empty states
                 document.querySelectorAll('.tab-content').forEach(content => {
                     const tabId = content.id;
-                    content.innerHTML = `<div class="empty-state" id="${tabId}-empty-state"><p>Start typing to search for ${tabId === 'all' ? 'content across SociaFam.' : tabId + '.'}</p></div>`;
+                    const placeholderText = tabId === 'all' ? 'content across SociaFam.' : tabId + '.';
+                    content.innerHTML = `<div class="empty-state" id="${tabId}-empty-state"><p>Start typing to search for ${placeholderText}</p></div>`;
                 });
                 return;
             }
@@ -542,7 +548,7 @@
                     const followButtonDisabled = user.status !== 'none' && user.status !== 'pending_received' ? 'disabled' : '';
                     
                     html = `
-                        <div class="result-item" onclick="window.location.href='{{ url_for('profile', username='USER_PLACEHOLDER') }}'.replace('USER_PLACEHOLDER', '${user.username}')">
+                        <div class="result-item" onclick="window.location.href='${profileBaseUrl}${user.username}'">
                             <img src="${user.profilePhoto || '{{ url_for('static', filename='img/default_profile.png') }}'}" alt="Profile">
                             <div class="result-info">
                                 <h3>${user.realName} <small class="text-gray-500">@${user.username}</small></h3>
@@ -561,7 +567,7 @@
                     const joinButtonDisabled = group.is_member ? 'disabled' : '';
 
                     html = `
-                        <div class="result-item" onclick="window.location.href='{{ url_for('view_group_profile', group_id='GROUP_PLACEHOLDER') }}'.replace('GROUP_PLACEHOLDER', '${group.id}')">
+                        <div class="result-item" onclick="window.location.href='${viewGroupProfileBaseUrl}${group.id}'">
                             <img src="${group.profilePhoto || '{{ url_for('static', filename='img/default_group.png') }}'}" alt="Group">
                             <div class="result-info">
                                 <h3>${group.name}</h3>
@@ -607,8 +613,8 @@
                         alert(data.message);
                     }
                 } else if (status === 'pending_received') {
-                    // Need a specific API for accepting requests if done via search directly
-                    // For now, redirect to friends page to accept
+                    // This action would typically be handled on the 'friends' page
+                    alert('Please go to your friends page to accept this request.');
                     window.location.href = '{{ url_for('friends') }}';
                 }
                 // Other statuses (friend, pending_sent) are disabled, no action needed
@@ -642,7 +648,7 @@
                 const response = await fetch(`/api/chat/${userId}`);
                 const data = await response.json();
                 if (data.success && data.chat_room_id) {
-                    window.location.href = `{{ url_for('view_chat', chat_room_id='CHAT_ROOM_ID_PLACEHOLDER') }}`.replace('CHAT_ROOM_ID_PLACEHOLDER', data.chat_room_id);
+                    window.location.href = `${viewChatBaseUrl}${data.chat_room_id}`;
                 } else {
                     alert(data.message || 'Failed to open chat.');
                 }
