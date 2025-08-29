@@ -272,6 +272,16 @@ def get_member_profile_pic(user_id):
     return url_for('static', filename='img/default_profile.png')
 
 # --- Add this NEW helper function to your app.py, ideally near other helper functions (e.g., after process_mentions_and_links) ---
+# app.py
+
+# Ensure 'datetime' is imported at the top:
+# from datetime import datetime, timedelta, timezone
+
+# Ensure Flask-Moment is initialized (usually after `app = Flask(__name__)`):
+# from flask_moment import Moment
+# moment = Moment(app)
+
+# --- NEW HELPER FUNCTION: get_post_details_for_display ---
 def get_post_details_for_display(post_id, current_user_id):
     db = get_db()
     post = db.execute(
@@ -288,7 +298,20 @@ def get_post_details_for_display(post_id, current_user_id):
     if post:
         post_dict = dict(post)
         post_dict['profile_pic_url'] = get_member_profile_pic(post_dict['user_id'])
-        post_dict['timestamp_formatted'] = moment.utc(post_dict['timestamp']).fromNow() # Assuming 'moment' is available in your app
+        
+        # --- CORRECTED: Convert timestamp to ISO format string for frontend Moment.js ---
+        if post_dict['timestamp']:
+            # Handle potential 'Z' for UTC and ensure it's a parseable format for datetime.fromisoformat
+            timestamp_str = str(post_dict['timestamp']).replace('Z', '+00:00')
+            try:
+                dt_object = datetime.fromisoformat(timestamp_str)
+                post_dict['timestamp_formatted'] = dt_object.isoformat()
+            except ValueError:
+                # Fallback if the string format is unexpected, send as-is for frontend to handle best it can
+                post_dict['timestamp_formatted'] = post_dict['timestamp'] 
+        else:
+            post_dict['timestamp_formatted'] = None 
+        # --- END CORRECTION ---
 
         # Add like status and count
         like_count = db.execute("SELECT COUNT(*) FROM post_likes WHERE post_id = ?", (post_id,)).fetchone()[0]
@@ -299,8 +322,8 @@ def get_post_details_for_display(post_id, current_user_id):
         post_dict['is_saved_by_current_user'] = db.execute("SELECT 1 FROM saved_posts WHERE post_id = ? AND user_id = ?", (post_id, current_user_id)).fetchone() is not None
 
         # Add follow status for the post owner (if not current user)
+        # get_relationship_status is assumed to be an existing helper in your app.py
         if post_dict['user_id'] != current_user_id:
-            # get_relationship_status is assumed to be an existing helper
             status = get_relationship_status(current_user_id, post_dict['user_id']) 
             post_dict['is_followed_by_current_user'] = (status == 'friend' or status == 'pending_sent')
         else:
@@ -308,7 +331,11 @@ def get_post_details_for_display(post_id, current_user_id):
 
         if post_dict['media_path']:
             # Adjust path if it includes 'static/' at the beginning, url_for expects relative path from static
-            post_dict['media_path'] = url_for('static', filename=post_dict['media_path'][len('static/'):]) 
+            # Example: 'static/uploads/posts/image.jpg' -> 'uploads/posts/image.jpg'
+            if post_dict['media_path'].startswith('static/'):
+                post_dict['media_path'] = url_for('static', filename=post_dict['media_path'][len('static/'):]) 
+            else: # If path is already relative to static/
+                post_dict['media_path'] = url_for('static', filename=post_dict['media_path'])
         
         return post_dict
     return None
