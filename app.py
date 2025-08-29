@@ -2053,7 +2053,8 @@ def create_group():
 @login_required
 def view_group_profile(group_id):
     db = get_db()
-    group = db.execute("SELECT * FROM groups WHERE id = ?", (group_id,)).fetchone()
+    # Ensure to select the unique_join_link column here
+    group = db.execute("SELECT *, unique_join_link FROM groups WHERE id = ?", (group_id,)).fetchone()
     if not group:
         flash("Group not found.", "danger")
         return redirect(url_for('inbox'))  # Redirect to inbox if group not found
@@ -2106,6 +2107,7 @@ def view_group_profile(group_id):
         admin_view=is_admin_view,  # Pass this flag to template
         current_year=current_year
     )
+
 
 
 @app.route('/join_group_by_link/<unique_link>')
