@@ -2341,8 +2341,8 @@ def api_dynamic_search():
             user_dict['profilePhoto'] = get_member_profile_pic(user_dict['id'])
             user_dict['status'] = get_relationship_status(current_user.id, user_dict['id'])
             user_dict['mutual_count'] = get_mutual_friends_count(current_user.id, user_dict['id'])
-            user_dict['is_member'] = False # Default for users
-            user_dict['is_following'] = (user_dict['status'] == 'friend' or user_dict['status'] == 'pending_sent') # Simplified logic for 'following' in UI
+            # Simplified 'is_following' check for UI display
+            user_dict['is_following'] = (user_dict['status'] == 'friend' or user_dict['status'] == 'pending_sent')
             return user_dict
         return None
 
@@ -2398,50 +2398,36 @@ def api_dynamic_search():
 
 
     # --- Search Logic ---
+    # Fetch all relevant user IDs first to avoid complex subqueries and improve clarity
+    # and then process them.
     if search_type in ['all', 'users']:
-        users_by_realname = db.execute(
+        # Fetch users matching the query in either full name or username, excluding current user and blocked users
+        users_raw_ids = db.execute(
             """
-            SELECT u.id FROM users u JOIN members m ON u.id = m.user_id
-            WHERE LOWER(m.fullName) LIKE ? AND u.id != ? AND u.id NOT IN (SELECT blocked_id FROM blocked_users WHERE blocker_id = ?)
-            ORDER BY LOWER(m.fullName)
+            SELECT DISTINCT u.id,
+                   CASE
+                       WHEN LOWER(m.fullName) LIKE ? THEN 0 -- Exact match/starts with full name
+                       WHEN LOWER(u.username) LIKE ? THEN 1 -- Exact match/starts with username
+                       ELSE 2                                -- Contains anywhere
+                   END AS match_priority
+            FROM users u
+            JOIN members m ON u.id = m.user_id
+            WHERE (LOWER(m.fullName) LIKE ? OR LOWER(u.username) LIKE ?)
+              AND u.id != ?
+              AND u.id NOT IN (SELECT blocked_id FROM blocked_users WHERE blocker_id = ?)
+            ORDER BY match_priority, LOWER(m.fullName), LOWER(u.username)
             """,
-            (f'{query}%', current_user.id, current_user.id)
+            (f'{query}%', f'{query}%', f'%{query}%', f'%{query}%', current_user.id, current_user.id)
         ).fetchall()
-        for user_id_row in users_by_realname:
-            user_data = get_user_search_data(user_id_row['id'])
-            if user_data:
-                results.append({'type': 'user', 'priority': 0, 'data': user_data}) # Highest priority
 
-        users_by_username = db.execute(
-            """
-            SELECT u.id FROM users u
-            WHERE LOWER(u.username) LIKE ? AND u.id != ? AND u.id NOT IN (SELECT blocked_id FROM blocked_users WHERE blocker_id = ?)
-              AND u.id NOT IN (SELECT id FROM users u2 JOIN members m2 ON u2.id = m2.user_id WHERE LOWER(m2.fullName) LIKE ?) -- Exclude already found by realname prefix
-            ORDER BY LOWER(u.username)
-            """,
-            (f'{query}%', current_user.id, current_user.id, f'{query}%')
-        ).fetchall()
-        for user_id_row in users_by_username:
-            user_data = get_user_search_data(user_id_row['id'])
-            if user_data:
-                results.append({'type': 'user', 'priority': 1, 'data': user_data}) # Lower priority
-
-        # General user search (contains query anywhere) for 'users' tab only, or if prefix search yields nothing for 'all'
-        if search_type == 'users' or (search_type == 'all' and not users_by_realname and not users_by_username):
-            general_users = db.execute(
-                """
-                SELECT u.id FROM users u JOIN members m ON u.id = m.user_id
-                WHERE (LOWER(m.fullName) LIKE ? OR LOWER(u.username) LIKE ?) AND u.id != ?
-                    AND u.id NOT IN (SELECT blocked_id FROM blocked_users WHERE blocker_id = ?)
-                ORDER BY LOWER(m.fullName), LOWER(u.username)
-                """,
-                (f'%{query}%', f'%{query}%', current_user.id, current_user.id)
-            ).fetchall()
-            for user_id_row in general_users:
-                user_data = get_user_search_data(user_id_row['id'])
-                if user_data and not any(r['data']['id'] == user_data['id'] for r in results if r['type'] == 'user'): # Avoid duplicates
-                    results.append({'type': 'user', 'priority': 2, 'data': user_data})
-
+        processed_user_ids = set()
+        for user_id_row in users_raw_ids:
+            user_id = user_id_row['id']
+            if user_id not in processed_user_ids:
+                user_data = get_user_search_data(user_id)
+                if user_data:
+                    results.append({'type': 'user', 'priority': user_id_row['match_priority'], 'data': user_data})
+                    processed_user_ids.add(user_id) # Track processed IDs to prevent duplicates
 
     if search_type in ['all', 'groups']:
         groups_data = db.execute(
@@ -2450,7 +2436,7 @@ def api_dynamic_search():
             WHERE LOWER(g.name) LIKE ? OR LOWER(g.description) LIKE ?
             ORDER BY LOWER(g.name)
             """,
-            (f'{query}%', f'%{query}%')
+            (f'%{query}%', f'%{query}%')
         ).fetchall()
         for group_id_row in groups_data:
             group_data = get_group_search_data(group_id_row['id'])
