@@ -148,6 +148,7 @@ CREATE TABLE groups (
     created_by INTEGER NOT NULL,            -- The user who created this group
     chat_room_id INTEGER UNIQUE NOT NULL,   -- One-to-one link to its corresponding chat_room
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    unique_join_link TEXT UNIQUE,
 
     -- Ban-related fields for group moderation
     ban_status TEXT DEFAULT 'none',         -- 'none', 'temporary', 'permanent'
