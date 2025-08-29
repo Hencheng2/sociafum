@@ -300,7 +300,7 @@ def process_mentions_and_links(text):
             return f'<a href="{url_for("profile", username=username)}">@{username}</a>'
         return match.group(0)  # If username not found, keep original text
     
-    processed_text = re.sub(r'@([a-zA-Z0-9_]+)', replace_mention, processed_text)
+    processed_text = re.sub(r'@([a-zA-Z0-9_]+)', replace_mention, text)
 
     # 2. Process URLs
     # Regular expression to find URLs
@@ -2037,32 +2037,31 @@ def reels():
     return render_template('reels.html', reels=reels_to_display, current_year=current_year)
 
 
-# ... other imports and code ...
-
 @app.route('/create_story', methods=['GET', 'POST'])
 @login_required
 def create_story():
     current_year = datetime.now(timezone.utc).year
     if request.method == 'POST':
         description = request.form.get('description', '').strip()
-        visibility = request.form.get('visibility', 'friends')
+        visibility = request.form.get('visibility', 'friends') # 'friends' is a default value if not provided by form.
 
         media_path = None
         media_type = None
-        background_audio_path = None
+        background_audio_path = None # Initialize to None.
 
-        file = request.files.get('file') # This handles uploaded photo/video/audio
-        audio_file = request.files.get('audioFile') # This handles background audio for photo stories
+        file = request.files.get('file')
+        audio_file = request.files.get('audioFile')
 
+        # First check if the main media file exists and has a filename
         if not file or file.filename == '':
-            # This check is now the primary one due to frontend FormData handling
             return jsonify({'success': False, 'message': 'Story requires a photo, video, or voice note.'}), 400
 
-        # Existing file handling logic (simplified slightly, as frontend prepares the 'file')
+        # Save the main media file
         media_path = save_uploaded_file(file, app.config['STORY_MEDIA_FOLDER'])
         if not media_path:
             return jsonify({'success': False, 'message': 'Invalid uploaded media file type for story.'}), 400
 
+        # Determine media type for the main file
         file_extension = file.filename.rsplit('.', 1)[1].lower()
         if file_extension in ALLOWED_IMAGE_EXTENSIONS:
             media_type = 'image'
@@ -2073,38 +2072,55 @@ def create_story():
         else:
             return jsonify({'success': False, 'message': 'Unsupported media type for story.'}), 400
         
-        # Handle background audio for image stories
+        # If it's an image story, handle optional background audio
         if media_type == 'image' and audio_file and audio_file.filename != '':
             background_audio_path = save_uploaded_file(audio_file, app.config['VOICE_NOTES_FOLDER'])
             if not background_audio_path:
                 return jsonify({'success': False, 'message': 'Invalid background audio file type for story.'}), 400
         
-        # Removed the base64 fallback logic here as the frontend should always send a File object now
-        # via the 'file' input field in the FormData.
+        # Note: The frontend JavaScript is designed to convert camera/voice note captures
+        # into a File object and attach it to the 'file' input. Therefore, the base64
+        # fallback logic from previous versions in app.py is no longer strictly needed here,
+        # as 'file' should always be present and correctly formatted if media was selected.
 
         db = get_db()
         try:
-            # Stories expire in 24 hours
-            expires_at = datetime.now(timezone.utc) + timedelta(hours=24)
-            db.execute(
-                """
+            now_utc = datetime.now(timezone.utc)
+            expires_at = now_utc + timedelta(hours=24)
+            
+            # Define the SQL statement with 8 placeholders
+            sql = """
                 INSERT INTO stories (user_id, description, media_path, media_type, background_audio_path, visibility, timestamp, expires_at)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                """,
-                (current_user.id, description, media_path, media_type, background_audio_path, datetime.now(timezone.utc), expires_at)
+            """
+            
+            # Define the tuple of values with 8 elements
+            values = (
+                current_user.id,
+                description,
+                media_path,
+                media_type,
+                background_audio_path, # This will be a string path or None
+                visibility,
+                now_utc,
+                expires_at
             )
+
+            # Add debug logging to verify the number of bindings
+            app.logger.debug(f"SQL statement: {sql}")
+            app.logger.debug(f"Values to bind: {values}")
+            app.logger.debug(f"Number of values in tuple: {len(values)}")
+
+            db.execute(sql, values)
             db.commit()
-            # Changed this to return JSON
+            
             return jsonify({'success': True, 'message': 'Story created successfully! It will expire in 24 hours.', 'redirect_url': url_for('home')}), 200
         except Exception as e:
             db.rollback()
             app.logger.error(f"Error creating story: {e}")
-            # Changed this to return JSON
             return jsonify({'success': False, 'message': f'An error occurred while creating your story: {e}'}), 500
 
     return render_template('create_story.html', current_year=current_year)
-
-# ... rest of your app.py code ...
 
 # --- Search Route ---
 @app.route('/search', methods=['GET'])
