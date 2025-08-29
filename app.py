@@ -1332,42 +1332,137 @@ def friends():
         suggested_users=suggested_users
     )
 
-# Add this new API route to app.py for search
-@app.route('/api/search_users')
+
+# API route for dynamic search on the friends page
+@app.route('/api/friends_search', methods=['GET'])
 @login_required
-def api_search_users():
-    query = request.args.get('q', '').lower()
-    if not query:
-        return jsonify([])
-
+def api_friends_search():
+    query = request.args.get('q', '').strip().lower()
+    active_tab = request.args.get('tab', 'followers') # Default to 'followers' if not specified
     db = get_db()
-    users_raw = db.execute(
+    results = []
+
+    # Helper function to get common user data for search results
+    def get_user_data_for_friends_page(user_id):
+        user_data = db.execute("SELECT u.id, u.username, u.originalName, m.profilePhoto FROM users u LEFT JOIN members m ON u.id = m.user_id WHERE u.id = ?", (user_id,)).fetchone()
+        if user_data:
+            user_dict = dict(user_data)
+            user_dict['profilePhoto'] = get_member_profile_pic(user_dict['id'])
+            user_dict['mutual_count'] = get_mutual_friends_count(current_user.id, user_dict['id'])
+            user_dict['status'] = get_relationship_status(current_user.id, user_dict['id']) # Needed for suggested/requests
+            user_dict['is_blocked_by_current_user'] = is_blocked(current_user.id, user_dict['id'])
+            return user_dict
+        return None
+
+    # Base query for users in various friendship categories
+    base_query_conditions = ""
+    query_params = [current_user.id, current_user.id, current_user.id] # For blocking and self-exclusion
+
+    if active_tab == 'followers':
+        base_query_conditions = """
+            f.user2_id = ? AND f.status = 'accepted' AND u.id NOT IN (SELECT blocked_id FROM blocked_users WHERE blocker_id = ?)
         """
-        SELECT u.id, m.fullName AS realName, u.username, m.profilePhoto,
-        CASE WHEN LOWER(m.fullName) LIKE ? THEN 0 ELSE 1 END AS sort_order
-        FROM users u
-        JOIN members m ON m.user_id = u.id
-        WHERE (LOWER(m.fullName) LIKE ? OR LOWER(u.username) LIKE ?) AND u.id != ?
-            AND u.id NOT IN (SELECT blocked_id FROM blocked_users WHERE blocker_id = ?)
-        ORDER BY sort_order, LOWER(m.fullName), LOWER(u.username)
-        """,
-        (query + '%', query + '%', query + '%', current_user.id, current_user.id)
-    ).fetchall()
+        query_params = [current_user.id, current_user.id]
 
-    users = []
-    for user in users_raw:
-        mutual_count = get_mutual_friends_count(current_user.id, user['id'])
-        status = get_relationship_status(current_user.id, user['id'])
-        users.append({
-            'id': user['id'],
-            'realName': user['realName'],
-            'username': user['username'],
-            'profilePhoto': get_member_profile_pic(user['id']),
-            'mutual_count': mutual_count,
-            'status': status
-        })
+    elif active_tab == 'following':
+        base_query_conditions = """
+            f.user1_id = ? AND f.status = 'accepted' AND u.id NOT IN (SELECT blocked_id FROM blocked_users WHERE blocker_id = ?)
+        """
+        query_params = [current_user.id, current_user.id]
 
-    return jsonify(users)
+    elif active_tab == 'friends':
+        base_query_conditions = """
+            (f.user1_id = ? OR f.user2_id = ?) AND f.status = 'accepted' AND u.id != ? AND u.id NOT IN (SELECT blocked_id FROM blocked_users WHERE blocker_id = ?)
+        """
+        query_params = [current_user.id, current_user.id, current_user.id, current_user.id] # Add current_user.id twice for the (f.user1_id = ? OR f.user2_id = ?) condition.
+
+    elif active_tab == 'requests':
+        base_query_conditions = """
+            f.user2_id = ? AND f.status = 'pending' AND u.id NOT IN (SELECT blocked_id FROM blocked_users WHERE blocker_id = ?)
+        """
+        query_params = [current_user.id, current_user.id]
+
+    elif active_tab == 'suggested':
+        # This one is more complex, fetch all suggested and then filter with Python
+        # Or, modify the complex suggested query directly
+        # For simplicity, let's keep the existing suggested query logic and apply Python filtering if needed
+        pass # Handle this below separately
+
+    if active_tab != 'suggested':
+        full_query = f"""
+            SELECT DISTINCT u.id,
+                   CASE
+                       WHEN LOWER(m.fullName) LIKE ? THEN 0 -- Real name prefix match
+                       WHEN LOWER(u.username) LIKE ? THEN 1 -- Username prefix match
+                       ELSE 2                                -- Contains anywhere
+                   END AS match_priority
+            FROM users u
+            JOIN members m ON u.id = m.user_id
+            JOIN friendships f ON (f.user1_id = u.id OR f.user2_id = u.id)
+            WHERE {base_query_conditions}
+              AND (LOWER(m.fullName) LIKE ? OR LOWER(u.username) LIKE ?)
+            ORDER BY match_priority, LOWER(m.fullName), LOWER(u.username)
+        """
+        # Add query parameters for LIKE clauses
+        final_query_params = query_params + [f'{query}%', f'{query}%', f'%{query}%', f'%{query}%'] if query else query_params
+        
+        # If no query, just get all from the tab's base conditions
+        if not query:
+             full_query = f"""
+                SELECT DISTINCT u.id
+                FROM users u
+                JOIN members m ON u.id = m.user_id
+                JOIN friendships f ON (f.user1_id = u.id OR f.user2_id = u.id)
+                WHERE {base_query_conditions}
+                ORDER BY LOWER(m.fullName), LOWER(u.username)
+            """
+             final_query_params = query_params
+
+
+        user_ids_raw = db.execute(full_query, final_query_params).fetchall()
+        for user_id_row in user_ids_raw:
+            user_data = get_user_data_for_friends_page(user_id_row['id'])
+            if user_data:
+                results.append(user_data) # Append user data directly
+    else: # Handle suggested users
+        suggested_users_raw = db.execute(
+            """
+            SELECT u.id, m.fullName AS realName, u.username, m.profilePhoto, COUNT(DISTINCT my_friend.id) AS mutual_count
+            FROM users u
+            JOIN members m ON m.user_id = u.id
+            JOIN friendships f1 ON (f1.user1_id = ? OR f1.user2_id = ?) AND f1.status = 'accepted'
+            JOIN users my_friend ON my_friend.id = CASE WHEN f1.user1_id = ? THEN f1.user2_id ELSE f1.user1_id END
+            JOIN friendships f2 ON (f2.user1_id = my_friend.id OR f2.user2_id = my_friend.id) AND f2.status = 'accepted'
+            WHERE u.id = CASE WHEN f2.user1_id = my_friend.id THEN f2.user2_id ELSE f2.user1_id END
+                AND u.id != ?
+                AND u.id NOT IN (
+                    SELECT CASE WHEN f.user1_id = ? THEN f.user2_id ELSE f.user1_id END
+                    FROM friendships f
+                    WHERE (f.user1_id = ? OR f.user2_id = ?) AND f.status IN ('accepted', 'pending')
+                )
+                AND u.id NOT IN (SELECT blocked_id FROM blocked_users WHERE blocker_id = ?)
+            GROUP BY u.id
+            HAVING mutual_count > 0
+            ORDER BY mutual_count DESC
+            LIMIT 20
+            """,
+            (current_user.id, current_user.id, current_user.id, current_user.id, current_user.id, current_user.id, current_user.id, current_user.id)
+        ).fetchall()
+
+        for user in suggested_users_raw:
+            user_dict = dict(user)
+            # Apply search filter after fetching suggested, as the SQL for suggested is complex
+            # and integrating LIKE for name/username directly might make it even more unwieldy
+            if query and not (user_dict['realName'].lower().startswith(query) or user_dict['username'].lower().startswith(query) or query in user_dict['realName'].lower() or query in user_dict['username'].lower()):
+                continue # Skip if it doesn't match query
+
+            user_dict['profilePhoto'] = get_member_profile_pic(user_dict['id'])
+            user_dict['status'] = get_relationship_status(current_user.id, user_dict['id']) # For UI buttons
+            results.append(user_dict)
+
+
+    return jsonify(results)
+
 
 # --- API Route for Inbox Search (Friends & Groups) ---
 @app.route('/api/inbox_search', methods=['GET'])
