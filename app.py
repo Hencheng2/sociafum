@@ -1597,13 +1597,15 @@ def api_get_inbox_contacts():
 
 # --- Messaging & Chat Rooms ---
 
+# In app.py, find the inbox route and replace its current implementation with this:
+
 @app.route('/inbox')
 @login_required
 def inbox():
     db = get_db()
 
     # Fetch conversations (chat rooms the user is a member of)
-    # Get latest message for each chat room
+    # Get latest message for each chat room, and ONLY include chat rooms that have at least one message
     conversations_data = db.execute(
         """
         SELECT
@@ -1624,6 +1626,7 @@ def inbox():
         LEFT JOIN users u_other ON crm_other.user_id = u_other.id
         LEFT JOIN members m_other ON u_other.id = m_other.user_id
         WHERE crm.user_id = ?
+          AND cm.id IS NOT NULL -- *** THIS IS THE KEY CHANGE: Only include chat rooms with messages ***
         GROUP BY cr.id
         ORDER BY latest_message_timestamp DESC
         """,
