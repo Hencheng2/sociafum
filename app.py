@@ -476,6 +476,7 @@ def home():
 
 
 # --- API Route to Get Posts ---
+# --- Find your existing @app.route('/api/get_posts') and REPLACE its content with this: ---
 @app.route('/api/get_posts')
 @login_required
 def api_get_posts():
@@ -484,19 +485,11 @@ def api_get_posts():
     per_page = request.args.get('per_page', 10, type=int)
     offset = (page - 1) * per_page
 
-    posts_query = """
+    # Modify this query to only fetch 'id's and then use the helper for full details
+    # This query determines which posts are visible to the current user
+    post_ids_query = """
         SELECT
-            p.id,
-            p.user_id,
-            p.description,
-            p.media_path,
-            p.media_type,
-            p.timestamp,
-            p.likes_count,
-            p.comments_count,
-            u.username,
-            u.originalName,
-            m.profilePhoto AS author_profile_pic
+            p.id
         FROM posts p
         JOIN users u ON p.user_id = u.id
         LEFT JOIN members m ON u.id = m.user_id
@@ -515,20 +508,20 @@ def api_get_posts():
         LIMIT ? OFFSET ?
     """
     
-    # Execute the query to get posts for the current page
-    posts_data = db.execute(posts_query, (current_user.id, current_user.id, current_user.id, per_page, offset)).fetchall()
+    # Execute the query to get post IDs for the current page
+    post_ids_data = db.execute(post_ids_query, (current_user.id, current_user.id, current_user.id, per_page, offset)).fetchall()
 
     posts_list = []
-    for post in posts_data:
-        post_dict = dict(post)
-        post_dict['profile_pic'] = get_member_profile_pic(post_dict['user_id'])
-        # Ensure timestamp is ISO format for moment.js
-        if post_dict['timestamp']:
-            post_dict['timestamp'] = datetime.fromisoformat(post_dict['timestamp']).isoformat()
-        posts_list.append(post_dict)
+    for post_id_row in post_ids_data:
+        post_id = post_id_row['id']
+        # Use the NEW helper function to get all enriched post details
+        post_data = get_post_details_for_display(post_id, current_user.id)
+        if post_data:
+            posts_list.append(post_data)
 
     # Check if there are more posts for the next page
-    has_more_query = """
+    # This count should match the visibility logic of the main query
+    total_posts_query = """
         SELECT COUNT(*)
         FROM posts p
         JOIN users u ON p.user_id = u.id
@@ -545,13 +538,14 @@ def api_get_posts():
             (p.visibility = 'private' AND p.user_id = ?)
         )
     """
-    total_posts = db.execute(has_more_query, (current_user.id, current_user.id, current_user.id)).fetchone()[0]
+    total_posts = db.execute(total_posts_query, (current_user.id, current_user.id, current_user.id)).fetchone()[0]
     has_more = (offset + per_page) < total_posts
 
     return jsonify({
         'posts': posts_list,
         'has_more': has_more
     })
+
 
 # --- API Route to Get Stories ---
 @app.route('/api/get_stories')
