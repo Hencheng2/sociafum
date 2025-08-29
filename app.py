@@ -271,6 +271,49 @@ def get_member_profile_pic(user_id):
         return url_for('static', filename=member['profilePhoto'])
     return url_for('static', filename='img/default_profile.png')
 
+# --- Add this NEW helper function to your app.py, ideally near other helper functions (e.g., after process_mentions_and_links) ---
+def get_post_details_for_display(post_id, current_user_id):
+    db = get_db()
+    post = db.execute(
+        """
+        SELECT p.id, p.user_id, p.description, p.media_path, p.media_type, p.timestamp, u.username, u.originalName
+        FROM posts p
+        JOIN users u ON p.user_id = u.id
+        LEFT JOIN members m ON u.id = m.user_id
+        WHERE p.id = ?
+        """,
+        (post_id,)
+    ).fetchone()
+
+    if post:
+        post_dict = dict(post)
+        post_dict['profile_pic_url'] = get_member_profile_pic(post_dict['user_id'])
+        post_dict['timestamp_formatted'] = moment.utc(post_dict['timestamp']).fromNow() # Assuming 'moment' is available in your app
+
+        # Add like status and count
+        like_count = db.execute("SELECT COUNT(*) FROM post_likes WHERE post_id = ?", (post_id,)).fetchone()[0]
+        post_dict['like_count'] = like_count
+        post_dict['is_liked_by_current_user'] = db.execute("SELECT 1 FROM post_likes WHERE post_id = ? AND user_id = ?", (post_id, current_user_id)).fetchone() is not None
+
+        # Add save status
+        post_dict['is_saved_by_current_user'] = db.execute("SELECT 1 FROM saved_posts WHERE post_id = ? AND user_id = ?", (post_id, current_user_id)).fetchone() is not None
+
+        # Add follow status for the post owner (if not current user)
+        if post_dict['user_id'] != current_user_id:
+            # get_relationship_status is assumed to be an existing helper
+            status = get_relationship_status(current_user_id, post_dict['user_id']) 
+            post_dict['is_followed_by_current_user'] = (status == 'friend' or status == 'pending_sent')
+        else:
+            post_dict['is_followed_by_current_user'] = False
+
+        if post_dict['media_path']:
+            # Adjust path if it includes 'static/' at the beginning, url_for expects relative path from static
+            post_dict['media_path'] = url_for('static', filename=post_dict['media_path'][len('static/'):]) 
+        
+        return post_dict
+    return None
+
+
 def get_member_from_user_id(user_id):
     db = get_db()
     member = db.execute('SELECT * FROM members WHERE user_id = ?', (user_id,)).fetchone()
