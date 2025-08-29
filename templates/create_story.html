@@ -190,19 +190,69 @@
         border-radius: 8px;
         display: none;
     }
+
+    /* Custom Message Box for Alerts */
+    .custom-alert-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.6);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 1000;
+    }
+
+    .custom-alert-box {
+        background: var(--card-background);
+        color: var(--primary-text);
+        padding: 25px 35px;
+        border-radius: 12px;
+        box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+        text-align: center;
+        max-width: 350px;
+        animation: fadeIn 0.3s ease-out;
+    }
+
+    .custom-alert-box p {
+        margin-bottom: 20px;
+        font-size: 1.1em;
+    }
+
+    .custom-alert-box button {
+        background-color: var(--primary-color);
+        color: white;
+        border: none;
+        padding: 10px 25px;
+        border-radius: 25px;
+        cursor: pointer;
+        font-size: 1em;
+        transition: background-color 0.2s ease;
+    }
+
+    .custom-alert-box button:hover {
+        background-color: darken(var(--primary-color), 10%);
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: scale(0.9); }
+        to { opacity: 1; transform: scale(1); }
+    }
 </style>
 
 <div class="container create-story-container">
     <div class="card create-story-card">
         <h2>Create New Story</h2>
         <!-- Form for Story Creation -->
-        <!-- Added a new action and enctype for proper form submission with files -->
         <form id="createStoryForm" action="{{ url_for('create_story') }}" method="post" enctype="multipart/form-data">
             <div class="form-group">
                 <label for="fileInput" class="form-label">
                     <i class="fas fa-image"></i>
                     Upload Photo/Video
                 </label>
+                <!-- Changed 'accept' to include audio -->
                 <input type="file" class="form-control" id="fileInput" name="file" accept="image/*,video/*,audio/*" style="display: none;">
             </div>
 
@@ -245,10 +295,10 @@
                 </div>
             </div>
 
-            <!-- Hidden Inputs to store captured media data - these are largely fallbacks now -->
-            <input type="hidden" id="cameraCapturedMedia" name="cameraCapturedMedia">
-            <input type="hidden" id="voiceNoteBlob" name="voiceNoteBlob">
-            <input type="hidden" id="cameraCapturedMediaType" name="cameraCapturedMediaType">
+            <!-- Hidden Inputs to store captured media data, for the new FormData approach -->
+            <!-- These are no longer directly used by Flask's request.files but are for JS internal use -->
+            <input type="hidden" id="capturedMediaData" name="capturedMediaData">
+            <input type="hidden" id="capturedMediaType" name="capturedMediaType">
 
             <div class="form-group">
                 <label for="description" class="form-label"><i class="fas fa-edit"></i> Story Description (Optional)</label>
@@ -279,7 +329,6 @@
         const videoPreview = document.getElementById('videoPreview');
         const audioPreview = document.getElementById('audioPreview');
         const mediaMessage = document.getElementById('mediaMessage');
-        const submitBtn = document.getElementById('submitStoryBtn');
         const cameraCaptureBtn = document.getElementById('cameraCaptureBtn');
         const voiceNoteBtn = document.getElementById('voiceNoteBtn');
         const cameraCaptureSection = document.getElementById('cameraCaptureSection');
@@ -292,10 +341,10 @@
         const stopRecordingBtn = document.getElementById('stopRecordingBtn');
         const voiceNoteTimer = document.getElementById('voiceNoteTimer');
 
-        // Hidden inputs to store captured media data, primarily for fallback/internal use
-        const cameraCapturedMediaInput = document.getElementById('cameraCapturedMedia');
-        const cameraCapturedMediaTypeInput = document.getElementById('cameraCapturedMediaType');
-        const voiceNoteBlobInput = document.getElementById('voiceNoteBlob');
+        // New elements for the revised FormData approach
+        let selectedMediaBlob = null; // Stores the File/Blob object to be sent
+        let selectedMediaName = null;
+        let selectedMediaType = null;
 
         let isRecording = false;
         let mediaRecorder;
@@ -311,8 +360,28 @@
         let videoCaptureSeconds = 0;
         const MAX_STORY_VIDEO_DURATION = 15; // Max 15 seconds for a story video
 
+        // Custom alert function
+        function customAlert(message) {
+            const existingAlert = document.querySelector('.custom-alert-overlay');
+            if (existingAlert) existingAlert.remove();
+
+            const overlay = document.createElement('div');
+            overlay.className = 'custom-alert-overlay';
+            overlay.innerHTML = `
+                <div class="custom-alert-box">
+                    <p>${message}</p>
+                    <button>OK</button>
+                </div>
+            `;
+            document.body.appendChild(overlay);
+
+            overlay.querySelector('button').addEventListener('click', () => {
+                overlay.remove();
+            });
+        }
+
         function resetAllMediaInputs() {
-            fileInput.value = ''; // Clear the file input
+            // Clear all previews
             imagePreview.src = '#';
             imagePreview.style.display = 'none';
             videoPreview.src = '';
@@ -321,7 +390,7 @@
             audioPreview.style.display = 'none';
             mediaMessage.textContent = 'No media selected.';
 
-            // Reset camera and voice note states
+            // Stop camera stream
             if (cameraStream) {
                 cameraStream.getTracks().forEach(track => track.stop());
                 cameraLiveFeed.srcObject = null;
@@ -329,6 +398,7 @@
             cameraCaptureSection.style.display = 'none';
             cameraLiveFeed.style.display = 'none';
             
+            // Stop voice note recording
             if (mediaRecorder && mediaRecorder.state !== 'inactive') {
                 mediaRecorder.stop();
             }
@@ -338,38 +408,46 @@
             isRecording = false;
             clearInterval(audioTimer);
             voiceNoteSection.style.display = 'none';
+            voiceNoteTimer.textContent = '00:00';
             
-            // Clear hidden inputs (these should be redundant if fileInput is correctly used)
-            cameraCapturedMediaInput.value = '';
-            cameraCapturedMediaTypeInput.value = '';
-            voiceNoteBlobInput.value = '';
+            // Clear the dynamically stored media for FormData
+            selectedMediaBlob = null;
+            selectedMediaName = null;
+            selectedMediaType = null;
+            
+            // Clear the hidden file input's value
+            fileInput.value = '';
         }
 
         // Function to display media preview
-        function displayMediaPreview(file) {
-            resetAllMediaInputs();
-            if (file) {
-                const fileURL = URL.createObjectURL(file);
-                mediaMessage.textContent = `File selected: ${file.name}`;
-                
-                if (file.type.startsWith('image/')) {
-                    imagePreview.src = fileURL;
-                    imagePreview.style.display = 'block';
-                } else if (file.type.startsWith('video/')) {
-                    videoPreview.src = fileURL;
-                    videoPreview.style.display = 'block';
-                } else if (file.type.startsWith('audio/')) {
-                    audioPreview.src = fileURL;
-                    audioPreview.style.display = 'block';
-                }
-            } else {
-                mediaMessage.textContent = 'No media selected.';
+        function displayMediaPreview(file, name) {
+            resetAllMediaInputs(); // Clear everything first
+            selectedMediaBlob = file; // Store the blob/file for submission
+            selectedMediaName = name;
+            mediaMessage.textContent = `Media selected: ${name}`;
+
+            if (file.type.startsWith('image/')) {
+                imagePreview.src = URL.createObjectURL(file);
+                imagePreview.style.display = 'block';
+                selectedMediaType = 'image';
+            } else if (file.type.startsWith('video/')) {
+                videoPreview.src = URL.createObjectURL(file);
+                videoPreview.style.display = 'block';
+                selectedMediaType = 'video';
+            } else if (file.type.startsWith('audio/')) {
+                audioPreview.src = URL.createObjectURL(file);
+                audioPreview.style.display = 'block';
+                selectedMediaType = 'audio';
             }
         }
 
         fileInput.addEventListener('change', function() {
             const file = this.files[0];
-            displayMediaPreview(file);
+            if (file) {
+                displayMediaPreview(file, file.name);
+            } else {
+                resetAllMediaInputs();
+            }
         });
 
         cameraCaptureBtn.addEventListener('click', async function() {
@@ -380,12 +458,12 @@
                 cameraLiveFeed.style.display = 'block';
                 cameraCaptureSection.style.display = 'block';
                 mediaMessage.textContent = 'Camera live feed active.';
-                startVideoCaptureBtn.style.display = 'block'; // Ensure video controls are visible
+                startVideoCaptureBtn.style.display = 'block';
                 takePhotoBtn.style.display = 'block';
                 stopVideoCaptureBtn.style.display = 'none';
             } catch (err) {
                 console.error("Error accessing camera: ", err);
-                alert("Could not access camera. Please check your permissions.");
+                customAlert("Could not access camera. Please check your permissions.");
                 resetAllMediaInputs();
             }
         });
@@ -400,14 +478,9 @@
                 context.drawImage(cameraLiveFeed, 0, 0, canvas.width, canvas.height);
                 
                 canvas.toBlob(function(blob) {
-                    const file = new File([blob], "camera_photo.jpg", { type: mediaType });
-                    
-                    // Assign the created File object to the fileInput
-                    const dataTransfer = new DataTransfer();
-                    dataTransfer.items.add(file);
-                    fileInput.files = dataTransfer.files;
-
-                    displayMediaPreview(file); // Update preview with the new file
+                    const fileName = "camera_photo.jpg";
+                    const file = new File([blob], fileName, { type: mediaType });
+                    displayMediaPreview(file, fileName);
                     
                     cameraStream.getTracks().forEach(track => track.stop());
                     cameraLiveFeed.srcObject = null;
@@ -431,14 +504,9 @@
 
                 videoCaptureRecorder.onstop = function() {
                     const blob = new Blob(videoCaptureChunks, { 'type' : 'video/webm' });
-                    const file = new File([blob], "camera_video.webm", { type: 'video/webm' });
-                    
-                    // Assign the created File object to the fileInput
-                    const dataTransfer = new DataTransfer();
-                    dataTransfer.items.add(file);
-                    fileInput.files = dataTransfer.files;
-                    
-                    displayMediaPreview(file); // Update preview with the new file
+                    const fileName = "camera_video.webm";
+                    const file = new File([blob], fileName, { type: 'video/webm' });
+                    displayMediaPreview(file, fileName);
                     
                     cameraStream.getTracks().forEach(track => track.stop());
                     cameraLiveFeed.srcObject = null;
@@ -459,8 +527,7 @@
                     // You might want to update a timer display here too
                     if (videoCaptureSeconds >= MAX_STORY_VIDEO_DURATION) {
                         videoCaptureRecorder.stop();
-                        // Instead of alert, use a custom modal or flash message
-                        // alert(`Video recording reached max ${MAX_STORY_VIDEO_DURATION} seconds.`);
+                        customAlert(`Video recording reached max ${MAX_STORY_VIDEO_DURATION} seconds.`);
                         mediaMessage.textContent = `Video recording stopped (max ${MAX_STORY_VIDEO_DURATION}s reached).`;
                     }
                 }, 1000);
@@ -489,7 +556,7 @@
                 voiceNoteTimer.textContent = '00:00'; // Reset timer display
             } catch (err) {
                 console.error("Error accessing microphone: ", err);
-                alert("Could not access microphone. Please check your permissions.");
+                customAlert("Could not access microphone. Please check your permissions.");
                 resetAllMediaInputs();
             }
         });
@@ -506,14 +573,9 @@
 
                 mediaRecorder.onstop = function() {
                     const audioBlob = new Blob(audioChunks, { 'type' : 'audio/wav' }); // Or 'audio/webm' depending on browser
-                    const file = new File([audioBlob], "voice_note.wav", { type: 'audio/wav' });
-
-                    // Assign the created File object to the fileInput
-                    const dataTransfer = new DataTransfer();
-                    dataTransfer.items.add(file);
-                    fileInput.files = dataTransfer.files;
-
-                    displayMediaPreview(file); // Update preview with the new file
+                    const fileName = "voice_note.wav";
+                    const file = new File([audioBlob], fileName, { type: 'audio/wav' });
+                    displayMediaPreview(file, fileName);
                     
                     audioStream.getTracks().forEach(track => track.stop());
                     
@@ -547,11 +609,46 @@
         });
 
         // Form submission handler
-        createStoryForm.addEventListener('submit', function(event) {
-            // Check if a file has been selected via any method
-            if (fileInput.files.length === 0) {
-                event.preventDefault();
-                alert('Story requires a photo, video, or voice note.'); // Consider custom modal instead of alert
+        createStoryForm.addEventListener('submit', async function(event) {
+            event.preventDefault(); // Prevent default form submission
+
+            if (!selectedMediaBlob) {
+                customAlert('Story requires a photo, video, or voice note.');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', selectedMediaBlob, selectedMediaName); // Append the stored blob/file
+            formData.append('description', document.getElementById('description').value);
+            formData.append('visibility', document.getElementById('visibility').value);
+
+            // You can also append the original file input's file if it was used for consistency,
+            // though selectedMediaBlob should cover all cases if logic is correct.
+            if (fileInput.files.length > 0 && selectedMediaBlob !== fileInput.files[0]) {
+                 // This case should ideally not happen if displayMediaPreview always updates selectedMediaBlob
+                 // But as a fallback:
+                 formData.append('file', fileInput.files[0], fileInput.files[0].name);
+            }
+
+
+            try {
+                const response = await fetch(createStoryForm.action, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    // Assuming Flask sends a JSON response with 'success' and 'message'
+                    customAlert(result.message);
+                    window.location.href = result.redirect_url || '/home'; // Redirect on success
+                } else {
+                    customAlert(result.message || 'Failed to post story.');
+                }
+            } catch (error) {
+                console.error('Error during story submission:', error);
+                customAlert('An error occurred during submission. Please try again.');
             }
         });
     });
