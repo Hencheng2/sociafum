@@ -362,7 +362,7 @@
         <!-- Stories Container -->
         <div id="stories-container" class="stories-container bg-gray-50 dark:bg-gray-800 shadow-inner rounded-xl px-2">
             <!-- Your Story Link -->
-            <a href="{{ url_for('create_story') }}" class="story-item">
+            <a href="{{ url_for('create_story') }}" class="story-item" id="your-story-link">
                 <div class="story-ring bg-gray-200 dark:bg-gray-700">
                     <img src="{{ current_user.get_member_profile().profilePhoto | default(url_for('static', filename='img/default_profile.png')) }}" alt="Your Story" class="border-white dark:border-gray-900">
                 </div>
@@ -421,6 +421,7 @@
         const storyModalTimestamp = document.getElementById('story-modal-timestamp');
         const storyModalDescription = document.getElementById('story-modal-description');
         const storyProgressBar = document.getElementById('story-progress-bar');
+        const yourStoryLink = document.getElementById('your-story-link'); // Get the static 'Your Story' link
 
         let currentStoryIndex = { user: 0, story: 0 }; // Track current user and story within that user's sequence
         let activeStoriesData = []; // To store fetched stories, grouped by user
@@ -440,11 +441,9 @@
                 const data = await response.json();
                 activeStoriesData = data; // Data is already grouped by user from API
 
-                if (activeStoriesData.length === 0) {
-                    // If no stories, ensure 'Your Story' is the only item. The link is already in HTML.
-                    return;
-                }
-
+                // Regardless of whether activeStoriesData is empty or not,
+                // the static "Your Story" link is always present in the HTML.
+                // So we always proceed to render other stories.
                 renderStories();
             } catch (error) {
                 console.error('Error fetching stories:', error);
@@ -453,11 +452,12 @@
         }
 
         function renderStories() {
-            // Clear existing *fetched* stories, but preserve the 'Your Story' link
-            // Find the "Your Story" link and remove everything after it
-            let yourStoryLink = storiesContainer.querySelector('.story-item[href="{{ url_for('create_story') }}"]');
-            while (yourStoryLink.nextSibling) {
-                storiesContainer.removeChild(yourStoryLink.nextSibling);
+            // Clear all dynamically added story elements (children after 'Your Story' link)
+            // Loop backwards to safely remove elements while iterating
+            let child = storiesContainer.lastElementChild;
+            while (child && child !== yourStoryLink) {
+                storiesContainer.removeChild(child);
+                child = storiesContainer.lastElementChild;
             }
             
             activeStoriesData.forEach((userStories, userIndex) => {
@@ -473,6 +473,12 @@
                 storiesContainer.appendChild(storyItem);
 
                 storyItem.addEventListener('click', (e) => {
+                    // Stop any potential background audio from a previous story if modal was closed manually
+                    const activeAudio = storyModalMediaContent.querySelector('audio');
+                    if (activeAudio) {
+                        activeAudio.pause();
+                        activeAudio.currentTime = 0;
+                    }
                     openStoryModal(userIndex, 0); // Open the first story of this user
                 });
             });
@@ -840,11 +846,11 @@
         function handleFollow(userId) { console.log(`Follow user ${userId}`); /* Implement AJAX call */ }
         function handleSave(postId) { console.log(`Save post ${postId}`); /* Implement AJAX call */ }
         function handleRepost(postId) { console.log(`Repost post ${postId}`); /* Implement AJAX call */ }
-        function handleViewsAnalytics(postId) { console.log(`View analytics for post ${postId}`); /* Open analytics modal */ }\
-        function handleReport(itemId, itemType) { console.log(`Report ${itemType} ${itemId}`); /* Open report modal */ }\
-        function handleHide(postId) { console.log(`Hide post ${postId}`); /* Implement AJAX call */ }\
-        function handleNotifications(postId) { console.log(`Turn on notifications for post type ${postId}`); /* Implement AJAX call */ }\
-        function handleBlockProfile(userId) { console.log(`Block user profile ${userId}`); /* Implement AJAX call */ }\
+        function handleViewsAnalytics(postId) { console.log(`View analytics for post ${postId}`); /* Open analytics modal */ }
+        function handleReport(itemId, itemType) { console.log(`Report ${itemType} ${itemId}`); /* Open report modal */ }
+        function handleHide(postId) { console.log(`Hide post ${postId}`); /* Implement AJAX call */ }
+        function handleNotifications(postId) { console.log(`Turn on notifications for post type ${postId}`); /* Implement AJAX call */ }
+        function handleBlockProfile(userId) { console.log(`Block user profile ${userId}`); /* Implement AJAX call */ }
 
 
         // --- Initial Load ---
