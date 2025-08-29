@@ -4,352 +4,718 @@
 
 {% block content %}
 <style>
-    .tab-container {
-        display: flex;
-        border-bottom: 1px solid #dee2e6;
-        margin-bottom: 20px;
+    body {
+        background-color: var(--bg-light); /* Tailwind-like variable for light mode */
+        color: var(--text-light); /* Tailwind-like variable for light mode */
     }
-    .tab {
-        padding: 10px 20px;
-        cursor: pointer;
-        font-weight: bold;
-        color: #6c757d;
+    .dark body {
+        background-color: var(--bg-dark); /* Tailwind-like variable for dark mode */
+        color: var(--text-dark); /* Tailwind-like variable for dark mode */
     }
-    .tab.active {
-        color: #007bff;
-        border-bottom: 2px solid #007bff;
+
+    .friends-container {
+        padding: 15px;
+        max-width: 800px;
+        margin: 0 auto;
+        background-color: var(--background);
+        border-radius: 12px;
+        box-shadow: 0 4px 15px var(--shadow-medium);
     }
-    .tab-content {
-        display: none;
+    .dark .friends-container {
+        background-color: var(--background-dark);
+        box-shadow: 0 4px 15px var(--shadow-dark);
     }
-    .tab-content.active {
-        display: block;
-    }
+
     .search-bar {
         margin-bottom: 20px;
+        display: flex;
     }
     .search-bar input {
-        width: 100%;
-        padding: 8px;
-        border: 1px solid #dee2e6;
-        border-radius: 20px;
+        flex-grow: 1;
+        padding: 12px 20px;
+        border: 1px solid var(--border-color-light);
+        border-radius: 25px;
+        font-size: 16px;
+        background-color: var(--input-background);
+        color: var(--text-primary);
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
     }
+    .dark .search-bar input {
+        border: 1px solid var(--border-color-dark);
+        background-color: var(--input-background-dark);
+        color: var(--text-primary-dark);
+    }
+    .search-bar input:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+    }
+
+    .tab-container {
+        display: flex;
+        flex-wrap: wrap;
+        border-bottom: 1px solid var(--border-color-light);
+        margin-bottom: 20px;
+        background-color: var(--card-background);
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    }
+    .dark .tab-container {
+        border-bottom: 1px solid var(--border-color-dark);
+        background-color: var(--card-background-dark);
+        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    }
+    .tab {
+        flex: 1;
+        min-width: 80px;
+        padding: 10px 15px;
+        text-align: center;
+        cursor: pointer;
+        font-weight: 600;
+        color: var(--text-secondary);
+        transition: background-color 0.2s ease, color 0.2s ease;
+        white-space: nowrap; /* Prevent tab text from wrapping */
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .tab.active {
+        color: var(--primary);
+        border-bottom: 2px solid var(--primary);
+        background-color: var(--background-light);
+    }
+    .dark .tab.active {
+        background-color: var(--background-dark);
+    }
+    .tab:hover:not(.active) {
+        background-color: var(--hover-bg-light);
+    }
+    .dark .tab:hover:not(.active) {
+        background-color: var(--hover-bg-dark);
+    }
+
+    /* Result Item Styles (same as search.html) */
     .user-item {
         display: flex;
         align-items: center;
-        padding: 10px;
-        border-bottom: 1px solid #dee2e6;
+        padding: 12px 15px;
+        border-bottom: 1px solid var(--border-color-light);
+        cursor: pointer;
+        transition: background-color 0.2s ease;
+        background-color: var(--card-background);
+        border-radius: 8px;
+        margin-bottom: 8px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
     }
+    .dark .user-item {
+        border-bottom: 1px solid var(--border-color-dark);
+        background-color: var(--card-background-dark);
+        box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    }
+    .user-item:hover {
+        background-color: var(--hover-bg-light);
+    }
+    .dark .user-item:hover {
+        background-color: var(--hover-bg-dark);
+    }
+    .user-item:last-child {
+        border-bottom: none;
+    }
+
     .user-item img {
         width: 50px;
         height: 50px;
         border-radius: 50%;
-        margin-right: 10px;
+        object-fit: cover;
+        margin-right: 15px;
+        border: 2px solid var(--primary-light);
+    }
+    .dark .user-item img {
+        border: 2px solid var(--primary-dark);
     }
     .user-info {
         flex: 1;
+        min-width: 0;
     }
     .user-info h3 {
         margin: 0;
         font-size: 16px;
+        color: var(--text-primary);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
     .user-info p {
-        margin: 0;
+        margin: 2px 0 0;
         font-size: 12px;
-        color: #6c757d;
+        color: var(--text-secondary);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .user-actions {
+        display: flex;
+        gap: 10px;
+        margin-left: 10px;
     }
     .user-actions button {
-        margin-left: 10px;
-        padding: 5px 10px;
+        padding: 8px 12px;
         border: none;
-        background: #007bff;
+        background-color: var(--primary);
         color: white;
-        border-radius: 5px;
+        border-radius: 20px;
         cursor: pointer;
+        font-size: 13px;
+        font-weight: 500;
+        transition: background-color 0.2s ease, transform 0.1s ease;
+        display: flex;
+        align-items: center;
+        white-space: nowrap;
+    }
+    .user-actions button:hover {
+        background-color: var(--primary-dark);
+        transform: translateY(-1px);
+    }
+    .user-actions button:active {
+        transform: translateY(0);
     }
     .user-actions button:disabled {
-        background: #6c757d;
+        background-color: var(--disabled-bg);
+        color: var(--disabled-text);
         cursor: not-allowed;
+        transform: none;
+        opacity: 0.8;
+    }
+    .user-actions button i {
+        margin-right: 5px;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 30px 15px;
+        color: var(--text-secondary);
+        background-color: var(--card-background);
+        border-radius: 8px;
+        margin-top: 15px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+    .dark .empty-state {
+        background-color: var(--card-background-dark);
+        box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    }
+    .empty-state p {
+        margin-bottom: 5px;
+        font-size: 15px;
+    }
+
+    /* Responsive Adjustments */
+    @media (max-width: 768px) {
+        .friends-container {
+            padding: 10px;
+            margin: 0;
+            border-radius: 0;
+            box-shadow: none;
+        }
+        .tab-container {
+            border-radius: 0;
+            margin-bottom: 10px;
+            box-shadow: none;
+        }
+        .tab {
+            font-size: 14px;
+            padding: 8px 10px;
+            min-width: 60px;
+        }
+        .search-bar input {
+            padding: 10px 15px;
+        }
+        .user-item {
+            padding: 10px;
+            margin-bottom: 6px;
+            border-radius: 0;
+            box-shadow: none;
+        }
+        .user-item img {
+            width: 40px;
+            height: 40px;
+            margin-right: 10px;
+        }
+        .user-info h3 {
+            font-size: 14px;
+        }
+        .user-info p {
+            font-size: 11px;
+        }
+        .user-actions button {
+            padding: 6px 10px;
+            font-size: 11px;
+            border-radius: 15px;
+        }
     }
 </style>
 
-<div class="search-bar">
-    <input type="text" id="searchInput" placeholder="Search SociaFam" oninput="searchUsers()">
-</div>
+<div class="friends-container">
+    <div class="search-bar">
+        <input type="text" id="searchInput" placeholder="Search friends, followers, or others" oninput="searchFriendsLive()">
+    </div>
 
-<div class="tab-container">
-    <div class="tab active" onclick="showTab('followers')">Followers ({{ followers|length }})</div>
-    <div class="tab" onclick="showTab('following')">Following ({{ following|length }})</div>
-    <div class="tab" onclick="showTab('friends')">Friends ({{ all_friends|length }})</div>
-    <div class="tab" onclick="showTab('requests')">Friend requests ({{ friend_requests|length }})</div>
-    <div class="tab" onclick="showTab('suggested')">Suggested</div>
-    <div class="tab" onclick="showTab('search')">Search</div>
-</div>
+    <div class="tab-container">
+        <div class="tab active" data-tab-id="followers" onclick="showTab('followers')">Followers (<span id="followers-count">{{ followers|length }}</span>)</div>
+        <div class="tab" data-tab-id="following" onclick="showTab('following')">Following (<span id="following-count">{{ following|length }}</span>)</div>
+        <div class="tab" data-tab-id="friends" onclick="showTab('friends')">Friends (<span id="friends-count">{{ all_friends|length }}</span>)</div>
+        <div class="tab" data-tab-id="requests" onclick="showTab('requests')">Requests (<span id="requests-count">{{ friend_requests|length }}</span>)</div>
+        <div class="tab" data-tab-id="suggested" onclick="showTab('suggested')">Suggested (<span id="suggested-count">{{ suggested_users|length }}</span>)</div>
+    </div>
 
-<div id="followers" class="tab-content active">
-    {% if followers %}
-        {% for follower in followers %}
-        <div class="user-item">
-            <img src="{{ follower.profilePhoto | default('/static/img/default_profile.png') }}" alt="Profile">
-            <div class="user-info">
-                <h3>{{ follower.realName }}</h3>
-                <p>{{ follower.mutual_count }} mutual friends/followers</p>
+    <div id="followers" class="tab-content active">
+        <!-- Initial content populated by Jinja2, then dynamically updated by JS -->
+        {% if followers %}
+            {% for follower in followers %}
+            <div class="user-item" data-user-id="{{ follower.id }}">
+                <img src="{{ follower.profilePhoto | default('/static/img/default_profile.png') }}" alt="Profile">
+                <div class="user-info">
+                    <h3>{{ follower.realName }} <small class="text-gray-500">@{{ follower.username }}</small></h3>
+                    <p>{{ follower.mutual_count }} mutual friends</p>
+                </div>
+                <div class="user-actions">
+                    <button onclick="event.stopPropagation(); blockUser({{ follower.id }})"><i class="fas fa-ban"></i> Block</button>
+                    <button onclick="event.stopPropagation(); messageUser({{ follower.id }})"><i class="fas fa-comment-dots"></i> Message</button>
+                </div>
             </div>
-            <div class="user-actions">
-                <button onclick="blockUser({{ follower.id }})">Block</button>
+            {% endfor %}
+        {% else %}
+            <div class="empty-state">
+                <p>No one is following you yet.</p>
+                <p>Share your profile with friends to get followers!</p>
             </div>
-        </div>
-        {% endfor %}
-    {% else %}
-        <div class="user-item">
-            <p>No one is following you yet.</p>
-            <p>Share your profile with friends to get followers!</p>
-        </div>
-    {% endif %}
-</div>
+        {% endif %}
+    </div>
 
-<div id="following" class="tab-content">
-    {% if following %}
-        {% for user in following %}
-        <div class="user-item">
-            <img src="{{ user.profilePhoto | default('/static/img/default_profile.png') }}" alt="Profile">
-            <div class="user-info">
-                <h3>{{ user.realName }}</h3>
-                <p>{{ user.mutual_count }} mutual friends/followers</p>
+    <div id="following" class="tab-content">
+        {% if following %}
+            {% for user in following %}
+            <div class="user-item" data-user-id="{{ user.id }}">
+                <img src="{{ user.profilePhoto | default('/static/img/default_profile.png') }}" alt="Profile">
+                <div class="user-info">
+                    <h3>{{ user.realName }} <small class="text-gray-500">@{{ user.username }}</small></h3>
+                    <p>{{ user.mutual_count }} mutual friends</p>
+                </div>
+                <div class="user-actions">
+                    <button onclick="event.stopPropagation(); unfollowUser({{ user.id }})"><i class="fas fa-user-minus"></i> Unfollow</button>
+                    <button onclick="event.stopPropagation(); blockUser({{ user.id }})"><i class="fas fa-ban"></i> Block</button>
+                    <button onclick="event.stopPropagation(); messageUser({{ user.id }})"><i class="fas fa-comment-dots"></i> Message</button>
+                </div>
             </div>
-            <div class="user-actions">
-                <button onclick="unfollowUser({{ user.id }})">Unfollow</button>
-                <button onclick="blockUser({{ user.id }})">Block</button>
+            {% endfor %}
+        {% else %}
+            <div class="empty-state">
+                <p>You are not following anyone yet.</p>
+                <p>Follow people you know to see their posts and updates here.</p>
             </div>
-        </div>
-        {% endfor %}
-    {% else %}
-        <div class="user-item">
-            <p>No one is following you yet.</p>
-            <p>Follow people you know to see their posts and updates here.</p>
-        </div>
-    {% endif %}
-</div>
+        {% endif %}
+    </div>
 
-<div id="friends" class="tab-content">
-    {% if all_friends %}
-        {% for friend in all_friends %}
-        <div class="user-item">
-            <img src="{{ friend.profilePhoto | default('/static/img/default_profile.png') }}" alt="Profile">
-            <div class="user-info">
-                <h3>{{ friend.realName }}</h3>
-                <p>{{ friend.mutual_count }} mutual friends/followers</p>
+    <div id="friends" class="tab-content">
+        {% if all_friends %}
+            {% for friend in all_friends %}
+            <div class="user-item" data-user-id="{{ friend.id }}">
+                <img src="{{ friend.profilePhoto | default('/static/img/default_profile.png') }}" alt="Profile">
+                <div class="user-info">
+                    <h3>{{ friend.realName }} <small class="text-gray-500">@{{ friend.username }}</small></h3>
+                    <p>{{ friend.mutual_count }} mutual friends</p>
+                </div>
+                <div class="user-actions">
+                    <button onclick="event.stopPropagation(); unfriendUser({{ friend.id }})"><i class="fas fa-user-times"></i> Unfriend</button>
+                    <button onclick="event.stopPropagation(); blockUser({{ friend.id }})"><i class="fas fa-ban"></i> Block</button>
+                    <button onclick="event.stopPropagation(); messageUser({{ friend.id }})"><i class="fas fa-comment-dots"></i> Message</button>
+                </div>
             </div>
-            <div class="user-actions">
-                <button onclick="unfollowUser({{ friend.id }})">Unfollow</button>
-                <button onclick="blockUser({{ friend.id }})">Block</button>
+            {% endfor %}
+        {% else %}
+            <div class="empty-state">
+                <p>You have no friends yet.</p>
+                <p>Explore suggested users or use the search bar to find people.</p>
             </div>
-        </div>
-        {% endfor %}
-    {% else %}
-        <div class="user-item">
-            <p>You have no friends yet.</p>
-            <p>Explore suggested users or use the search bar to find people.</p>
-        </div>
-    {% endif %}
-</div>
+        {% endif %}
+    </div>
 
-<div id="requests" class="tab-content">
-    {% if friend_requests %}
-        {% for request in friend_requests %}
-        <div class="user-item">
-            <img src="{{ request.sender_profilePhoto | default('/static/img/default_profile.png') }}" alt="Profile">
-            <div class="user-info">
-                <h3>{{ request.sender_realName }}</h3>
-                <p>{{ request.mutual_count }} mutual friends/followers</p>
+    <div id="requests" class="tab-content">
+        {% if friend_requests %}
+            {% for request in friend_requests %}
+            <div class="user-item" data-user-id="{{ request.sender_id }}">
+                <img src="{{ request.profilePhoto | default('/static/img/default_profile.png') }}" alt="Profile">
+                <div class="user-info">
+                    <h3>{{ request.sender_realName }} <small class="text-gray-500">@{{ request.sender_username }}</small></h3>
+                    <p>{{ request.mutual_count }} mutual friends</p>
+                </div>
+                <div class="user-actions">
+                    <button onclick="event.stopPropagation(); acceptRequest({{ request.friendship_id }})"><i class="fas fa-check"></i> Accept</button>
+                    <button onclick="event.stopPropagation(); declineRequest({{ request.friendship_id }})"><i class="fas fa-times"></i> Decline</button>
+                    <button onclick="event.stopPropagation(); blockUser({{ request.sender_id }})"><i class="fas fa-ban"></i> Block</button>
+                </div>
             </div>
-            <div class="user-actions">
-                <button onclick="acceptRequest({{ request.id }})">Accept</button>
-                <button onclick="declineRequest({{ request.id }})">Decline</button>
-                <button onclick="blockUser({{ request.sender_id }})">Block</button>
+            {% endfor %}
+        {% else %}
+            <div class="empty-state">
+                <p>You have no new friend requests.</p>
+                <p>Come back later or send some of your own!</p>
             </div>
-        </div>
-        {% endfor %}
-    {% else %}
-        <div class="user-item">
-            <p>You have no new friend requests.</p>
-            <p>Come back later or send some of your own!</p>
-        </div>
-    {% endif %}
-</div>
+        {% endif %}
+    </div>
 
-<div id="suggested" class="tab-content">
-    {% if suggested_users %}
-        {% for user in suggested_users %}
-        <div class="user-item">
-            <img src="{{ user.profilePhoto | default('/static/img/default_profile.png') }}" alt="Profile">
-            <div class="user-info">
-                <h3>{{ user.realName }}</h3>
-                <p>{{ user.mutual_count }} mutual friends/followers</p>
+    <div id="suggested" class="tab-content">
+        {% if suggested_users %}
+            {% for user in suggested_users %}
+            <div class="user-item" data-user-id="{{ user.id }}">
+                <img src="{{ user.profilePhoto | default('/static/img/default_profile.png') }}" alt="Profile">
+                <div class="user-info">
+                    <h3>{{ user.realName }} <small class="text-gray-500">@{{ user.username }}</small></h3>
+                    <p>{{ user.mutual_count }} mutual friends</p>
+                </div>
+                <div class="user-actions">
+                    <button onclick="event.stopPropagation(); sendFriendRequest({{ user.id }})" 
+                        {% if user.status == 'pending_sent' %}disabled title="Request sent"{% endif %}
+                        {% if user.status == 'friend' %}disabled title="Already friends"{% endif %}
+                    >
+                        {% if user.status == 'pending_sent' %}<i class="fas fa-hourglass-half"></i> Pending
+                        {% elif user.status == 'friend' %}<i class="fas fa-check"></i> Friend
+                        {% else %}<i class="fas fa-user-plus"></i> Add Friend
+                        {% endif %}
+                    </button>
+                    <button onclick="event.stopPropagation(); removeSuggested({{ user.id }})"><i class="fas fa-minus-circle"></i> Remove</button>
+                    <button onclick="event.stopPropagation(); blockUser({{ user.id }})"><i class="fas fa-ban"></i> Block</button>
+                    <button onclick="event.stopPropagation(); messageUser({{ user.id }})"><i class="fas fa-comment-dots"></i> Message</button>
+                </div>
             </div>
-            <div class="user-actions">
-                <button onclick="followUser({{ user.id }})">Follow</button>
-                <button onclick="removeSuggested({{ user.id }})">Remove</button>
-                <button onclick="blockUser({{ user.id }})">Block</button>
+            {% endfor %}
+        {% else %}
+            <div class="empty-state">
+                <p>No suggested users for now.</p>
+                <p>Check back later or search for people you may know.</p>
             </div>
-        </div>
-        {% endfor %}
-    {% else %}
-        <div class="user-item">
-            <p>No suggested users for now.</p>
-            <p>Check back later or search for people you may know.</p>
-        </div>
-    {% endif %}
-</div>
-
-<div id="search" class="tab-content">
-    <div id="search-results">
-        <p>Start typing to search for users across SociaFam.</p>
+        {% endif %}
     </div>
 </div>
 
 <script>
-    function showTab(tabId) {
-        document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
-        document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-        document.querySelector(`[onclick="showTab('${tabId}')"]`).classList.add('active');
-        document.getElementById(tabId).classList.add('active');
-    }
+    document.addEventListener('DOMContentLoaded', () => {
+        let activeTabId = 'followers'; // Initialize with the default active tab
+        let debounceTimer;
 
-    let debounceTimer;
-    function searchUsers() {
-        clearTimeout(debounceTimer);
-        const searchTerm = document.getElementById('searchInput').value.trim();
-        const searchResults = document.getElementById('search-results');
-        
-        if (!searchTerm) {
-            searchResults.innerHTML = '<p>Start typing to search for users across SociaFam.</p>';
-            return;
+        // Base URL for user profiles
+        const profileBaseUrl = "{{ url_for('profile', username='USER_PLACEHOLDER') }}".replace('USER_PLACEHOLDER', '');
+        const viewChatBaseUrl = "{{ url_for('view_chat', chat_room_id=0) }}".replace('/0', '');
+
+        // Initialize activeTabId based on the currently active tab in HTML
+        const initialActiveTab = document.querySelector('.tab.active');
+        if (initialActiveTab) {
+            activeTabId = initialActiveTab.dataset.tabId;
         }
 
-        debounceTimer = setTimeout(() => {
-            fetch(`/api/search_users?term=${encodeURIComponent(searchTerm)}`)
-                .then(response => response.json())
-                .then(data => {
-                    searchResults.innerHTML = '';
-                    if (data.results.length === 0) {
-                        searchResults.innerHTML = '<p>No users found.</p>';
-                        return;
+        // Add click event listener to user items to navigate to profile
+        document.querySelectorAll('.user-item').forEach(item => {
+            item.addEventListener('click', function() {
+                const username = this.querySelector('.user-info small').textContent.substring(1); // Get username without '@'
+                window.location.href = `${profileBaseUrl}${username}`;
+            });
+        });
+
+        window.showTab = function(tabId) {
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+
+            document.querySelector(`.tab[data-tab-id="${tabId}"]`).classList.add('active');
+            document.getElementById(tabId).classList.add('active');
+            activeTabId = tabId; // Update active tab ID
+
+            // Trigger search for the newly active tab
+            searchFriendsLive(true); // Pass true to force immediate search for tab switch
+        };
+
+        window.searchFriendsLive = function(immediate = false) {
+            clearTimeout(debounceTimer);
+            const searchTerm = document.getElementById('searchInput').value.trim();
+            const currentTabContent = document.getElementById(activeTabId);
+
+            // Function to execute the search
+            const executeSearch = async () => {
+                currentTabContent.innerHTML = `<div class="empty-state"><p>Searching...</p></div>`; // Show loading state
+
+                try {
+                    const response = await fetch(`/api/friends_search?q=${encodeURIComponent(searchTerm)}&tab=${activeTabId}`);
+                    if (!response.ok) {
+                        throw new Error(`Failed to fetch results for ${activeTabId}.`);
                     }
-                    data.results.forEach(item => {
-                        if (item.type === 'user') {
-                            const user = item.data;
-                            const html = `
-                                <div class="user-item">
-                                    <img src="${user.profilePhoto}" alt="Profile">
-                                    <div class="user-info">
-                                        <h3>${user.real_name}</h3>
-                                        <p>@${user.username}</p>
-                                    </div>
-                                    <div class="user-actions">
-                                        <button onclick="followUser(${user.id})" ${user.is_following ? 'disabled' : ''}>
-                                            ${user.is_following ? 'Following' : 'Follow'}
-                                        </button>
-                                        <button onclick="messageUser(${user.id})">Message</button>
-                                    </div>
-                                </div>`;
-                            searchResults.insertAdjacentHTML('beforeend', html);
-                        }
-                    });
-                })
-                .catch(error => {
-                    console.error('Error searching users:', error);
-                    searchResults.innerHTML = '<p>Error searching users. Please try again.</p>';
+                    const data = await response.json(); // This will be a list of user objects
+
+                    renderSearchResults(data, currentTabContent, searchTerm);
+
+                } catch (error) {
+                    console.error(`Error searching ${activeTabId}:`, error);
+                    currentTabContent.innerHTML = `<div class="empty-state"><p>Error loading users. Please try again.</p></div>`;
+                }
+            };
+
+            if (immediate) {
+                executeSearch();
+            } else {
+                debounceTimer = setTimeout(executeSearch, 300); // Debounce for 300ms
+            }
+        };
+
+        function renderSearchResults(users, containerElement, searchTerm) {
+            containerElement.innerHTML = ''; // Clear previous results
+
+            if (users.length === 0) {
+                let message = `No ${activeTabId} found matching "${searchTerm}".`;
+                if (!searchTerm) {
+                    // Provide default messages if no search term
+                    if (activeTabId === 'followers') message = 'No one is following you yet.';
+                    else if (activeTabId === 'following') message = 'You are not following anyone yet.';
+                    else if (activeTabId === 'friends') message = 'You have no friends yet.';
+                    else if (activeTabId === 'requests') message = 'You have no new friend requests.';
+                    else if (activeTabId === 'suggested') message = 'No suggested users for now.';
+                }
+                containerElement.innerHTML = `<div class="empty-state"><p>${message}</p></div>`;
+                return;
+            }
+
+            users.forEach(user => {
+                let buttonsHtml = '';
+                const profileLink = `${profileBaseUrl}${user.username}`;
+
+                // Common buttons
+                if (user.id !== {{ current_user.id }}) { // Cannot block/message self
+                     buttonsHtml += `<button onclick="event.stopPropagation(); blockUser(${user.id})"><i class="fas fa-ban"></i> Block</button>`;
+                     buttonsHtml += `<button onclick="event.stopPropagation(); messageUser(${user.id})"><i class="fas fa-comment-dots"></i> Message</button>`;
+                }
+               
+
+                if (activeTabId === 'followers') {
+                    // Followers tab doesn't have direct "unfollow" for the current user *from* them.
+                    // Instead, current user would 'unfriend' if they were mutual friends.
+                    // The 'Block' button remains.
+                } else if (activeTabId === 'following') {
+                    buttonsHtml = `<button onclick="event.stopPropagation(); unfollowUser(${user.id})"><i class="fas fa-user-minus"></i> Unfollow</button>` + buttonsHtml;
+                } else if (activeTabId === 'friends') {
+                    buttonsHtml = `<button onclick="event.stopPropagation(); unfriendUser(${user.id})"><i class="fas fa-user-times"></i> Unfriend</button>` + buttonsHtml;
+                } else if (activeTabId === 'requests') {
+                    // For requests, 'user.id' is the sender_id, 'user.friendship_id' is the request ID
+                    buttonsHtml = `
+                        <button onclick="event.stopPropagation(); acceptRequest(${user.friendship_id})"><i class="fas fa-check"></i> Accept</button>
+                        <button onclick="event.stopPropagation(); declineRequest(${user.friendship_id})"><i class="fas fa-times"></i> Decline</button>
+                        <button onclick="event.stopPropagation(); blockUser(${user.id})"><i class="fas fa-ban"></i> Block</button>
+                    `;
+                } else if (activeTabId === 'suggested') {
+                    const isFriend = user.status === 'friend';
+                    const isPendingSent = user.status === 'pending_sent';
+                    const isPendingReceived = user.status === 'pending_received';
+
+                    let addFriendBtn = '';
+                    if (isFriend) {
+                        addFriendBtn = `<button disabled title="Already friends"><i class="fas fa-check"></i> Friend</button>`;
+                    } else if (isPendingSent) {
+                        addFriendBtn = `<button disabled title="Request sent"><i class="fas fa-hourglass-half"></i> Pending</button>`;
+                    } else if (isPendingReceived) {
+                        // This case is unlikely in 'suggested' but kept for completeness
+                        addFriendBtn = `<button onclick="event.stopPropagation(); acceptRequest(${user.friendship_id})"><i class="fas fa-user-plus"></i> Accept</button>`;
+                    } else {
+                        addFriendBtn = `<button onclick="event.stopPropagation(); sendFriendRequest(${user.id})"><i class="fas fa-user-plus"></i> Add Friend</button>`;
+                    }
+
+                    buttonsHtml = addFriendBtn + 
+                                  `<button onclick="event.stopPropagation(); removeSuggested(${user.id})"><i class="fas fa-minus-circle"></i> Remove</button>` +
+                                  `<button onclick="event.stopPropagation(); blockUser(${user.id})"><i class="fas fa-ban"></i> Block</button>` +
+                                  `<button onclick="event.stopPropagation(); messageUser(${user.id})"><i class="fas fa-comment-dots"></i> Message</button>`;
+                }
+
+
+                const html = `
+                    <div class="user-item" data-user-id="${user.id}" onclick="window.location.href='${profileLink}'">
+                        <img src="${user.profilePhoto || '{{ url_for('static', filename='img/default_profile.png') }}'}" alt="Profile">
+                        <div class="user-info">
+                            <h3>${user.realName} <small class="text-gray-500">@${user.username}</small></h3>
+                            <p>${user.mutual_count} mutual friends</p>
+                        </div>
+                        <div class="user-actions">
+                            ${buttonsHtml}
+                        </div>
+                    </div>`;
+                containerElement.insertAdjacentHTML('beforeend', html);
+            });
+        }
+
+        // --- Action Handlers (updated to use API endpoints and reload) ---
+
+        window.sendFriendRequest = async function(userId) {
+            try {
+                const response = await fetch('/api/send_friend_request/' + userId, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({}) // Empty body for POST request
                 });
-        }, 300); // Debounce for 300ms
-    }
-
-    function followUser(userId) {
-        fetch('/api/follow', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ user_id: userId })
-        }).then(response => response.json()).then(data => {
-            if (data.success) {
-                location.reload();
-            } else {
-                alert('Failed to follow user.');
+                const data = await response.json();
+                if (data.success) {
+                    // alert(data.message); // Replace with custom toast/modal
+                    searchFriendsLive(true); // Refresh current tab to update button state
+                } else {
+                    // alert(data.message);
+                }
+            } catch (error) {
+                console.error('Error sending friend request:', error);
+                // alert('An error occurred. Please try again.');
             }
-        });
-    }
+        };
 
-    function unfollowUser(userId) {
-        fetch('/api/unfollow', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ user_id: userId })
-        }).then(response => response.json()).then(data => {
-            if (data.success) {
-                location.reload();
-            } else {
-                alert('Failed to unfollow user.');
+        window.unfollowUser = async function(userId) {
+            try {
+                const response = await fetch('/api/unfriend/' + userId, { // Use unfriend API for unfollow
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({})
+                });
+                const data = await response.json();
+                if (data.success) {
+                    // alert(data.message);
+                    searchFriendsLive(true); // Refresh current tab
+                } else {
+                    // alert(data.message);
+                }
+            } catch (error) {
+                console.error('Error unfollowing user:', error);
+                // alert('An error occurred. Please try again.');
             }
-        });
-    }
-
-    function acceptRequest(requestId) {
-        fetch('/api/accept_request', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ request_id: requestId })
-        }).then(response => response.json()).then(data => {
-            if (data.success) {
-                location.reload();
-            } else {
-                alert('Failed to accept request.');
+        };
+        
+        // This is specifically for 'Friends' tab where they are mutual friends
+        window.unfriendUser = async function(userId) {
+            try {
+                const response = await fetch('/api/unfriend/' + userId, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({})
+                });
+                const data = await response.json();
+                if (data.success) {
+                    // alert(data.message);
+                    searchFriendsLive(true); // Refresh current tab
+                } else {
+                    // alert(data.message);
+                }
+            } catch (error) {
+                console.error('Error unfriending user:', error);
+                // alert('An error occurred. Please try again.');
             }
-        });
-    }
+        };
 
-    function declineRequest(requestId) {
-        fetch('/api/decline_request', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ request_id: requestId })
-        }).then(response => response.json()).then(data => {
-            if (data.success) {
-                location.reload();
-            } else {
-                alert('Failed to decline request.');
+        window.acceptRequest = async function(requestId) {
+            try {
+                const response = await fetch('/api/accept_friend_request/' + requestId, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({})
+                });
+                const data = await response.json();
+                if (data.success) {
+                    // alert(data.message);
+                    searchFriendsLive(true); // Refresh current tab
+                } else {
+                    // alert(data.message);
+                }
+            } catch (error) {
+                console.error('Error accepting request:', error);
+                // alert('An error occurred. Please try again.');
             }
-        });
-    }
+        };
 
-    function blockUser(userId) {
-        fetch('/api/block_user', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ user_id: userId })
-        }).then(response => response.json()).then(data => {
-            if (data.success) {
-                location.reload();
-            } else {
-                alert('Failed to block user.');
+        window.declineRequest = async function(requestId) {
+            try {
+                const response = await fetch('/api/decline_friend_request/' + requestId, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({})
+                });
+                const data = await response.json();
+                if (data.success) {
+                    // alert(data.message);
+                    searchFriendsLive(true); // Refresh current tab
+                } else {
+                    // alert(data.message);
+                }
+            } catch (error) {
+                console.error('Error declining request:', error);
+                // alert('An error occurred. Please try again.');
             }
-        });
-    }
+        };
 
-    function removeSuggested(userId) {
-        fetch('/api/remove_suggested', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ user_id: userId })
-        }).then(response => response.json()).then(data => {
-            if (data.success) {
-                location.reload();
-            } else {
-                alert('Failed to remove suggested user.');
+        window.blockUser = async function(userId) {
+            try {
+                const response = await fetch('/api/block_user/' + userId, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({})
+                });
+                const data = await response.json();
+                if (data.success) {
+                    // alert(data.message);
+                    // Blocking a user should hide them from all lists. Reloading might be best.
+                    location.reload(); 
+                } else {
+                    // alert(data.message);
+                }
+            } catch (error) {
+                console.error('Error blocking user:', error);
+                // alert('An error occurred. Please try again.');
             }
-        });
-    }
+        };
 
-    function messageUser(userId) {
-        window.location.href = `/chat/${userId}`;
-    }
+        window.removeSuggested = async function(userId) {
+            // For suggested, "remove" usually means just hide for now or block
+            // As per schema, there's no explicit table for "removed suggestions".
+            // A simple implementation could be to block or just remove from view without backend persistence.
+            // For now, let's just make it a client-side removal for the current session.
+            // If persistent "remove" is needed, a new API route and table would be required.
+            try {
+                // Find and remove the element from the DOM
+                const itemToRemove = document.querySelector(`.suggested .user-item[data-user-id="${userId}"]`);
+                if (itemToRemove) {
+                    itemToRemove.remove();
+                    // Optionally, update the suggested count if you want
+                    const currentCount = parseInt(document.getElementById('suggested-count').textContent);
+                    document.getElementById('suggested-count').textContent = currentCount - 1;
+
+                    // If all suggested are removed, show empty state
+                    if (document.querySelectorAll('.suggested .user-item').length === 0) {
+                        document.getElementById('suggested').innerHTML = `<div class="empty-state"><p>No suggested users for now.</p><p>Check back later or search for people you may know.</p></div>`;
+                    }
+                }
+                // If a backend API is ever created for this:
+                // const response = await fetch('/api/remove_suggested_user/' + userId, { method: 'POST' });
+                // const data = await response.json();
+                // if (!data.success) { alert('Failed to remove suggestion.'); }
+            } catch (error) {
+                console.error('Error removing suggested user:', error);
+                // alert('An error occurred while removing suggestion.');
+            }
+        };
+
+        window.messageUser = async function(userId) {
+            try {
+                const response = await fetch(`/api/chat/${userId}`);
+                const data = await response.json();
+                if (data.success && data.chat_room_id) {
+                    window.location.href = `${viewChatBaseUrl}${data.chat_room_id}`;
+                } else {
+                    // alert(data.message || 'Failed to open chat.');
+                }
+            } catch (error) {
+                console.error('Error opening chat:', error);
+                // alert('An error occurred while trying to open chat.');
+            }
+        };
+
+        // Initial load for the active tab content
+        searchFriendsLive(true);
+    });
 </script>
 {% endblock %}
