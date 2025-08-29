@@ -421,8 +421,8 @@
         const storyModalDescription = document.getElementById('story-modal-description');
         const storyProgressBar = document.getElementById('story-progress-bar');
 
-        let currentStoryIndex = 0;
-        let activeStoriesData = []; // To store fetched stories
+        let currentStoryIndex = { user: 0, story: 0 }; // Track current user and story within that user's sequence
+        let activeStoriesData = []; // To store fetched stories, grouped by user
         let storyInterval; // For progress bar animation
         let storyTimeout; // For auto-advancing story
         let isStoryPaused = false;
@@ -430,34 +430,37 @@
         let elapsedTime = 0;
         const storyDuration = 5000; // 5 seconds per story
 
-        // Dummy Stories Data (Replace with API call to /api/stories)
-        // Ensure this matches the structure expected by the rendering logic
-        const dummyStoriesData = [
-            { id: 1, user_id: 1, username: 'user1', profile_pic: "{{ url_for('static', filename='img/default_profile.png') }}", media_path: "https://placehold.co/600x800/A3B8FF/4F46E5?text=Story%201", media_type: 'image', timestamp: moment().subtract(2, 'hours').toISOString(), description: "Enjoying the view!" },
-            { id: 2, user_id: 2, username: 'user2', profile_pic: "{{ url_for('static', filename='img/default_profile.png') }}", media_path: "https://www.learningcontainer.com/wp-content/uploads/2020/05/sample-mp4-file.mp4", media_type: 'video', timestamp: moment().subtract(4, 'hours').toISOString(), description: "My latest adventure!" },
-            { id: 3, user_id: 1, username: 'user1', profile_pic: "{{ url_for('static', filename='img/default_profile.png') }}", media_path: "https://placehold.co/600x800/C3E6CB/155724?text=Story%203", media_type: 'image', timestamp: moment().subtract(1, 'hour').toISOString(), description: "Good morning!" },
-            { id: 4, user_id: 3, username: 'user3', profile_pic: "https://placehold.co/65x65/E0E7FF/4F46E5?text=U3", media_path: "https://placehold.co/600x800/94A3B8/FFFFFF?text=Story%204", media_type: 'image', timestamp: moment().subtract(10, 'minutes').toISOString(), description: "Just chillin' 😎" },
-        ];
-        
-        // This will group stories by user
-        let groupedStories = {};
-        dummyStoriesData.forEach(story => {
-            if (!groupedStories[story.user_id]) {
-                groupedStories[story.user_id] = {
-                    username: story.username,
-                    profile_pic: story.profile_pic,
-                    stories: []
-                };
-            }
-            groupedStories[story.user_id].stories.push(story);
-        });
+        async function fetchAndRenderStories() {
+            try {
+                const response = await fetch('/api/get_stories');
+                if (!response.ok) {
+                    throw new Error('Failed to fetch stories.');
+                }
+                const data = await response.json();
+                activeStoriesData = data; // Data is already grouped by user from API
 
-        // Convert grouped stories to an array for easy iteration
-        activeStoriesData = Object.values(groupedStories);
+                if (activeStoriesData.length === 0) {
+                    // If no stories, ensure 'Your Story' is the only item
+                    storiesContainer.innerHTML =
+                        '<div class="story-item" onclick="addStory()">' +
+                            '<div class="story-ring bg-gray-200 dark:bg-gray-700">' +
+                                '<img src="{{ current_user.get_member_profile().profilePhoto | default(url_for('static', filename='img/default_profile.png')) }}" alt="Your Story" class="border-white dark:border-gray-900">' +
+                            '</div>' +
+                            '<div class="add-story-icon"><i class="fas fa-plus"></i></div>' +
+                            '<p class="story-username dark:text-gray-300">Your Story</p>' +
+                        '</div>';
+                    return;
+                }
+
+                renderStories();
+            } catch (error) {
+                console.error('Error fetching stories:', error);
+                // Optionally show an error message to the user
+            }
+        }
 
         function renderStories() {
             // Clear existing stories first, then re-add 'Your Story' and fetched ones
-            // FIX: Using standard string concatenation to avoid Jinja2 template literal conflicts
             storiesContainer.innerHTML =
                 '<div class="story-item" onclick="addStory()">' +
                     '<div class="story-ring bg-gray-200 dark:bg-gray-700">' +
@@ -468,16 +471,15 @@
                 '</div>';
             
             activeStoriesData.forEach((userStories, userIndex) => {
-                const latestStory = userStories.stories[userStories.stories.length - 1]; // Use latest for preview
+                const latestStory = userStories.stories[0]; // Assuming stories are ordered latest first
                 const storyItem = document.createElement('div');
                 storyItem.classList.add('story-item');
                 storyItem.dataset.userIndex = userIndex; // To identify which user's stories to open
-                // FIX: Using standard string concatenation here as well
                 storyItem.innerHTML =
                     '<div class="story-ring">' +
-                        '<img src="' + latestStory.profile_pic + '" alt="' + latestStory.username + ' Story">' +
+                        `<img src="${latestStory.profile_pic}" alt="${latestStory.username} Story">` +
                     '</div>' +
-                    '<p class="story-username dark:text-gray-300">' + latestStory.username + '</p>';
+                    `<p class="story-username dark:text-gray-300">${latestStory.username}</p>`;
                 storiesContainer.appendChild(storyItem);
 
                 storyItem.addEventListener('click', (e) => {
@@ -514,23 +516,42 @@
                 mediaElement.src = story.media_path;
                 mediaElement.classList.add('story-modal-media');
                 mediaElement.autoplay = true;
-                mediaElement.loop = true; // Auto-loop videos
+                mediaElement.loop = false; // Only loop once, then advance
                 mediaElement.muted = false; // Videos typically start muted in stories
                 mediaElement.playsInline = true; // For iOS compatibility
                 mediaElement.volume = 0.8; // Set default volume
+                mediaElement.addEventListener('ended', () => {
+                    goToNextStory(true); // Automatically advance after video ends
+                });
             } else if (story.media_type === 'audio') {
                 mediaElement = document.createElement('audio');
                 mediaElement.src = story.media_path;
                 mediaElement.autoplay = true;
                 mediaElement.controls = true; // Show controls for audio-only stories
+                mediaElement.addEventListener('ended', () => {
+                    goToNextStory(true); // Automatically advance after audio ends
+                });
             }
 
             if (mediaElement) {
                 storyModalMediaContent.appendChild(mediaElement);
             }
             
+            // Handle background audio for image/video stories
+            if (story.background_audio_path && (story.media_type === 'image' || story.media_type === 'video')) {
+                const backgroundAudio = new Audio(story.background_audio_path);
+                backgroundAudio.loop = true;
+                backgroundAudio.volume = 0.5; // Lower volume for background
+                backgroundAudio.play().catch(e => console.warn("Background audio play failed:", e));
+                storyModalMediaContent.appendChild(backgroundAudio); // Keep reference to stop it later
+            }
+
+
             renderProgressBar(userStories.stories.length, storyLocalIndex);
-            startStoryTimer();
+            // Start timer only for image/audio stories, videos handle their own advance on 'ended'
+            if (story.media_type === 'image' || story.media_type === 'audio') {
+                startStoryTimer();
+            }
 
             storyViewerModal.classList.add('active');
             // Add touch/mouse listeners for navigation and pause
@@ -544,7 +565,15 @@
             storyViewerModal.classList.remove('active');
             clearTimeout(storyTimeout);
             clearInterval(storyInterval);
-            storyModalMediaContent.innerHTML = ''; // Clear media
+            // Stop all media playback when closing
+            const mediaElements = storyModalMediaContent.querySelectorAll('video, audio, img');
+            mediaElements.forEach(el => {
+                if (el.tagName === 'VIDEO' || el.tagName === 'AUDIO') {
+                    el.pause();
+                    el.currentTime = 0;
+                }
+                el.remove(); // Clear all media
+            });
             // Remove listeners
             storyViewerModal.removeEventListener('touchstart', handleStoryTouchStart);
             storyViewerModal.removeEventListener('touchend', handleStoryTouchEnd);
@@ -593,6 +622,13 @@
             if (!isStoryPaused) {
                 isStoryPaused = true;
                 clearTimeout(storyTimeout);
+                
+                // Pause any playing video/audio
+                const playingMedia = storyModalMediaContent.querySelector('video, audio');
+                if (playingMedia && !playingMedia.paused) {
+                    playingMedia.pause();
+                }
+
                 const currentSegmentFill = storyProgressBar.children[currentStoryIndex.story].querySelector('.story-modal-progress-fill');
                 // Stop CSS animation by setting width to current computed width and removing transition
                 const computedWidth = window.getComputedStyle(currentSegmentFill).width;
@@ -608,6 +644,12 @@
                 startTime = Date.now() - elapsedTime; // Adjust start time
                 const remainingDuration = storyDuration - elapsedTime;
                 if (remainingDuration > 0) {
+                    // Resume any paused video/audio
+                    const pausedMedia = storyModalMediaContent.querySelector('video, audio');
+                    if (pausedMedia && pausedMedia.paused) {
+                        pausedMedia.play().catch(e => console.warn("Media resume failed:", e));
+                    }
+
                     const currentSegmentFill = storyProgressBar.children[currentStoryIndex.story].querySelector('.story-modal-progress-fill');
                     currentSegmentFill.style.transition = `width ${remainingDuration}ms linear`;
                     currentSegmentFill.style.width = '100%';
@@ -708,7 +750,8 @@
             }
         }
 
-        renderStories(); // Initial render of stories on page load
+        // Call the new fetch function on load
+        fetchAndRenderStories(); 
 
         // --- Posts Loading Logic (Consolidated) ---
         let currentPage = 1;
