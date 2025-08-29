@@ -1942,6 +1942,11 @@ def api_send_chat_message(chat_room_id):
         app.logger.error(f"Error sending chat message: {e}")
         return jsonify({'success': False, 'message': 'Failed to send message.'}), 500
 
+# Add this helper function at the top of app.py, near other helper functions
+def generate_unique_group_link():
+    """Generates a unique, short string for group join links."""
+    return str(uuid.uuid4())[:8] # Using first 8 chars of a UUID for a short unique link
+
 
 @app.route('/create_group', methods=['GET', 'POST'])
 @login_required
@@ -1987,9 +1992,10 @@ def create_group():
             flash('Group name is required.', 'danger')
             return render_template('create_group.html', friends=friends_with_pics, form_data=request.form.to_dict(), current_year=current_year)
 
-        if not selected_friends_ids:
-            flash('Please select at least one friend to add to the group.', 'danger')
-            return render_template('create_group.html', friends=friends_with_pics, form_data=request.form.to_dict(), current_year=current_year)
+        # No longer require selecting friends when creating the group if the user intends to share a join link
+        # if not selected_friends_ids:
+        #     flash('Please select at least one friend to add to the group.', 'danger')
+        #     return render_template('create_group.html', friends=friends_with_pics, form_data=request.form.to_dict(), current_year=current_year)
 
         try:
             # Create chat room for the group
@@ -1999,10 +2005,13 @@ def create_group():
             )
             chat_room_id = cursor.lastrowid
 
-            # Create group entry
+            # Generate a unique join link
+            unique_join_link = generate_unique_group_link()
+
+            # Create group entry, including the new unique_join_link
             cursor = db.execute(
-                "INSERT INTO groups (name, description, profilePhoto, created_by, chat_room_id) VALUES (?, ?, ?, ?, ?)",
-                (group_name, description, profile_photo_path, current_user.id, chat_room_id)
+                "INSERT INTO groups (name, description, profilePhoto, created_by, chat_room_id, unique_join_link) VALUES (?, ?, ?, ?, ?, ?)",
+                (group_name, description, profile_photo_path, current_user.id, chat_room_id, unique_join_link)
             )
             group_id = cursor.lastrowid
 
@@ -2030,7 +2039,7 @@ def create_group():
                     )
 
             db.commit()
-            flash(f'Group "{group_name}" created successfully!', 'success')
+            flash(f'Group "{group_name}" created successfully! Share this link to invite others: {url_for("join_group_by_link", unique_link=unique_join_link, _external=True)}', 'success')
             return redirect(url_for('view_group_profile', group_id=group_id))
         except Exception as e:
             flash(f'An error occurred while creating the group: {e}', 'danger')
@@ -2097,6 +2106,46 @@ def view_group_profile(group_id):
         admin_view=is_admin_view,  # Pass this flag to template
         current_year=current_year
     )
+
+
+@app.route('/join_group_by_link/<unique_link>')
+@login_required
+def join_group_by_link(unique_link):
+    db = get_db()
+    group = db.execute("SELECT id, name, chat_room_id FROM groups WHERE unique_join_link = ?", (unique_link,)).fetchone()
+
+    if not group:
+        flash("Group not found or invalid join link.", "danger")
+        return redirect(url_for('inbox'))
+
+    chat_room_id = group['chat_room_id']
+    group_name = group['name']
+    group_id = group['id']
+
+    is_member = db.execute(
+        "SELECT 1 FROM chat_room_members WHERE chat_room_id = ? AND user_id = ?",
+        (chat_room_id, current_user.id)
+    ).fetchone()
+
+    if is_member:
+        flash(f'You are already a member of "{group_name}".', 'info')
+        return redirect(url_for('view_group_profile', group_id=group_id))
+
+    try:
+        db.execute(
+            "INSERT INTO chat_room_members (chat_room_id, user_id, is_admin) VALUES (?, ?, 0)",
+            (chat_room_id, current_user.id)
+        )
+        db.commit()
+        flash(f'You have successfully joined "{group_name}"!', 'success')
+        # Notify group creator and existing members that a new member joined (optional)
+        return redirect(url_for('view_group_profile', group_id=group_id))
+    except Exception as e:
+        db.rollback()
+        app.logger.error(f"Error joining group by link: {e}")
+        flash('Failed to join group. Please try again.', 'danger')
+        return redirect(url_for('inbox'))
+
 
 
 @app.route('/api/join_group/<int:group_id>', methods=['POST'])
