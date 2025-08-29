@@ -472,9 +472,10 @@
         let debounceTimer;
 
         // Base URLs for dynamic navigation (Jinja2 renders these once)
+        // For integer IDs, we pass a dummy '0' to url_for and replace it in JS
         const profileBaseUrl = "{{ url_for('profile', username='USER_PLACEHOLDER') }}".replace('USER_PLACEHOLDER', '');
-        const viewGroupProfileBaseUrl = "{{ url_for('view_group_profile', group_id='GROUP_PLACEHOLDER') }}".replace('GROUP_PLACEHOLDER', '');
-        const viewChatBaseUrl = "{{ url_for('view_chat', chat_room_id='CHAT_ROOM_ID_PLACEHOLDER') }}".replace('CHAT_ROOM_ID_PLACEHOLDER', '');
+        const viewGroupProfileBaseUrl = "{{ url_for('view_group_profile', group_id=0) }}".replace('/0', ''); // Replace '/0' instead of ''
+        const viewChatBaseUrl = "{{ url_for('view_chat', chat_room_id=0) }}".replace('/0', ''); // Replace '/0' instead of ''
 
         // --- Tab Switching Logic ---
         window.showTab = function(tabId) {
