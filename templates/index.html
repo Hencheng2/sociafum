@@ -758,7 +758,7 @@
         let hasMorePosts = true; // Track if there are more posts to load
 
         // Base URL for user profiles (fetched once from Jinja)
-        const profileBaseUrl = "{{ url_for('profile', username='USER_PLACEHOLDER') | replace('PLACEHOLDER_USERNAME', '') }}";
+        const profileBaseUrl = "{{ url_for('profile', username='USER_PLACEHOLDER') | replace('USER_PLACEHOLDER', '') }}";
         const currentUserId = {{ current_user.id }};
 
         async function loadAllPosts() {
@@ -782,7 +782,7 @@
 
                 if (posts.length === 0 && currentPage === 1) {
                     container.innerHTML = `
-                        <div class="no-posts-message">
+                        <div class="no-posts-message text-center text-gray-500 mt-8 dark:text-gray-400">
                             <i class="fas fa-box-open fa-3x mb-3"></i>
                             <p class="h5">No posts to display yet.</p>
                             <p>Follow more people or create your first post!</p>
@@ -792,7 +792,6 @@
                         const postElement = document.createElement('div');
                         postElement.classList.add('post-card');
                         
-                        // Using template literals to dynamically build post HTML
                         postElement.innerHTML = `
                             <div class="post-header">
                                 <a href="${profileBaseUrl}${post.username}">
@@ -800,7 +799,7 @@
                                 </a>
                                 <div class="flex-grow">
                                     <a href="${profileBaseUrl}${post.username}" class="username-realname block">${post.originalName || post.username}</a>
-                                    <small class="post-meta">@${post.username} &middot; ${moment.utc(post.timestamp).fromNow()}</small>
+                                    <small class="post-meta">@${post.username} &middot; ${moment(post.timestamp_formatted).fromNow()}</small>
                                 </div>
                                 ${post.user_id !== currentUserId ? `
                                 <button class="post-actions-button follow-button ${post.is_followed_by_current_user ? 'following' : ''}"
@@ -871,17 +870,15 @@
                                 ` : ''}
                             </div>
                             <p class="post-comments-summary">View all comments</p>
-                        </div>
-                    `;
-                    container.appendChild(postElement);
-                    // Append new posts, do not replace existing content
-                });
-                
-                // Increment page only if there were posts and more are available
-                if (posts.length > 0) {
-                    currentPage++;
+                        `;
+                        container.appendChild(postElement);
+                    });
+                    
+                    // Increment page only if there were posts and more are available
+                    if (posts.length > 0) {
+                        currentPage++;
+                    }
                 }
-
             } catch (error) {
                 console.error(`Error loading posts:`, error);
                 if (currentPage === 1) { // Only show error message if no posts were loaded initially
