@@ -2310,48 +2310,377 @@ def create_story():
     return render_template('create_story.html', current_year=current_year)
 
 # --- Search Route ---
+# --- Search Route (Now just renders the template) ---
 @app.route('/search', methods=['GET'])
 @login_required
 def search():
-    query = request.args.get('q', '').strip()
-    db = get_db()
-    
-    search_results = []
-    if query:
-        # Search users
-        users = db.execute(
-            """
-            SELECT u.id, u.username, u.originalName, m.profilePhoto
-            FROM users u
-            LEFT JOIN members m ON u.id = m.user_id
-            WHERE u.username LIKE ? OR u.originalName LIKE ?
-            ORDER BY u.originalName
-            """,
-            (f'%{query}%', f'%{query}%')
-        ).fetchall()
-        for user in users:
-            user_dict = dict(user)
-            user_dict['profilePhoto'] = get_member_profile_pic(user_dict['id'])
-            search_results.append({'type': 'user', 'data': user_dict})
-        
-        # Search groups
-        groups = db.execute(
-            """
-            SELECT g.id, g.name, g.description, g.profilePhoto
-            FROM groups g
-            WHERE g.name LIKE ? OR g.description LIKE ?
-            ORDER BY g.name
-            """,
-            (f'%{query}%', f'%{query}%')
-        ).fetchall()
-        for group in groups:
-            group_dict = dict(group)
-            group_dict['profilePhoto'] = group_dict['profilePhoto'] or url_for('static', filename='img/default_group.png')
-            search_results.append({'type': 'group', 'data': group_dict})
-
+    # The actual search results will be fetched dynamically via JavaScript
     # Pass the current year to the template
     current_year = datetime.now(timezone.utc).year
-    return render_template('search.html', query=query, search_results=search_results, current_year=current_year)
+    return render_template('search.html', current_year=current_year)
+
+
+# --- API Route for Dynamic Search ---
+
+@app.route('/api/dynamic_search', methods=['GET'])
+@login_required
+def api_dynamic_search():
+    query = request.args.get('q', '').strip().lower()
+    search_type = request.args.get('type', 'all') # 'all', 'users', 'groups', 'posts', 'reels'
+    db = get_db()
+    results = []
+
+    if not query:
+        return jsonify({'results': []})
+
+    # Helper function to get common user data for search results
+    def get_user_search_data(user_id):
+        user_data = db.execute("SELECT u.id, u.username, u.originalName, m.profilePhoto FROM users u LEFT JOIN members m ON u.id = m.user_id WHERE u.id = ?", (user_id,)).fetchone()
+        if user_data:
+            user_dict = dict(user_data)
+            user_dict['profilePhoto'] = get_member_profile_pic(user_dict['id'])
+            user_dict['status'] = get_relationship_status(current_user.id, user_dict['id'])
+            user_dict['mutual_count'] = get_mutual_friends_count(current_user.id, user_dict['id'])
+            user_dict['is_member'] = False # Default for users
+            user_dict['is_following'] = (user_dict['status'] == 'friend' or user_dict['status'] == 'pending_sent') # Simplified logic for 'following' in UI
+            return user_dict
+        return None
+
+    # Helper function to get common group data for search results
+    def get_group_search_data(group_id):
+        group_data = db.execute("SELECT g.id, g.name, g.description, g.profilePhoto, g.chat_room_id FROM groups g WHERE g.id = ?", (group_id,)).fetchone()
+        if group_data:
+            group_dict = dict(group_data)
+            group_dict['profilePhoto'] = group_dict['profilePhoto'] or url_for('static', filename='img/default_group.png')
+            
+            member_count = db.execute("SELECT COUNT(*) FROM chat_room_members WHERE chat_room_id = ?", (group_dict['chat_room_id'],)).fetchone()[0]
+            group_dict['member_count'] = member_count
+
+            is_member = db.execute("SELECT 1 FROM chat_room_members WHERE chat_room_id = ? AND user_id = ?", (group_dict['chat_room_id'], current_user.id)).fetchone() is not None
+            group_dict['is_member'] = is_member
+            group_dict['is_following'] = False # Default for groups
+            return group_dict
+        return None
+
+    # Helper for posts
+    def get_post_search_data(post_id):
+        post_data = db.execute(
+            """
+            SELECT p.id, p.user_id, p.description, p.media_path, p.media_type, p.timestamp, u.username, u.originalName
+            FROM posts p JOIN users u ON p.user_id = u.id WHERE p.id = ?
+            """,
+            (post_id,)
+        ).fetchone()
+        if post_data:
+            post_dict = dict(post_data)
+            post_dict['profilePhoto'] = get_member_profile_pic(post_dict['user_id'])
+            if post_dict['media_path']:
+                post_dict['media_path'] = url_for('static', filename=post_dict['media_path'][len('static/'):])
+            return post_dict
+        return None
+
+    # Helper for reels
+    def get_reel_search_data(reel_id):
+        reel_data = db.execute(
+            """
+            SELECT r.id, r.user_id, r.description, r.media_path, r.media_type, r.timestamp, u.username, u.originalName
+            FROM reels r JOIN users u ON r.user_id = u.id WHERE r.id = ?
+            """,
+            (reel_id,)
+        ).fetchone()
+        if reel_data:
+            reel_dict = dict(reel_data)
+            reel_dict['profilePhoto'] = get_member_profile_pic(reel_dict['user_id'])
+            if reel_dict['media_path']:
+                reel_dict['media_path'] = url_for('static', filename=reel_dict['media_path'][len('static/'):])
+            return reel_dict
+        return None
+
+
+    # --- Search Logic ---
+    if search_type in ['all', 'users']:
+        users_by_realname = db.execute(
+            """
+            SELECT u.id FROM users u JOIN members m ON u.id = m.user_id
+            WHERE LOWER(m.fullName) LIKE ? AND u.id != ? AND u.id NOT IN (SELECT blocked_id FROM blocked_users WHERE blocker_id = ?)
+            ORDER BY LOWER(m.fullName)
+            """,
+            (f'{query}%', current_user.id, current_user.id)
+        ).fetchall()
+        for user_id_row in users_by_realname:
+            user_data = get_user_search_data(user_id_row['id'])
+            if user_data:
+                results.append({'type': 'user', 'priority': 0, 'data': user_data}) # Highest priority
+
+        users_by_username = db.execute(
+            """
+            SELECT u.id FROM users u
+            WHERE LOWER(u.username) LIKE ? AND u.id != ? AND u.id NOT IN (SELECT blocked_id FROM blocked_users WHERE blocker_id = ?)
+              AND u.id NOT IN (SELECT id FROM users u2 JOIN members m2 ON u2.id = m2.user_id WHERE LOWER(m2.fullName) LIKE ?) -- Exclude already found by realname prefix
+            ORDER BY LOWER(u.username)
+            """,
+            (f'{query}%', current_user.id, current_user.id, f'{query}%')
+        ).fetchall()
+        for user_id_row in users_by_username:
+            user_data = get_user_search_data(user_id_row['id'])
+            if user_data:
+                results.append({'type': 'user', 'priority': 1, 'data': user_data}) # Lower priority
+
+        # General user search (contains query anywhere) for 'users' tab only, or if prefix search yields nothing for 'all'
+        if search_type == 'users' or (search_type == 'all' and not users_by_realname and not users_by_username):
+            general_users = db.execute(
+                """
+                SELECT u.id FROM users u JOIN members m ON u.id = m.user_id
+                WHERE (LOWER(m.fullName) LIKE ? OR LOWER(u.username) LIKE ?) AND u.id != ?
+                    AND u.id NOT IN (SELECT blocked_id FROM blocked_users WHERE blocker_id = ?)
+                ORDER BY LOWER(m.fullName), LOWER(u.username)
+                """,
+                (f'%{query}%', f'%{query}%', current_user.id, current_user.id)
+            ).fetchall()
+            for user_id_row in general_users:
+                user_data = get_user_search_data(user_id_row['id'])
+                if user_data and not any(r['data']['id'] == user_data['id'] for r in results if r['type'] == 'user'): # Avoid duplicates
+                    results.append({'type': 'user', 'priority': 2, 'data': user_data})
+
+
+    if search_type in ['all', 'groups']:
+        groups_data = db.execute(
+            """
+            SELECT g.id FROM groups g
+            WHERE LOWER(g.name) LIKE ? OR LOWER(g.description) LIKE ?
+            ORDER BY LOWER(g.name)
+            """,
+            (f'{query}%', f'%{query}%')
+        ).fetchall()
+        for group_id_row in groups_data:
+            group_data = get_group_search_data(group_id_row['id'])
+            if group_data:
+                priority = 0 if group_data['name'].lower().startswith(query) else 2 # Higher priority for prefix match
+                if not any(r['data']['id'] == group_data['id'] for r in results if r['type'] == 'group'): # Avoid duplicates
+                    results.append({'type': 'group', 'priority': priority, 'data': group_data})
+
+    if search_type in ['all', 'posts']:
+        posts_data = db.execute(
+            """
+            SELECT p.id FROM posts p
+            WHERE LOWER(p.description) LIKE ?
+              AND (
+                    p.visibility = 'public'
+                    OR
+                    (p.visibility = 'friends' AND EXISTS (
+                        SELECT 1 FROM friendships
+                        WHERE ((user1_id = ? AND user2_id = p.user_id) OR (user1_id = p.user_id AND user2_id = ?))
+                        AND status = 'accepted'
+                    ))
+                    OR
+                    (p.visibility = 'private' AND p.user_id = ?)
+                )
+            ORDER BY p.timestamp DESC
+            """,
+            (f'%{query}%', current_user.id, current_user.id, current_user.id)
+        ).fetchall()
+        for post_id_row in posts_data:
+            post_data = get_post_search_data(post_id_row['id'])
+            if post_data:
+                results.append({'type': 'post', 'priority': 3, 'data': post_data})
+
+
+    if search_type in ['all', 'reels']:
+        reels_data = db.execute(
+            """
+            SELECT r.id FROM reels r
+            WHERE LOWER(r.description) LIKE ?
+              AND (
+                    r.visibility = 'public'
+                    OR
+                    (r.visibility = 'friends' AND EXISTS (
+                        SELECT 1 FROM friendships
+                        WHERE ((user1_id = ? AND user2_id = r.user_id) OR (user1_id = r.user_id AND user2_id = ?))
+                        AND status = 'accepted'
+                    ))
+                )
+            ORDER BY r.timestamp DESC
+            """,
+            (f'%{query}%', current_user.id, current_user.id)
+        ).fetchall()
+        for reel_id_row in reels_data:
+            reel_data = get_reel_search_data(reel_id_row['id'])
+            if reel_data:
+                results.append({'type': 'reel', 'priority': 4, 'data': reel_data})
+
+    # Sort results for 'all' tab
+    if search_type == 'all':
+        # Custom sort:
+        # 1. Users by realName starting with query (priority 0)
+        # 2. Users by username starting with query (priority 1)
+        # 3. Groups by name starting with query (priority 0 for groups)
+        # 4. Other users (contains query) (priority 2)
+        # 5. Other groups (contains query) (priority 2 for groups)
+        # 6. Posts (priority 3)
+        # 7. Reels (priority 4)
+        
+        # Sort based on priority first, then by alphabetical order within same priority
+        results.sort(key=lambda x: (x['priority'], x['data'].get('realName', x['data'].get('name', x['data'].get('username', ''))).lower()))
+
+    return jsonify({'results': results})
+
+# --- Other API routes (e.g., /api/send_friend_request, /api/join_group, /api/posts/<id>, /api/reels/<id>) ---
+# Make sure these routes exist and return JSON as expected by the JS below.
+# I've included placeholder definitions for them for completeness if they weren't fully there.
+
+@app.route('/api/send_friend_request/<int:receiver_id>', methods=['POST'])
+@login_required
+def api_send_friend_request_from_search(receiver_id):
+    # Re-use existing api_send_friend_request logic or direct to it
+    # This might need to accept JSON or form data, adjust based on your actual existing API
+    db = get_db()
+    # Check if request already exists or they are already friends
+    existing_friendship = db.execute(
+        """
+        SELECT * FROM friendships
+        WHERE (user1_id = ? AND user2_id = ?) OR (user1_id = ? AND user2_id = ?)
+        """,
+        (current_user.id, receiver_id, receiver_id, current_user.id)
+    ).fetchone()
+
+    if existing_friendship:
+        if existing_friendship['status'] == 'accepted':
+            return jsonify({'success': False, 'message': 'You are already friends.'})
+        elif existing_friendship['status'] == 'pending':
+            return jsonify({'success': False, 'message': 'Friend request already sent or received.'})
+
+    try:
+        db.execute(
+            "INSERT INTO friendships (user1_id, user2_id, status) VALUES (?, ?, 'pending')",
+            (current_user.id, receiver_id)
+        )
+        db.commit()
+        # Send notification to the receiver
+        receiver_user = load_user(receiver_id)
+        if receiver_user:
+            message = f'<strong>{current_user.original_name}</strong> (@{current_user.username}) sent you a friend request!'
+            send_system_notification(
+                receiver_id,
+                message,
+                link=url_for('friends'),
+                type='friend_request'
+            )
+        return jsonify({'success': True, 'message': 'Friend request sent!'})
+    except Exception as e:
+        db.rollback()
+        app.logger.error(f"Error sending friend request: {e}")
+        return jsonify({'success': False, 'message': 'Failed to send friend request.'})
+
+
+@app.route('/api/join_group/<int:group_id>', methods=['POST'])
+@login_required
+def api_join_group_from_search(group_id):
+    # Re-use existing api_join_group logic or direct to it
+    db = get_db()
+    group = db.execute("SELECT chat_room_id, name FROM groups WHERE id = ?", (group_id,)).fetchone()
+    if not group:
+        return jsonify({'success': False, 'message': 'Group not found.'}), 404
+
+    chat_room_id = group['chat_room_id']
+
+    is_member = db.execute(
+        "SELECT 1 FROM chat_room_members WHERE chat_room_id = ? AND user_id = ?",
+        (chat_room_id, current_user.id)
+    ).fetchone()
+    if is_member:
+        return jsonify({'success': False, 'message': 'You are already a member of this group.'}), 400
+
+    try:
+        db.execute(
+            "INSERT INTO chat_room_members (chat_room_id, user_id, is_admin) VALUES (?, ?, 0)",
+            (chat_room_id, current_user.id)
+        )
+        db.commit()
+        # No flash here, as it's an API call
+        return jsonify({'success': True, 'message': 'Successfully joined group.'})
+    except Exception as e:
+        db.rollback()
+        app.logger.error(f"Error joining group: {e}")
+        return jsonify({'success': False, 'message': 'Failed to join group.'}), 500
+
+
+@app.route('/api/posts/<int:post_id>', methods=['GET'])
+@login_required
+def api_get_single_post(post_id):
+    db = get_db()
+    post_data = db.execute(
+        """
+        SELECT p.id, p.user_id, p.description, p.media_path, p.media_type, p.timestamp, u.username, u.originalName
+        FROM posts p JOIN users u ON p.user_id = u.id
+        WHERE p.id = ?
+        """,
+        (post_id,)
+    ).fetchone()
+
+    if post_data:
+        post_dict = dict(post_data)
+        post_dict['profile_pic'] = get_member_profile_pic(post_dict['user_id'])
+        if post_dict['media_path']:
+            post_dict['media_path'] = url_for('static', filename=post_dict['media_path'][len('static/'):])
+        post_dict['timestamp'] = datetime.fromisoformat(post_dict['timestamp']).isoformat() # Ensure ISO format
+        return jsonify({'success': True, 'post': post_dict})
+    return jsonify({'success': False, 'message': 'Post not found.'}), 404
+
+
+@app.route('/api/reels/<int:reel_id>', methods=['GET'])
+@login_required
+def api_get_single_reel(reel_id):
+    db = get_db()
+    reel_data = db.execute(
+        """
+        SELECT r.id, r.user_id, r.description, r.media_path, r.media_type, r.audio_path, r.timestamp, u.username, u.originalName
+        FROM reels r JOIN users u ON r.user_id = u.id
+        WHERE r.id = ?
+        """,
+        (reel_id,)
+    ).fetchone()
+
+    if reel_data:
+        reel_dict = dict(reel_data)
+        reel_dict['profile_pic'] = get_member_profile_pic(reel_dict['user_id'])
+        if reel_dict['media_path']:
+            reel_dict['media_path'] = url_for('static', filename=reel_dict['media_path'][len('static/'):])
+        if reel_dict['audio_path']:
+            reel_dict['audio_path'] = url_for('static', filename=reel_dict['audio_path'][len('static/'):])
+        reel_dict['timestamp'] = datetime.fromisoformat(reel_dict['timestamp']).isoformat() # Ensure ISO format
+        return jsonify({'success': True, 'reel': reel_dict})
+    return jsonify({'success': False, 'message': 'Reel not found.'}), 404
+
+
+@app.route('/api/chat/<int:user_id>', methods=['GET'])
+@login_required
+def api_get_chat_room_id(user_id):
+    db = get_db()
+    # Find or create a 1-on-1 chat room with this user
+    existing_chat_room = db.execute(
+        """
+        SELECT cr.id FROM chat_rooms cr
+        JOIN chat_room_members crm1 ON cr.id = crm1.chat_room_id AND crm1.user_id = ?
+        JOIN chat_room_members crm2 ON cr.id = crm2.chat_room_id AND crm2.user_id = ?
+        WHERE cr.is_group = 0
+        """,
+        (current_user.id, user_id)
+    ).fetchone()
+
+    if existing_chat_room:
+        return jsonify({'success': True, 'chat_room_id': existing_chat_room['id']})
+    else:
+        try:
+            cursor = db.execute("INSERT INTO chat_rooms (is_group, created_by) VALUES (?, ?)", (0, current_user.id))
+            new_chat_room_id = cursor.lastrowid
+            db.execute("INSERT INTO chat_room_members (chat_room_id, user_id) VALUES (?, ?)", (new_chat_room_id, current_user.id))
+            db.execute("INSERT INTO chat_room_members (chat_room_id, user_id) VALUES (?, ?)", (new_chat_room_id, user_id))
+            db.commit()
+            return jsonify({'success': True, 'chat_room_id': new_chat_room_id, 'message': 'New conversation started!'})
+        except Exception as e:
+            db.rollback()
+            app.logger.error(f"Error creating new chat room: {e}")
+            return jsonify({'success': False, 'message': 'Failed to start new conversation.'}), 500
 
 
 # --- Dashboard & Static Pages ---
