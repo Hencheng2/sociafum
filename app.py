@@ -1369,6 +1369,117 @@ def api_search_users():
 
     return jsonify(users)
 
+# --- API Route for Inbox Search (Friends & Groups) ---
+@app.route('/api/inbox_search', methods=['GET'])
+@login_required
+def api_inbox_search():
+    query = request.args.get('q', '').lower()
+    db = get_db()
+    results = []
+
+    # 1. Search Friends
+    if query:
+        friends_query = """
+            SELECT u.id, u.username, u.originalName AS realName, m.profilePhoto, m.bio
+            FROM friendships f
+            JOIN users u ON (f.user1_id = u.id OR f.user2_id = u.id)
+            JOIN members m ON m.user_id = u.id
+            WHERE (f.user1_id = ? OR f.user2_id = ?) AND f.status = 'accepted' AND u.id != ?
+              AND (LOWER(u.originalName) LIKE ? OR LOWER(u.username) LIKE ?)
+            ORDER BY LOWER(u.originalName)
+        """
+        friends_data = db.execute(friends_query, (current_user.id, current_user.id, current_user.id, f'%{query}%', f'%{query}%')).fetchall()
+        
+        for friend in friends_data:
+            friend_dict = dict(friend)
+            friend_dict['profilePhoto'] = get_member_profile_pic(friend_dict['id'])
+            results.append({'type': 'friend', 'data': friend_dict})
+
+    # 2. Search Groups
+    if query:
+        groups_query = """
+            SELECT g.id, g.name, g.profilePhoto
+            FROM groups g
+            JOIN chat_room_members crm ON g.chat_room_id = crm.chat_room_id
+            WHERE crm.user_id = ? -- Only groups the current user is a member of
+              AND LOWER(g.name) LIKE ?
+            ORDER BY LOWER(g.name)
+        """
+        groups_data = db.execute(groups_query, (current_user.id, f'%{query}%')).fetchall()
+
+        for group in groups_data:
+            group_dict = dict(group)
+            group_members = db.execute(
+                """
+                SELECT u.originalName FROM chat_room_members crm
+                JOIN users u ON crm.user_id = u.id
+                WHERE crm.chat_room_id = (SELECT chat_room_id FROM groups WHERE id = ?)
+                ORDER BY u.originalName
+                LIMIT 3
+                """,
+                (group_dict['id'],)
+            ).fetchall()
+            group_dict['members_snippet'] = ', '.join([m['originalName'] for m in group_members]) + (', ...' if len(group_members) == 3 else '')
+
+            group_dict['profilePhoto'] = group_dict['profilePhoto'] or url_for('static', filename='img/default_group.png')
+            results.append({'type': 'group', 'data': group_dict})
+
+    return jsonify(results)
+
+
+# --- API Route to get all Friends and Groups for the initial load of the "New Chat" modal ---
+@app.route('/api/get_inbox_contacts', methods=['GET'])
+@login_required
+def api_get_inbox_contacts():
+    db = get_db()
+    results = []
+
+    # Get all accepted friends, ordered alphabetically by real name
+    friends_query = """
+        SELECT u.id, u.username, u.originalName AS realName, m.profilePhoto, m.bio
+        FROM friendships f
+        JOIN users u ON (f.user1_id = u.id OR f.user2_id = u.id)
+        JOIN members m ON m.user_id = u.id
+        WHERE (f.user1_id = ? OR f.user2_id = ?) AND f.status = 'accepted' AND u.id != ?
+        ORDER BY LOWER(u.originalName)
+    """
+    friends_data = db.execute(friends_query, (current_user.id, current_user.id, current_user.id)).fetchall()
+
+    for friend in friends_data:
+        friend_dict = dict(friend)
+        friend_dict['profilePhoto'] = get_member_profile_pic(friend_dict['id'])
+        results.append({'type': 'friend', 'data': friend_dict})
+
+    # Get all groups the user is a member of, ordered alphabetically by group name
+    groups_query = """
+        SELECT g.id, g.name, g.profilePhoto
+        FROM groups g
+        JOIN chat_room_members crm ON g.chat_room_id = crm.chat_room_id
+        WHERE crm.user_id = ?
+        ORDER BY LOWER(g.name)
+    """
+    groups_data = db.execute(groups_query, (current_user.id,)).fetchall()
+
+    for group in groups_data:
+        group_dict = dict(group)
+        group_members = db.execute(
+            """
+            SELECT u.originalName FROM chat_room_members crm
+            JOIN users u ON crm.user_id = u.id
+            WHERE crm.chat_room_id = (SELECT chat_room_id FROM groups WHERE id = ?)
+            ORDER BY u.originalName
+            LIMIT 3
+            """,
+            (group_dict['id'],)
+        ).fetchall()
+        group_dict['members_snippet'] = ', '.join([m['originalName'] for m in group_members]) + (', ...' if len(group_members) == 3 else '')
+        
+        group_dict['profilePhoto'] = group_dict['profilePhoto'] or url_for('static', filename='img/default_group.png')
+        results.append({'type': 'group', 'data': group_dict})
+    
+    return jsonify(results)
+
+
 # --- Messaging & Chat Rooms ---
 
 @app.route('/inbox')
