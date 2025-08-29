@@ -2037,6 +2037,8 @@ def reels():
     return render_template('reels.html', reels=reels_to_display, current_year=current_year)
 
 
+# ... other imports and code ...
+
 @app.route('/create_story', methods=['GET', 'POST'])
 @login_required
 def create_story():
@@ -2052,76 +2054,33 @@ def create_story():
         file = request.files.get('file') # This handles uploaded photo/video/audio
         audio_file = request.files.get('audioFile') # This handles background audio for photo stories
 
-        if file and file.filename != '':
-            media_path = save_uploaded_file(file, app.config['STORY_MEDIA_FOLDER'])
-            if media_path:
-                file_extension = file.filename.rsplit('.', 1)[1].lower()
-                if file_extension in ALLOWED_IMAGE_EXTENSIONS:
-                    media_type = 'image'
-                elif file_extension in ALLOWED_VIDEO_EXTENSIONS:
-                    media_type = 'video'
-                elif file_extension in ALLOWED_AUDIO_EXTENSIONS:
-                    media_type = 'audio' # For standalone voice notes
-            else:
-                flash('Invalid uploaded media file type for story.', 'danger')
-                return render_template('create_story.html', form_data=request.form.to_dict(), current_year=current_year)
+        if not file or file.filename == '':
+            # This check is now the primary one due to frontend FormData handling
+            return jsonify({'success': False, 'message': 'Story requires a photo, video, or voice note.'}), 400
+
+        # Existing file handling logic (simplified slightly, as frontend prepares the 'file')
+        media_path = save_uploaded_file(file, app.config['STORY_MEDIA_FOLDER'])
+        if not media_path:
+            return jsonify({'success': False, 'message': 'Invalid uploaded media file type for story.'}), 400
+
+        file_extension = file.filename.rsplit('.', 1)[1].lower()
+        if file_extension in ALLOWED_IMAGE_EXTENSIONS:
+            media_type = 'image'
+        elif file_extension in ALLOWED_VIDEO_EXTENSIONS:
+            media_type = 'video'
+        elif file_extension in ALLOWED_AUDIO_EXTENSIONS:
+            media_type = 'audio'
+        else:
+            return jsonify({'success': False, 'message': 'Unsupported media type for story.'}), 400
         
         # Handle background audio for image stories
         if media_type == 'image' and audio_file and audio_file.filename != '':
             background_audio_path = save_uploaded_file(audio_file, app.config['VOICE_NOTES_FOLDER'])
             if not background_audio_path:
-                flash('Invalid background audio file type for story.', 'danger')
-                return render_template('create_story.html', form_data=request.form.to_dict(), current_year=current_year)
+                return jsonify({'success': False, 'message': 'Invalid background audio file type for story.'}), 400
         
-        # Handle camera-captured photo/video or voice note data sent as base64
-        # These are now handled by the 'file' input thanks to the JS changes making them blobs.
-        # So the below logic for cameraCapturedData/voiceNoteData should mostly be redundant
-        # IF the JS correctly assigns them to the 'file' input before submission.
-        # If not, this fallback is crucial.
-
-        # Fallback for camera-captured media not processed by 'file' input
-        if not media_path:
-            camera_captured_media_data = request.form.get('cameraCapturedMedia')
-            camera_captured_media_type = request.form.get('cameraCapturedMediaType')
-            if camera_captured_media_data and camera_captured_media_type:
-                try:
-                    header, encoded = camera_captured_media_data.split(",", 1)
-                    decoded_data = base64.b64decode(encoded)
-                    file_extension = 'png' if 'image' in camera_captured_media_type else 'webm'
-                    unique_filename = f"{uuid.uuid4()}.{file_extension}"
-                    file_path = os.path.join(app.config['STORY_MEDIA_FOLDER'], unique_filename)
-                    with open(file_path, 'wb') as f:
-                        f.write(decoded_data)
-                    media_path = os.path.join('static', 'uploads', os.path.basename(app.config['STORY_MEDIA_FOLDER']), unique_filename).replace("\\", "/")
-                    media_type = 'image' if 'image' in camera_captured_media_type else 'video'
-                except Exception as e:
-                    app.logger.error(f"Error decoding camera media: {e}")
-                    flash('Failed to process camera media.', 'danger')
-                    return render_template('create_story.html', form_data=request.form.to_dict(), current_year=current_year)
-
-        # Fallback for voice note data not processed by 'file' input
-        if not media_path:
-            voice_note_blob_data = request.form.get('voiceNoteBlob')
-            if voice_note_blob_data:
-                try:
-                    header, encoded = voice_note_blob_data.split(",", 1)
-                    decoded_data = base64.b64decode(encoded)
-                    unique_filename = f"{uuid.uuid4()}.wav" # Assuming wav as per JS or webm
-                    file_path = os.path.join(app.config['VOICE_NOTES_FOLDER'], unique_filename)
-                    with open(file_path, 'wb') as f:
-                        f.write(decoded_data)
-                    media_path = os.path.join('static', 'uploads', os.path.basename(app.config['VOICE_NOTES_FOLDER']), unique_filename).replace("\\", "/")
-                    media_type = 'audio'
-                except Exception as e:
-                    app.logger.error(f"Error decoding voice note: {e}")
-                    flash('Failed to process voice note.', 'danger')
-                    return render_template('create_story.html', form_data=request.form.to_dict(), current_year=current_year)
-
-
-        if not media_path:
-            flash('Story requires a photo, video, or voice note.', 'danger')
-            return render_template('create_story.html', form_data=request.form.to_dict(), current_year=current_year)
-
+        # Removed the base64 fallback logic here as the frontend should always send a File object now
+        # via the 'file' input field in the FormData.
 
         db = get_db()
         try:
@@ -2132,18 +2091,20 @@ def create_story():
                 INSERT INTO stories (user_id, description, media_path, media_type, background_audio_path, visibility, timestamp, expires_at)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 """,
-                (current_user.id, description, media_path, media_type, background_audio_path, visibility, datetime.now(timezone.utc), expires_at)
+                (current_user.id, description, media_path, media_type, background_audio_path, datetime.now(timezone.utc), expires_at)
             )
             db.commit()
-            flash('Story created successfully! It will expire in 24 hours.', 'success')
-            return redirect(url_for('home'))  # Redirect to home/stories feed
+            # Changed this to return JSON
+            return jsonify({'success': True, 'message': 'Story created successfully! It will expire in 24 hours.', 'redirect_url': url_for('home')}), 200
         except Exception as e:
-            flash(f'An error occurred while creating your story: {e}', 'danger')
-            app.logger.error(f"Error creating story: {e}")
             db.rollback()
-            return render_template('create_story.html', form_data=request.form.to_dict(), current_year=current_year)
+            app.logger.error(f"Error creating story: {e}")
+            # Changed this to return JSON
+            return jsonify({'success': False, 'message': f'An error occurred while creating your story: {e}'}), 500
 
     return render_template('create_story.html', current_year=current_year)
+
+# ... rest of your app.py code ...
 
 # --- Search Route ---
 @app.route('/search', methods=['GET'])
