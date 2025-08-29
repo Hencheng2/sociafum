@@ -503,7 +503,7 @@ def home():
 
 
 # --- API Route to Get Posts ---
-# --- Find your existing @app.route('/api/get_posts') and REPLACE its content with this: ---
+
 @app.route('/api/get_posts')
 @login_required
 def api_get_posts():
@@ -512,8 +512,9 @@ def api_get_posts():
     per_page = request.args.get('per_page', 10, type=int)
     offset = (page - 1) * per_page
 
-    # Modify this query to only fetch 'id's and then use the helper for full details
-    # This query determines which posts are visible to the current user
+    # Query to get post IDs based on visibility for the current user
+    # Ensure current_user.id is correctly passed for all three '?' placeholders.
+    # The `friendships` table is used to determine 'friends' visibility.
     post_ids_query = """
         SELECT
             p.id
@@ -535,7 +536,6 @@ def api_get_posts():
         LIMIT ? OFFSET ?
     """
     
-    # Execute the query to get post IDs for the current page
     post_ids_data = db.execute(post_ids_query, (current_user.id, current_user.id, current_user.id, per_page, offset)).fetchall()
 
     posts_list = []
@@ -546,8 +546,8 @@ def api_get_posts():
         if post_data:
             posts_list.append(post_data)
 
-    # Check if there are more posts for the next page
-    # This count should match the visibility logic of the main query
+    # Query to get the total count of posts visible to the current user
+    # This is used for pagination to determine `has_more`.
     total_posts_query = """
         SELECT COUNT(*)
         FROM posts p
