@@ -510,6 +510,82 @@ def api_get_posts():
         'has_more': has_more
     })
 
+# --- API Route to Get Stories ---
+@app.route('/api/get_stories')
+@login_required
+def api_get_stories():
+    db = get_db()
+    now_utc = datetime.now(timezone.utc)
+
+    # Fetch stories from the current user and their accepted friends
+    # Filter by visibility and expiration time
+    stories_query = """
+        SELECT
+            s.id,
+            s.user_id,
+            s.description,
+            s.media_path,
+            s.media_type,
+            s.background_audio_path,
+            s.visibility,
+            s.timestamp,
+            s.expires_at,
+            u.username,
+            u.originalName,
+            m.profilePhoto AS author_profile_pic
+        FROM stories s
+        JOIN users u ON s.user_id = u.id
+        LEFT JOIN members m ON u.id = m.user_id
+        WHERE s.expires_at > ?
+          AND (
+                s.user_id = ? -- Current user's own stories
+                OR s.is_sociafam_story = 1 -- SociaFam stories are always visible
+                OR (
+                    s.visibility = 'public' -- Public stories from anyone
+                )
+                OR (
+                    s.visibility = 'friends' AND EXISTS ( -- Friends-only stories from accepted friends
+                        SELECT 1 FROM friendships
+                        WHERE ((user1_id = ? AND user2_id = s.user_id) OR (user1_id = s.user_id AND user2_id = ?))
+                        AND status = 'accepted'
+                    )
+                )
+            )
+        ORDER BY s.timestamp DESC
+    """
+    
+    stories_data = db.execute(stories_query, (now_utc, current_user.id, current_user.id, current_user.id)).fetchall()
+
+    grouped_stories = {}
+    for story in stories_data:
+        story_dict = dict(story)
+        story_user_id = story_dict['user_id']
+        
+        # Ensure media_path is properly formatted for URL
+        if story_dict['media_path']:
+             story_dict['media_path'] = url_for('static', filename=story_dict['media_path'][len('static/'):])
+        if story_dict['background_audio_path']:
+             story_dict['background_audio_path'] = url_for('static', filename=story_dict['background_audio_path'][len('static/'):])
+
+        story_dict['profile_pic'] = get_member_profile_pic(story_user_id)
+        if story_dict['timestamp']:
+            story_dict['timestamp'] = datetime.fromisoformat(story_dict['timestamp']).isoformat()
+        
+        if story_user_id not in grouped_stories:
+            grouped_stories[story_user_id] = {
+                'user_id': story_user_id,
+                'username': story_dict['username'],
+                'originalName': story_dict['originalName'],
+                'profile_pic': story_dict['profile_pic'],
+                'stories': []
+            }
+        grouped_stories[story_user_id]['stories'].append(story_dict)
+    
+    # Convert dictionary to list of user-story groups
+    stories_list_for_json = list(grouped_stories.values())
+
+    return jsonify(stories_list_for_json)
+
 
 # --- Authentication Routes ---
 
