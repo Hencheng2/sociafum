@@ -361,6 +361,7 @@
 
         <!-- Stories Container -->
         <div id="stories-container" class="stories-container bg-gray-50 dark:bg-gray-800 shadow-inner rounded-xl px-2">
+            <!-- Your Story Link -->
             <a href="{{ url_for('create_story') }}" class="story-item">
                 <div class="story-ring bg-gray-200 dark:bg-gray-700">
                     <img src="{{ current_user.get_member_profile().profilePhoto | default(url_for('static', filename='img/default_profile.png')) }}" alt="Your Story" class="border-white dark:border-gray-900">
@@ -440,15 +441,7 @@
                 activeStoriesData = data; // Data is already grouped by user from API
 
                 if (activeStoriesData.length === 0) {
-                    // If no stories, ensure 'Your Story' is the only item
-                    storiesContainer.innerHTML =
-                        '<div class="story-item" onclick="addStory()">' +
-                            '<div class="story-ring bg-gray-200 dark:bg-gray-700">' +
-                                '<img src="{{ current_user.get_member_profile().profilePhoto | default(url_for('static', filename='img/default_profile.png')) }}" alt="Your Story" class="border-white dark:border-gray-900">' +
-                            '</div>' +
-                            '<div class="add-story-icon"><i class="fas fa-plus"></i></div>' +
-                            '<p class="story-username dark:text-gray-300">Your Story</p>' +
-                        '</div>';
+                    // If no stories, ensure 'Your Story' is the only item. The link is already in HTML.
                     return;
                 }
 
@@ -460,15 +453,12 @@
         }
 
         function renderStories() {
-            // Clear existing stories first, then re-add 'Your Story' and fetched ones
-            storiesContainer.innerHTML =
-                '<div class="story-item" onclick="addStory()">' +
-                    '<div class="story-ring bg-gray-200 dark:bg-gray-700">' +
-                        '<img src="{{ current_user.get_member_profile().profilePhoto | default(url_for('static', filename='img/default_profile.png')) }}" alt="Your Story" class="border-white dark:border-gray-900">' +
-                    '</div>' +
-                    '<div class="add-story-icon"><i class="fas fa-plus"></i></div>' +
-                    '<p class="story-username dark:text-gray-300">Your Story</p>' +
-                '</div>';
+            // Clear existing *fetched* stories, but preserve the 'Your Story' link
+            // Find the "Your Story" link and remove everything after it
+            let yourStoryLink = storiesContainer.querySelector('.story-item[href="{{ url_for('create_story') }}"]');
+            while (yourStoryLink.nextSibling) {
+                storiesContainer.removeChild(yourStoryLink.nextSibling);
+            }
             
             activeStoriesData.forEach((userStories, userIndex) => {
                 const latestStory = userStories.stories[0]; // Assuming stories are ordered latest first
@@ -488,9 +478,10 @@
             });
         }
 
-        function addStory() {
-            window.location.href = '{{ url_for('create_story') }}';
-        }
+        // The addStory function is no longer needed since the 'Your Story' is now a direct link.
+        // function addStory() {
+        //     window.location.href = '{{ url_for('create_story') }}';
+        // }
 
         function openStoryModal(userIndex, storyLocalIndex) {
             currentStoryIndex = { user: userIndex, story: storyLocalIndex };
@@ -849,11 +840,11 @@
         function handleFollow(userId) { console.log(`Follow user ${userId}`); /* Implement AJAX call */ }
         function handleSave(postId) { console.log(`Save post ${postId}`); /* Implement AJAX call */ }
         function handleRepost(postId) { console.log(`Repost post ${postId}`); /* Implement AJAX call */ }
-        function handleViewsAnalytics(postId) { console.log(`View analytics for post ${postId}`); /* Open analytics modal */ }
-        function handleReport(itemId, itemType) { console.log(`Report ${itemType} ${itemId}`); /* Open report modal */ }
-        function handleHide(postId) { console.log(`Hide post ${postId}`); /* Implement AJAX call */ }
-        function handleNotifications(postId) { console.log(`Turn on notifications for post type ${postId}`); /* Implement AJAX call */ }
-        function handleBlockProfile(userId) { console.log(`Block user profile ${userId}`); /* Implement AJAX call */ }
+        function handleViewsAnalytics(postId) { console.log(`View analytics for post ${postId}`); /* Open analytics modal */ }\
+        function handleReport(itemId, itemType) { console.log(`Report ${itemType} ${itemId}`); /* Open report modal */ }\
+        function handleHide(postId) { console.log(`Hide post ${postId}`); /* Implement AJAX call */ }\
+        function handleNotifications(postId) { console.log(`Turn on notifications for post type ${postId}`); /* Implement AJAX call */ }\
+        function handleBlockProfile(userId) { console.log(`Block user profile ${userId}`); /* Implement AJAX call */ }\
 
 
         // --- Initial Load ---
