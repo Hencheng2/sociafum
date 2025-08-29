@@ -4,328 +4,936 @@
 
 {% block content %}
 <style>
+    /* General styles for tabs and items */
     .tab-container {
         display: flex;
-        border-bottom: 1px solid #dee2e6;
+        border-bottom: 1px solid var(--border-color-light);
         margin-bottom: 20px;
+        background-color: var(--card-background); /* Added for better blending */
+        border-radius: 8px; /* Slightly rounded tabs */
+        overflow: hidden; /* To keep inner elements within rounded corners */
+        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    }
+    .dark .tab-container {
+        border-bottom: 1px solid var(--border-color-dark);
+        background-color: var(--card-background-dark);
+        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
     }
     .tab {
-        padding: 10px 20px;
+        flex: 1; /* Distribute tabs evenly */
+        padding: 10px 15px;
+        text-align: center;
         cursor: pointer;
-        font-weight: bold;
-        color: #6c757d;
+        font-weight: 600;
+        color: var(--text-secondary);
+        transition: background-color 0.2s ease, color 0.2s ease;
     }
     .tab.active {
-        color: #007bff;
-        border-bottom: 2px solid #007bff;
+        color: var(--primary);
+        border-bottom: 2px solid var(--primary);
+        background-color: var(--background-light); /* Lighter background for active tab */
     }
+    .dark .tab.active {
+        background-color: var(--background-dark);
+    }
+    .tab:hover:not(.active) {
+        background-color: var(--hover-bg-light);
+    }
+    .dark .tab:hover:not(.active) {
+        background-color: var(--hover-bg-dark);
+    }
+
+    /* Tab content */
     .tab-content {
         display: none;
+        padding: 10px 0; /* Adjust padding as needed */
     }
     .tab-content.active {
         display: block;
     }
-    .search-bar {
-        margin-bottom: 20px;
-    }
-    .search-bar input {
-        width: 100%;
-        padding: 8px;
-        border: 1px solid #dee2e6;
-        border-radius: 20px;
-    }
-    .chat-item, .user-item, .group-item {
+
+    /* Chat/User/Group Item Styles */
+    .chat-item, .user-search-item, .group-search-item {
         display: flex;
         align-items: center;
-        padding: 10px;
-        border-bottom: 1px solid #dee2e6;
+        padding: 12px 15px;
+        border-bottom: 1px solid var(--border-color-light);
         cursor: pointer;
+        transition: background-color 0.2s ease;
+        background-color: var(--card-background); /* Ensure consistency */
     }
-    .chat-item img, .user-item img, .group-item img {
+    .dark .chat-item, .dark .user-search-item, .dark .group-search-item {
+        border-bottom: 1px solid var(--border-color-dark);
+        background-color: var(--card-background-dark);
+    }
+    .chat-item:hover, .user-search-item:hover, .group-search-item:hover {
+        background-color: var(--hover-bg-light);
+    }
+    .dark .chat-item:hover, .dark .user-search-item:hover, .dark .group-search-item:hover {
+        background-color: var(--hover-bg-dark);
+    }
+
+    .chat-item img, .user-search-item img, .group-search-item img {
         width: 50px;
         height: 50px;
         border-radius: 50%;
-        margin-right: 10px;
+        object-fit: cover;
+        margin-right: 15px;
+        border: 2px solid var(--primary-light); /* Subtle border */
     }
-    .chat-info, .user-info, .group-info {
+    .dark .chat-item img, .dark .user-search-item img, .dark .group-search-item img {
+        border: 2px solid var(--primary-dark);
+    }
+    .item-info {
         flex: 1;
+        min-width: 0; /* Allows content to shrink */
     }
-    .chat-info h3, .user-info h3, .group-info h3 {
+    .item-info h3 {
         margin: 0;
         font-size: 16px;
+        color: var(--text-primary);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
-    .chat-info p, .user-info p, .group-info p {
-        margin: 0;
+    .item-info p {
+        margin: 2px 0 0;
         font-size: 12px;
-        color: #6c757d;
+        color: var(--text-secondary);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
-    .chat-meta, .user-actions, .group-actions {
+    .item-meta {
         text-align: right;
-    }
-    .chat-meta small, .user-actions button, .group-actions button {
-        font-size: 12px;
-        color: #6c757d;
-    }
-    .user-actions button, .group-actions button {
+        display: flex; /* For alignment of time and unread count */
+        flex-direction: column;
+        align-items: flex-end;
+        justify-content: center;
         margin-left: 10px;
-        padding: 5px 10px;
-        border: none;
-        background: #007bff;
+    }
+    .item-meta small {
+        font-size: 11px;
+        color: var(--text-muted);
+    }
+    .item-meta .unread-count {
+        background-color: var(--accent); /* Accent color for unread count */
         color: white;
-        border-radius: 5px;
-        cursor: pointer;
+        border-radius: 50%;
+        padding: 2px 7px;
+        font-size: 10px;
+        margin-top: 4px;
+        font-weight: bold;
     }
-    .user-actions button:disabled, .group-actions button:disabled {
-        background: #6c757d;
-        cursor: not-allowed;
+
+    /* No messages/groups placeholder */
+    .empty-state {
+        text-align: center;
+        padding: 30px 15px;
+        color: var(--text-secondary);
+        background-color: var(--card-background);
+        border-radius: 8px;
+        margin-top: 15px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
     }
-    .new-group-form {
-        padding: 20px;
-        border: 1px solid #dee2e6;
-        border-radius: 5px;
-        display: none;
+    .dark .empty-state {
+        background-color: var(--card-background-dark);
+        box-shadow: 0 1px 3px rgba(0,0,0,0.2);
     }
-    .new-group-form.active {
+    .empty-state p {
+        margin-bottom: 5px;
+        font-size: 15px;
+    }
+
+    /* Modal Styles */
+    .modal {
+        display: none; /* Hidden by default */
+        position: fixed; /* Stay in place */
+        z-index: 1000; /* Sit on top */
+        left: 0;
+        top: 0;
+        width: 100%; /* Full width */
+        height: 100%; /* Full height */
+        overflow: auto; /* Enable scroll if needed */
+        background-color: rgba(0,0,0,0.6); /* Black w/ opacity */
+        animation: fadeIn 0.3s;
+    }
+    .modal.active {
         display: block;
     }
-    .chat-window {
-        display: none;
+    .modal-content {
+        background-color: var(--background);
+        margin: 10% auto; /* 10% from the top and centered */
         padding: 20px;
-        border: 1px solid #dee2e6;
-        border-radius: 5px;
+        border-radius: 10px;
+        width: 90%; /* Adjust width as necessary */
+        max-width: 600px; /* Max width */
+        box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        position: relative;
+        animation: slideInTop 0.3s;
+    }
+    .dark .modal-content {
+        background-color: var(--background-dark);
+    }
+    .modal-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+    .modal-header .back-arrow {
+        font-size: 24px;
+        color: var(--text-primary);
+        cursor: pointer;
+        margin-right: 15px;
+        transition: color 0.2s ease;
+    }
+    .dark .modal-header .back-arrow {
+        color: var(--text-primary-dark);
+    }
+    .modal-header .back-arrow:hover {
+        color: var(--primary);
+    }
+    .modal-header h2 {
+        flex-grow: 1;
+        margin: 0;
+        font-size: 20px;
+        color: var(--text-primary);
+    }
+    .dark .modal-header h2 {
+        color: var(--text-primary-dark);
+    }
+    .modal-search-bar {
+        margin-bottom: 20px;
+    }
+    .modal-search-bar input {
+        width: 100%;
+        padding: 10px 15px;
+        border: 1px solid var(--border-color-light);
+        border-radius: 25px;
+        font-size: 16px;
+        background-color: var(--input-background);
+        color: var(--text-primary);
+    }
+    .dark .modal-search-bar input {
+        border: 1px solid var(--border-color-dark);
+        background-color: var(--input-background-dark);
+        color: var(--text-primary-dark);
+    }
+    .modal-search-bar input::placeholder {
+        color: var(--text-secondary);
+    }
+    .modal-search-bar input:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2); /* ring-indigo-500/50 */
+    }
+    .modal-new-group-btn {
+        display: block; /* Make it a block button */
+        width: 100%;
+        padding: 12px 20px;
+        background-color: var(--primary);
+        color: white;
+        border: none;
+        border-radius: 25px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background-color 0.2s ease, transform 0.1s ease;
+        margin-bottom: 20px;
+    }
+    .modal-new-group-btn:hover {
+        background-color: var(--primary-dark);
+        transform: translateY(-1px);
+    }
+    .modal-new-group-btn:active {
+        transform: translateY(0);
+    }
+    .modal-heading {
+        font-size: 18px;
+        color: var(--text-primary);
+        margin-top: 25px;
+        margin-bottom: 15px;
+        border-bottom: 1px solid var(--border-color-light);
+        padding-bottom: 5px;
+    }
+    .dark .modal-heading {
+        color: var(--text-primary-dark);
+        border-bottom: 1px solid var(--border-color-dark);
+    }
+
+    /* Modal List Items */
+    .user-search-item, .group-search-item {
+        background-color: var(--background-light); /* Slightly different background for modal items */
+        border-bottom: 1px solid var(--border-color-light);
+        border-radius: 8px; /* Rounded corners for items */
+        margin-bottom: 8px; /* Spacing between items */
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+    .dark .user-search-item, .dark .group-search-item {
+        background-color: var(--background-dark);
+        border-bottom: 1px solid var(--border-color-dark);
+        box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    }
+    .user-search-item:last-of-type, .group-search-item:last-of-type {
+        border-bottom: none; /* No border for the last item in a group */
+    }
+    .user-search-item .item-info h3, .group-search-item .item-info h3 {
+        font-size: 15px;
+    }
+    .user-search-item .item-info p.bio, .group-search-item .item-info p.members-snippet {
+        font-size: 11px;
+        color: var(--text-muted);
+    }
+
+    /* Chat Window Styles */
+    .chat-window {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: var(--background);
+        z-index: 999; /* Below modal */
+        display: flex;
+        flex-direction: column;
+        transform: translateX(100%); /* Start off-screen to the right */
+        transition: transform 0.3s ease-out;
+        box-shadow: -5px 0 15px rgba(0,0,0,0.1);
+    }
+    .dark .chat-window {
+        background-color: var(--background-dark);
     }
     .chat-window.active {
+        transform: translateX(0); /* Slide in */
+    }
+    .chat-header {
+        display: flex;
+        align-items: center;
+        padding: 15px;
+        background-color: var(--card-background);
+        border-bottom: 1px solid var(--border-color-light);
+        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        min-height: 60px; /* Ensure sufficient height */
+    }
+    .dark .chat-header {
+        background-color: var(--card-background-dark);
+        border-bottom: 1px solid var(--border-color-dark);
+    }
+    .chat-header .back-arrow {
+        font-size: 24px;
+        color: var(--text-primary);
+        cursor: pointer;
+        margin-right: 15px;
+        transition: color 0.2s ease;
+    }
+    .dark .chat-header .back-arrow {
+        color: var(--text-primary-dark);
+    }
+    .chat-header .back-arrow:hover {
+        color: var(--primary);
+    }
+    .chat-header h3 {
+        flex-grow: 1;
+        margin: 0;
+        font-size: 18px;
+        color: var(--text-primary);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .dark .chat-header h3 {
+        color: var(--text-primary-dark);
+    }
+    .chat-header .chat-options button {
+        background: none;
+        border: none;
+        font-size: 24px;
+        color: var(--text-secondary);
+        cursor: pointer;
+        margin-left: 10px;
+        transition: color 0.2s ease;
+    }
+    .dark .chat-header .chat-options button {
+        color: var(--text-secondary-dark);
+    }
+    .chat-header .chat-options button:hover {
+        color: var(--primary);
+    }
+    .chat-options .options-menu {
+        position: absolute;
+        right: 15px;
+        top: 60px; /* Below the header */
+        background-color: var(--card-background);
+        border-radius: 8px;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+        min-width: 150px;
+        z-index: 101; /* Above other chat content */
+        padding: 10px 0;
+    }
+    .dark .chat-options .options-menu {
+        background-color: var(--card-background-dark);
+        box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+    }
+    .chat-options .options-menu a {
         display: block;
+        padding: 8px 15px;
+        color: var(--text-primary);
+        text-decoration: none;
+        font-size: 15px;
+        transition: background-color 0.2s ease;
+    }
+    .dark .chat-options .options-menu a {
+        color: var(--text-primary-dark);
+    }
+    .chat-options .options-menu a:hover {
+        background-color: var(--hover-bg-light);
+    }
+    .dark .chat-options .options-menu a:hover {
+        background-color: var(--hover-bg-dark);
+    }
+
+    #chatContent {
+        flex-grow: 1;
+        padding: 15px;
+        overflow-y: auto;
+        background-color: var(--background); /* Match body background */
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+    .dark #chatContent {
+        background-color: var(--background-dark);
+    }
+    .message-bubble {
+        max-width: 70%;
+        padding: 10px 15px;
+        border-radius: 18px;
+        line-height: 1.4;
+        position: relative;
+        word-wrap: break-word; /* Ensure long words wrap */
+    }
+    .message-bubble.sent {
+        background-color: var(--primary-light);
+        color: white;
+        align-self: flex-end; /* Align to right */
+        border-bottom-right-radius: 4px;
+    }
+    .message-bubble.received {
+        background-color: var(--card-background);
+        color: var(--text-primary);
+        align-self: flex-start; /* Align to left */
+        border-bottom-left-radius: 4px;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    }
+    .dark .message-bubble.received {
+        background-color: var(--card-background-dark);
+        color: var(--text-primary-dark);
+        box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+    }
+    .message-bubble .sender-name {
+        font-weight: 600;
+        font-size: 0.9em;
+        margin-bottom: 2px;
+        display: block;
+        color: var(--text-primary); /* Default for received, changed for sent */
+    }
+    .message-bubble.sent .sender-name {
+        color: rgba(255, 255, 255, 0.8); /* Lighter for sent messages */
+    }
+    .message-bubble.received .sender-name {
+        color: var(--primary-dark); /* Distinct color for received sender name */
+    }
+    .message-bubble .message-text {
+        font-size: 15px;
+    }
+    .message-bubble .message-timestamp {
+        font-size: 10px;
+        color: var(--text-muted);
+        margin-top: 5px;
+        text-align: right;
+        display: block;
+    }
+    .message-bubble.sent .message-timestamp {
+        color: rgba(255, 255, 255, 0.6);
+    }
+    .message-bubble img, .message-bubble video, .message-bubble audio {
+        max-width: 100%;
+        border-radius: 8px;
+        margin-top: 5px;
+        display: block;
+    }
+    .chat-input {
+        display: flex;
+        padding: 10px 15px;
+        border-top: 1px solid var(--border-color-light);
+        background-color: var(--card-background);
+        gap: 10px;
+    }
+    .dark .chat-input {
+        border-top: 1px solid var(--border-color-dark);
+        background-color: var(--card-background-dark);
+    }
+    .chat-input input[type="text"] {
+        flex-grow: 1;
+        padding: 10px 15px;
+        border: 1px solid var(--border-color-light);
+        border-radius: 25px;
+        font-size: 15px;
+        background-color: var(--input-background);
+        color: var(--text-primary);
+    }
+    .dark .chat-input input[type="text"] {
+        border: 1px solid var(--border-color-dark);
+        background-color: var(--input-background-dark);
+        color: var(--text-primary-dark);
+    }
+    .chat-input input[type="text"]:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+    }
+    .chat-input button {
+        background-color: var(--primary);
+        color: white;
+        border: none;
+        border-radius: 25px;
+        padding: 10px 18px;
+        font-size: 15px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background-color 0.2s ease;
+    }
+    .chat-input button:hover {
+        background-color: var(--primary-dark);
+    }
+    .chat-input input[type="file"] {
+        display: none; /* Hide default file input */
+    }
+    .chat-input .upload-btn {
+        background-color: var(--secondary); /* Different color for upload */
+    }
+    .chat-input .upload-btn:hover {
+        background-color: var(--secondary-dark);
+    }
+
+    /* Animations */
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+    @keyframes slideInTop {
+        from { transform: translateY(-50px); opacity: 0; }
+        to { transform: translateY(0); opacity: 1; }
     }
 </style>
 
-<div class="search-bar">
-    <input type="text" id="searchInput" placeholder="Search Chats and Groups" oninput="searchInbox()">
-</div>
-
-<div class="tab-container">
-    <div class="tab active" onclick="showTab('chats')">Chats {% if unread_chats_count %} ({{ unread_chats_count }}) {% endif %}</div>
-    <div class="tab" onclick="showTab('groups')">Groups {% if unread_groups_count %} ({{ unread_groups_count }}) {% endif %}</div>
-    <div class="tab" onclick="showTab('new')">New</div>
-    <div class="tab" onclick="showTab('search')">Search</div>
-</div>
-
-<div id="chats" class="tab-content active">
-    {% if chats %}
-        {% for chat in chats %}
-        <div class="chat-item" onclick="openChat({{ chat.other_user.id }})">
-            <img src="{{ chat.other_user.profilePhoto | default('/static/img/default_profile.png') }}" alt="Profile">
-            <div class="chat-info">
-                <h3>{{ chat.other_user.real_name }}</h3>
-                <p>{{ chat.latest_message_snippet }}</p>
-            </div>
-            <div class="chat-meta">
-                <small>{{ moment(chat.timestamp).fromNow() }}</small>
-                {% if chat.unread_count > 0 %}
-                <small class="unread">{{ chat.unread_count }}</small>
-                {% endif %}
-            </div>
+<div class="container mx-auto p-4 sm:px-6 lg:px-8">
+    <div class="tab-container">
+        <div class="tab active" onclick="showTab('chats')">Chats {% if unread_chats_count %} ({{ unread_chats_count }}) {% endif %}</div>
+        <div class="tab" onclick="showTab('groups')">Groups {% if unread_groups_count %} ({{ unread_groups_count }}) {% endif %}</div>
+        <div class="tab" onclick="openNewChatModal()">
+            <i class="fas fa-plus"></i>
         </div>
-        {% endfor %}
-    {% else %}
-        <div class="chat-item">
-            <p>No direct messages yet.</p>
-            <p>Start a conversation with a friend!</p>
-        </div>
-    {% endif %}
-</div>
+    </div>
 
-<div id="groups" class="tab-content">
-    {% if groups %}
-        {% for group in groups %}
-        <div class="chat-item" onclick="openGroupChat({{ group.id }})">
-            <img src="{{ group.profilePhoto | default('/static/img/default_group.png') }}" alt="Group">
-            <div class="chat-info">
-                <h3>{{ group.name }}</h3>
-                <p>{{ group.latest_message_snippet }}</p>
+    <div id="chats" class="tab-content active">
+        {% if conversations %}
+            {% for chat in conversations if not chat.is_group %}
+            <div class="chat-item" onclick="openChat({{ chat.other_user.id }})">
+                <img src="{{ chat.other_user.profilePhoto | default(url_for('static', filename='img/default_profile.png')) }}" alt="Profile">
+                <div class="item-info">
+                    <h3>{{ chat.other_user.originalName }}</h3>
+                    <p>{{ chat.latest_message_snippet }}</p>
+                </div>
+                <div class="item-meta">
+                    <small>{{ moment(chat.latest_message_timestamp).fromNow() }}</small>
+                    {% if chat.unread_count > 0 %}
+                    <span class="unread-count">{{ chat.unread_count }}</span>
+                    {% endif %}
+                </div>
             </div>
-            <div class="chat-meta">
-                <small>{{ moment(group.timestamp).fromNow() }}</small>
-                {% if group.unread_count > 0 %}
-                <small class="unread">{{ group.unread_count }}</small>
-                {% endif %}
+            {% endfor %}
+        {% else %}
+            <div class="empty-state">
+                <p>No direct messages yet.</p>
+                <p>Click the <i class="fas fa-plus"></i> tab to start a new conversation!</p>
             </div>
-        </div>
-        {% endfor %}
-    {% else %}
-        <div class="chat-item">
-            <p>No group chats yet.</p>
-            <p>Create a new group or join an existing one!</p>
-        </div>
-    {% endif %}
-</div>
+        {% endif %}
+    </div>
 
-<div id="new" class="tab-content">
-    <div class="new-group-form">
-        <form method="POST" action="{{ url_for('create_group') }}" enctype="multipart/form-data">
-            <div>
-                <label>Upload Photo</label>
-                <input type="file" name="groupPhoto" accept="image/*">
+    <div id="groups" class="tab-content">
+        {% if conversations %}
+            {% for group in conversations if group.is_group %}
+            <div class="chat-item" onclick="openGroupChat({{ group.chat_room_id }})">
+                <img src="{{ group.other_user.profilePhoto | default(url_for('static', filename='img/default_group.png')) }}" alt="Group">
+                <div class="item-info">
+                    <h3>{{ group.other_user.originalName }}</h3>
+                    <p>{{ group.latest_message_snippet }}</p>
+                </div>
+                <div class="item-meta">
+                    <small>{{ moment(group.latest_message_timestamp).fromNow() }}</small>
+                    {% if group.unread_count > 0 %}
+                    <span class="unread-count">{{ group.unread_count }}</span>
+                    {% endif %}
+                </div>
             </div>
-            <div>
-                <label>Group Name</label>
-                <input type="text" name="groupName" required>
+            {% endfor %}
+        {% else %}
+            <div class="empty-state">
+                <p>No group chats yet.</p>
+                <p>Click the <i class="fas fa-plus"></i> tab to create a new group!</p>
             </div>
-            <button type="submit">Create Group</button>
-            <button type="button" onclick="showTab('chats')">Cancel</button>
-        </form>
+        {% endif %}
     </div>
 </div>
 
-<div id="search" class="tab-content">
-    <div id="search-results">
-        <p>Start typing to search for mutual friends or groups.</p>
+<!-- New Chat/Group Modal -->
+<div id="newChatModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <span class="back-arrow" onclick="closeNewChatModal()"><i class="fas fa-arrow-left"></i></span>
+            <h2>New Chat</h2>
+        </div>
+        <div class="modal-search-bar">
+            <input type="text" id="newChatSearchInput" placeholder="Search friends or groups" oninput="searchContacts()">
+        </div>
+        <button class="modal-new-group-btn" onclick="window.location.href='{{ url_for('create_group') }}'">
+            <i class="fas fa-users"></i> New Group
+        </button>
+
+        <h3 class="modal-heading">Friends</h3>
+        <div id="friendsList" class="contacts-list">
+            <!-- Friends will be loaded here dynamically -->
+            <div class="empty-state">
+                <p>No friends found.</p>
+            </div>
+        </div>
+
+        <h3 class="modal-heading">Groups</h3>
+        <div id="groupsList" class="contacts-list">
+            <!-- Groups will be loaded here dynamically -->
+            <div class="empty-state">
+                <p>No groups found.</p>
+            </div>
+        </div>
     </div>
 </div>
 
+<!-- Chat Window (Remains largely the same, but with updated CSS and message bubble rendering) -->
 <div class="chat-window" id="chatWindow">
     <div class="chat-header">
-        <button onclick="closeChat()">×</button>
-        <button onclick="goBack()">←</button>
+        <span class="back-arrow" onclick="closeChat()"><i class="fas fa-arrow-left"></i></span>
+        <img id="chatHeaderProfilePic" src="" alt="Profile" class="w-9 h-9 rounded-full object-cover mr-3 border-2 border-indigo-500">
         <h3 id="chatTitle">Conversation</h3>
-        <div class="chat-options">
-            <button onclick="showOptions()">⋮</button>
-            <div class="options-menu" id="optionsMenu" style="display:none;">
-                <a href="#" onclick="viewProfile()">View Profile</a>
+        <div class="chat-options relative">
+            <button onclick="toggleOptionsMenu()"><i class="fas fa-ellipsis-v"></i></button>
+            <div class="options-menu absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-20" id="optionsMenu" style="display:none;">
+                <a href="#" class="block px-4 py-2 text-gray-700 hover:bg-gray-100" id="viewProfileOption" onclick="viewChatUserProfile()">View Profile</a>
+                <a href="#" class="block px-4 py-2 text-gray-700 hover:bg-gray-100" id="viewGroupProfileOption" onclick="viewChatGroupProfile()">View Group Info</a>
             </div>
         </div>
     </div>
-    <div id="chatContent">Conversation content loads here...</div>
+    <div id="chatContent">
+        <!-- Messages will be loaded here -->
+        <div class="empty-state">
+            <p>No messages yet.</p>
+            <p>Start a conversation!</p>
+        </div>
+    </div>
     <div class="chat-input">
+        <label for="mediaInput" class="upload-btn flex items-center justify-center p-2 rounded-full cursor-pointer transition duration-200 ease-in-out bg-gray-200 hover:bg-gray-300 text-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-300">
+            <i class="fas fa-paperclip text-lg"></i>
+            <input type="file" id="mediaInput" accept="image/*,video/*,audio/*" onchange="previewMedia(event)">
+        </label>
         <input type="text" id="messageInput" placeholder="Type a message...">
-        <button onclick="sendMessage()">Send</button>
-        <input type="file" id="mediaInput" accept="image/*,video/*">
-        <button onclick="uploadMedia()">Upload</button>
+        <button onclick="sendMessage()"><i class="fas fa-paper-plane"></i></button>
     </div>
 </div>
 
 <script>
-    function showTab(tabId) {
-        document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
-        document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-        document.querySelectorAll('.new-group-form, .chat-window').forEach(el => el.classList.remove('active'));
-        document.querySelector(`[onclick="showTab('${tabId}')"]`).classList.add('active');
-        document.getElementById(tabId).classList.add('active');
-        if (tabId === 'new') {
-            document.querySelector('.new-group-form').classList.add('active');
-        }
-    }
+    const newChatModal = document.getElementById('newChatModal');
+    const newChatSearchInput = document.getElementById('newChatSearchInput');
+    const friendsListContainer = document.getElementById('friendsList');
+    const groupsListContainer = document.getElementById('groupsList');
+    const chatWindow = document.getElementById('chatWindow');
+    const chatTitle = document.getElementById('chatTitle');
+    const chatContent = document.getElementById('chatContent');
+    const messageInput = document.getElementById('messageInput');
+    const mediaInput = document.getElementById('mediaInput');
+    const chatHeaderProfilePic = document.getElementById('chatHeaderProfilePic');
+    const optionsMenu = document.getElementById('optionsMenu');
+    const viewProfileOption = document.getElementById('viewProfileOption');
+    const viewGroupProfileOption = document.getElementById('viewGroupProfileOption');
 
-    let debounceTimer;
-    function searchInbox() {
-        clearTimeout(debounceTimer);
-        const searchTerm = document.getElementById('searchInput').value.trim();
-        const searchResults = document.getElementById('search-results');
-        
-        if (!searchTerm) {
-            searchResults.innerHTML = '<p>Start typing to search for mutual friends or groups.</p>';
-            return;
+    let currentOpenChatRoomId = null;
+    let currentOpenChatIsGroup = false;
+    let currentOpenChatOtherUserId = null; // For 1-on-1 chats
+    let currentOpenChatOtherUsername = ''; // To pass to profile link
+    let allInboxContacts = []; // Store all friends and groups for efficient filtering
+
+    document.addEventListener('DOMContentLoaded', (event) => {
+        // --- Tab Switching Logic ---
+        window.showTab = function(tabId) {
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            document.querySelector(`[onclick="showTab('${tabId}')"]`).classList.add('active');
+            document.getElementById(tabId).classList.add('active');
+            // Close modal if open when switching tabs
+            closeNewChatModal();
+            closeChat();
+        };
+
+        // --- New Chat/Group Modal Logic ---
+        window.openNewChatModal = async function() {
+            newChatModal.classList.add('active');
+            newChatSearchInput.value = ''; // Clear search input
+            await fetchAndRenderContacts(); // Load all contacts initially
+        };
+
+        window.closeNewChatModal = function() {
+            newChatModal.classList.remove('active');
+            newChatSearchInput.value = ''; // Clear search input
+            friendsListContainer.innerHTML = '';
+            groupsListContainer.innerHTML = '';
+        };
+
+        let debounceTimer;
+        window.searchContacts = function() {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(() => {
+                filterContacts();
+            }, 300); // Debounce for 300ms
+        };
+
+        async function fetchAndRenderContacts() {
+            try {
+                const response = await fetch('/api/get_inbox_contacts');
+                if (!response.ok) throw new Error('Failed to fetch inbox contacts');
+                allInboxContacts = await response.json();
+                filterContacts(); // Render all fetched contacts
+            } catch (error) {
+                console.error('Error fetching inbox contacts:', error);
+                friendsListContainer.innerHTML = '<div class="empty-state"><p>Error loading friends.</p></div>';
+                groupsListContainer.innerHTML = '<div class="empty-state"><p>Error loading groups.</p></div>';
+            }
         }
 
-        debounceTimer = setTimeout(() => {
-            fetch(`/api/search_inbox?term=${encodeURIComponent(searchTerm)}`)
-                .then(response => response.json())
-                .then(data => {
-                    searchResults.innerHTML = '';
-                    if (data.results.length === 0) {
-                        searchResults.innerHTML = '<p>No mutual friends or groups found.</p>';
-                        return;
-                    }
-                    data.results.forEach(item => {
-                        if (item.type === 'user') {
-                            const user = item.data;
-                            const html = `
-                                <div class="user-item" onclick="openChat(${user.id})">
-                                    <img src="${user.profilePhoto}" alt="Profile">
-                                    <div class="user-info">
-                                        <h3>${user.real_name}</h3>
-                                        <p>@${user.username}</p>
-                                    </div>
-                                    <div class="user-actions">
-                                        <button disabled>Following</button>
-                                    </div>
-                                </div>`;
-                            searchResults.insertAdjacentHTML('beforeend', html);
-                        } else if (item.type === 'group') {
-                            const group = item.data;
-                            const html = `
-                                <div class="group-item" onclick="openGroupChat(${group.id})">
-                                    <img src="${group.profilePhoto}" alt="Group">
-                                    <div class="group-info">
-                                        <h3>${group.name}</h3>
-                                        <p>${group.description || 'No description'}</p>
-                                    </div>
-                                    <div class="group-actions">
-                                        <button disabled>Member</button>
-                                    </div>
-                                </div>`;
-                            searchResults.insertAdjacentHTML('beforeend', html);
-                        }
-                    });
-                })
-                .catch(error => {
-                    console.error('Error searching inbox:', error);
-                    searchResults.innerHTML = '<p>Error searching users or groups. Please try again.</p>';
+        function filterContacts() {
+            const searchTerm = newChatSearchInput.value.toLowerCase();
+            friendsListContainer.innerHTML = '';
+            groupsListContainer.innerHTML = '';
+
+            let filteredFriends = [];
+            let filteredGroups = [];
+
+            if (searchTerm) {
+                filteredFriends = allInboxContacts.filter(contact =>
+                    contact.type === 'friend' &&
+                    (contact.data.realName.toLowerCase().includes(searchTerm) ||
+                     contact.data.username.toLowerCase().includes(searchTerm))
+                );
+                filteredGroups = allInboxContacts.filter(contact =>
+                    contact.type === 'group' &&
+                    contact.data.name.toLowerCase().includes(searchTerm)
+                );
+            } else {
+                // If no search term, show all contacts
+                filteredFriends = allInboxContacts.filter(contact => contact.type === 'friend');
+                filteredGroups = allInboxContacts.filter(contact => contact.type === 'group');
+            }
+
+            if (filteredFriends.length > 0) {
+                filteredFriends.forEach(friend => {
+                    const friendElement = document.createElement('div');
+                    friendElement.classList.add('user-search-item');
+                    friendElement.onclick = () => openChat(friend.data.id);
+                    friendElement.innerHTML = `
+                        <img src="${friend.data.profilePhoto}" alt="${friend.data.realName}">
+                        <div class="item-info">
+                            <h3>${friend.data.realName} <small class="text-gray-500">@${friend.data.username}</small></h3>
+                            ${friend.data.bio ? `<p class="bio">${friend.data.bio}</p>` : ''}
+                        </div>
+                    `;
+                    friendsListContainer.appendChild(friendElement);
                 });
-        }, 300); // Debounce for 300ms
-    }
+            } else {
+                friendsListContainer.innerHTML = '<div class="empty-state"><p>No friends found.</p></div>';
+            }
 
-    function openChat(userId) {
-        document.querySelector('.chat-window').classList.add('active');
-        fetch(`/api/chat/${userId}`)
-            .then(response => response.json())
-            .then(data => {
-                document.getElementById('chatTitle').textContent = data.user.real_name;
-                document.getElementById('chatContent').innerHTML = data.messages.map(msg => `
-                    <p><strong>${msg.sender}:</strong> ${msg.content}</p>
-                `).join('');
-            });
-    }
+            if (filteredGroups.length > 0) {
+                filteredGroups.forEach(group => {
+                    const groupElement = document.createElement('div');
+                    groupElement.classList.add('group-search-item');
+                    groupElement.onclick = () => openGroupChat(group.data.id, true); // True to indicate group ID
+                    groupElement.innerHTML = `
+                        <img src="${group.data.profilePhoto}" alt="${group.data.name}">
+                        <div class="item-info">
+                            <h3>${group.data.name}</h3>
+                            ${group.data.members_snippet ? `<p class="members-snippet">Members: ${group.data.members_snippet}</p>` : ''}
+                        </div>
+                    `;
+                    groupsListContainer.appendChild(groupElement);
+                });
+            } else {
+                groupsListContainer.innerHTML = '<div class="empty-state"><p>No groups found.</p></div>';
+            }
+        }
 
-    function openGroupChat(groupId) {
-        document.querySelector('.chat-window').classList.add('active');
-        fetch(`/api/group_chat/${groupId}`)
-            .then(response => response.json())
-            .then(data => {
-                document.getElementById('chatTitle').textContent = data.group.name;
-                document.getElementById('chatContent').innerHTML = data.messages.map(msg => `
-                    <p><strong>${msg.sender}:</strong> ${msg.content}</p>
-                `).join('');
-            });
-    }
+        // --- Chat Window Logic (Refined) ---
+        window.openChat = async function(targetUserId) {
+            currentOpenChatIsGroup = false;
+            currentOpenChatOtherUserId = targetUserId;
+            
+            try {
+                // If targetUserId is provided, try to create or get a chat room with that user
+                const response = await fetch(`/view_chat/${targetUserId}`); // This route now handles chat room creation/retrieval
+                if (!response.ok) throw new Error('Failed to open chat');
+                
+                // The Flask route will redirect if a new chat is created, or render the page.
+                // For AJAX, we would expect a JSON response with chat_room_id.
+                // Since this is a full page navigation, we don't need to parse JSON here.
+                window.location.href = `/view_chat/${targetUserId}`;
+                
+            } catch (error) {
+                console.error('Error opening chat:', error);
+                alert('Failed to open chat. Please try again.'); // Replace with a custom modal later
+            }
+        };
 
-    function closeChat() {
-        document.querySelector('.chat-window').classList.remove('active');
-        document.getElementById('chatContent').innerHTML = 'Conversation content loads here...';
-    }
+        window.openGroupChat = async function(groupId) {
+            currentOpenChatIsGroup = true;
+            currentOpenChatRoomId = groupId; // The passed ID is already the group_id (which maps to chat_room_id)
+            
+            try {
+                window.location.href = `/view_group_chat/${groupId}`;
+            } catch (error) {
+                console.error('Error opening group chat:', error);
+                alert('Failed to open group chat. Please try again.'); // Replace with a custom modal later
+            }
+        };
 
-    function goBack() {
-        closeChat();
-        showTab('chats');
-    }
+        window.closeChat = function() {
+            chatWindow.classList.remove('active');
+            chatContent.innerHTML = '';
+            messageInput.value = '';
+            mediaInput.value = '';
+            currentOpenChatRoomId = null;
+            currentOpenChatIsGroup = false;
+            currentOpenChatOtherUserId = null;
+            currentOpenChatOtherUsername = '';
+            optionsMenu.style.display = 'none'; // Close options menu
+        };
 
-    function showOptions() {
-        const menu = document.getElementById('optionsMenu');
-        menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
-    }
+        // --- Message Sending Logic (Placeholder - needs AJAX implementation) ---
+        window.sendMessage = async function() {
+            if (!currentOpenChatRoomId) {
+                console.error("No chat room is open.");
+                return;
+            }
 
-    function viewProfile() {
-        alert('Profile view not implemented yet.');
-    }
+            const messageText = messageInput.value.trim();
+            const mediaFile = mediaInput.files[0];
 
-    function sendMessage() {
-        const message = document.getElementById('messageInput').value;
-        alert('Message sending not implemented yet.');
-    }
+            if (!messageText && !mediaFile) {
+                alert('Please enter a message or select a file to send.');
+                return;
+            }
 
-    function uploadMedia() {
-        const file = document.getElementById('mediaInput').files[0];
-        alert('Media upload not implemented yet.');
-    }
+            const formData = new FormData();
+            formData.append('chat_room_id', currentOpenChatRoomId);
+            formData.append('content', messageText);
+            if (mediaFile) {
+                formData.append('media_file', mediaFile);
+            }
+
+            try {
+                const response = await fetch(`/api/send_chat_message/${currentOpenChatRoomId}`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    messageInput.value = '';
+                    mediaInput.value = '';
+                    // Optionally, re-fetch messages or append new message
+                    // For now, reload the entire chat to see the new message
+                    if (currentOpenChatIsGroup) {
+                        window.location.href = `/view_group_chat/${currentOpenChatRoomId}`;
+                    } else {
+                        window.location.href = `/view_chat/${currentOpenChatRoomId}`;
+                    }
+                } else {
+                    alert('Failed to send message: ' + result.message);
+                }
+            } catch (error) {
+                console.error('Error sending message:', error);
+                alert('An error occurred while sending the message.');
+            }
+        };
+
+        window.previewMedia = function(event) {
+            const file = event.target.files[0];
+            if (file) {
+                // You can add a visual indication that a file is selected here
+                console.log('File selected:', file.name);
+                // For a simple alert (to be replaced by custom UI):
+                // alert(`File selected: ${file.name}`);
+            }
+        };
+
+
+        // --- Chat Options Menu ---
+        window.toggleOptionsMenu = function() {
+            optionsMenu.style.display = optionsMenu.style.display === 'none' ? 'block' : 'none';
+        };
+
+        // Handle clicks outside the options menu to close it
+        document.addEventListener('click', function(event) {
+            if (!event.target.closest('.chat-options') && optionsMenu.style.display === 'block') {
+                optionsMenu.style.display = 'none';
+            }
+        });
+
+        window.viewChatUserProfile = function() {
+            if (currentOpenChatOtherUserId && !currentOpenChatIsGroup) {
+                window.location.href = `/profile/${currentOpenChatOtherUsername}`;
+            } else {
+                alert('Profile not available for group chats or unknown users.');
+            }
+            toggleOptionsMenu(); // Close menu
+        };
+
+        window.viewChatGroupProfile = function() {
+            if (currentOpenChatIsGroup && currentOpenChatRoomId) {
+                // currentOpenChatRoomId is already the group_id (or maps to it) for group chats
+                window.location.href = `/view_group_profile/${currentOpenChatRoomId}`;
+            } else {
+                alert('Group profile not available for direct chats.');
+            }
+            toggleOptionsMenu(); // Close menu
+        };
+
+
+        // Initial setup to hide group profile option for 1-on-1 chats
+        function updateOptionsMenuVisibility() {
+            if (currentOpenChatIsGroup) {
+                viewGroupProfileOption.style.display = 'block';
+                viewProfileOption.style.display = 'none';
+            } else {
+                viewGroupProfileOption.style.display = 'none';
+                viewProfileOption.style.display = 'block';
+            }
+        }
+
+        // --- Event Listeners for Chat Window Navigation (if coming from Flask redirect) ---
+        // These might be redundant if Flask handles full page renders for view_chat/view_group_chat,
+        // but are good for keeping the logic within inbox.html for completeness.
+        // For truly dynamic chat loading *within* inbox.html, these would be crucial.
+
+        // Example: How `view_chat` or `view_group_chat` would render content
+        // This part needs to be handled by Flask's render_template, NOT client-side JS.
+        // The current implementation is already doing full page redirects.
+    });
 </script>
 {% endblock %}
