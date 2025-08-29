@@ -361,13 +361,13 @@
 
         <!-- Stories Container -->
         <div id="stories-container" class="stories-container bg-gray-50 dark:bg-gray-800 shadow-inner rounded-xl px-2">
-            <div class="story-item" onclick="addStory()">
+            <a href="{{ url_for('create_story') }}" class="story-item">
                 <div class="story-ring bg-gray-200 dark:bg-gray-700">
                     <img src="{{ current_user.get_member_profile().profilePhoto | default(url_for('static', filename='img/default_profile.png')) }}" alt="Your Story" class="border-white dark:border-gray-900">
                 </div>
                 <div class="add-story-icon"><i class="fas fa-plus"></i></div>
                 <p class="story-username dark:text-gray-300">Your Story</p>
-            </div>
+            </a>
             <!-- Stories will be loaded here by JavaScript -->
         </div>
     </div>
