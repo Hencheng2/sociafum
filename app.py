@@ -3131,6 +3131,139 @@ def settings():
         current_year=current_year
     )
 
+# --- New API routes for reactions ---
+
+# API to like/unlike a post
+@app.route('/api/like_post', methods=['POST'])
+@login_required
+def like_post():
+    data = request.get_json()
+    post_id = data.get('post_id')
+    user_id = current_user.id
+    db = get_db()
+    
+    if not post_id:
+        return jsonify({'success': False, 'message': 'Post ID is required.'}), 400
+
+    try:
+        existing_like = db.execute("SELECT id FROM post_likes WHERE post_id = ? AND user_id = ?", (post_id, user_id)).fetchone()
+        
+        if existing_like:
+            db.execute("DELETE FROM post_likes WHERE id = ?", (existing_like['id'],))
+            db.commit()
+            action = 'unliked'
+        else:
+            db.execute("INSERT INTO post_likes (post_id, user_id) VALUES (?, ?)", (post_id, user_id))
+            db.commit()
+            action = 'liked'
+            
+        like_count = db.execute("SELECT COUNT(*) as count FROM post_likes WHERE post_id = ?", (post_id,)).fetchone()['count']
+
+        return jsonify({'success': True, 'action': action, 'like_count': like_count})
+    except sqlite3.Error as e:
+        db.rollback()
+        app.logger.error(f"Error liking/unliking post: {e}")
+        return jsonify({'success': False, 'message': 'Database error: ' + str(e)}), 500
+
+# API to save/unsave a post
+@app.route('/api/save_post', methods=['POST'])
+@login_required
+def save_post():
+    data = request.get_json()
+    post_id = data.get('post_id')
+    user_id = current_user.id
+    db = get_db()
+    
+    if not post_id:
+        return jsonify({'success': False, 'message': 'Post ID is required.'}), 400
+
+    try:
+        existing_save = db.execute("SELECT id FROM saved_posts WHERE post_id = ? AND user_id = ?", (post_id, user_id)).fetchone()
+        
+        if existing_save:
+            db.execute("DELETE FROM saved_posts WHERE id = ?", (existing_save['id'],))
+            db.commit()
+            action = 'unsaved'
+        else:
+            db.execute("INSERT INTO saved_posts (post_id, user_id) VALUES (?, ?)", (post_id, user_id))
+            db.commit()
+            action = 'saved'
+
+        return jsonify({'success': True, 'action': action})
+    except sqlite3.Error as e:
+        db.rollback()
+        app.logger.error(f"Error saving/unsaving post: {e}")
+        return jsonify({'success': False, 'message': 'Database error: ' + str(e)}), 500
+
+# API to follow/unfollow a user (from a post or profile card)
+@app.route('/api/follow_unfollow_user', methods=['POST'])
+@login_required
+def follow_unfollow_user():
+    data = request.get_json()
+    target_user_id = data.get('user_id') # The user to follow/unfollow
+    follower_id = current_user.id
+    db = get_db()
+
+    if not target_user_id:
+        return jsonify({'success': False, 'message': 'Target user ID is required.'}), 400
+    if follower_id == target_user_id:
+        return jsonify({'success': False, 'message': 'You cannot follow yourself.'}), 400
+
+    try:
+        # Check existing friendship status
+        # This assumes your 'friendships' table also manages 'following' if not mutual.
+        # If your friendship table has different states (e.g., 'following', 'friend'), adjust query.
+        existing_friendship = db.execute(
+            "SELECT id, status, user1_id, user2_id FROM friendships WHERE (user1_id = ? AND user2_id = ?) OR (user1_id = ? AND user2_id = ?)",
+            (follower_id, target_user_id, target_user_id, follower_id)
+        ).fetchone()
+
+        action_message = ""
+        if existing_friendship:
+            # If they are already friends, unfriending also means unfollowing
+            if existing_friendship['status'] == 'accepted':
+                db.execute("DELETE FROM friendships WHERE id = ?", (existing_friendship['id'],))
+                db.commit()
+                action = 'unfollowed'
+                action_message = 'Unfriended and unfollowed.'
+            # If there's a pending request from *us* to them, we can cancel it (unfollow attempt)
+            elif existing_friendship['status'] == 'pending' and existing_friendship['user1_id'] == follower_id:
+                db.execute("DELETE FROM friendships WHERE id = ?", (existing_friendship['id'],))
+                db.commit()
+                action = 'unfollowed' # Canceled request
+                action_message = 'Follow request cancelled.'
+            # If there's a pending request *from them* to us, we can't 'unfollow' in the same way.
+            # It implies they need to accept/decline. So we return an informative message.
+            else: # E.g., pending request where target_user_id is user1_id (they sent to us)
+                return jsonify({'success': False, 'message': 'Pending request exists from this user. Accept or decline from inbox.'}), 409
+
+        else: # No existing friendship, initiate follow/friend request
+            # This logic assumes 'following' is a one-way 'pending' before 'accepted' becomes mutual friend.
+            # You might need to refine this based on your specific 'following' vs 'friending' model.
+            # For simplicity, let's treat it as sending a friend request.
+            db.execute("INSERT INTO friendships (user1_id, user2_id, status) VALUES (?, ?, 'pending')", (follower_id, target_user_id))
+            db.commit()
+            action = 'followed'
+            action_message = 'Follow request sent.'
+            
+            # Send notification to the target user
+            target_user = load_user(target_user_id)
+            if target_user:
+                message = f'<strong>{current_user.original_name}</strong> (@{current_user.username}) sent you a friend request!'
+                send_system_notification(
+                    target_user_id,
+                    message,
+                    link=url_for('friends', _external=True), # Link to friends tab where requests are shown
+                    type='friend_request'
+                )
+
+        return jsonify({'success': True, 'action': action, 'message': action_message})
+    except sqlite3.Error as e:
+        db.rollback()
+        app.logger.error(f"Error following/unfollowing user: {e}")
+        return jsonify({'success': False, 'message': 'Database error: ' + str(e)}), 500
+
+
 
 @app.route('/blocked_users')
 @login_required
