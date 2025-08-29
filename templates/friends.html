@@ -75,7 +75,7 @@
         font-weight: 600;
         color: var(--text-secondary);
         transition: background-color 0.2s ease, color 0.2s ease;
-        white-space: nowrap; /* Prevent tab text from wrapping */
+        white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
     }
@@ -94,7 +94,16 @@
         background-color: var(--hover-bg-dark);
     }
 
-    /* Result Item Styles (same as search.html) */
+    /* Tab Content Styling */
+    .tab-content {
+        display: none;
+        padding: 10px 0;
+    }
+    .tab-content.active {
+        display: block;
+    }
+
+    /* User Item Styles */
     .user-item {
         display: flex;
         align-items: center;
@@ -260,6 +269,7 @@
     </div>
 
     <div class="tab-container">
+        <!-- The "All" tab is removed, default active tab will be "Followers" -->
         <div class="tab active" data-tab-id="followers" onclick="showTab('followers')">Followers (<span id="followers-count">{{ followers|length }}</span>)</div>
         <div class="tab" data-tab-id="following" onclick="showTab('following')">Following (<span id="following-count">{{ following|length }}</span>)</div>
         <div class="tab" data-tab-id="friends" onclick="showTab('friends')">Friends (<span id="friends-count">{{ all_friends|length }}</span>)</div>
@@ -267,8 +277,9 @@
         <div class="tab" data-tab-id="suggested" onclick="showTab('suggested')">Suggested (<span id="suggested-count">{{ suggested_users|length }}</span>)</div>
     </div>
 
+    <!-- Each tab content div will now hold only its specific results -->
     <div id="followers" class="tab-content active">
-        <!-- Initial content populated by Jinja2, then dynamically updated by JS -->
+        <!-- Content initially rendered by Jinja2 will be here -->
         {% if followers %}
             {% for follower in followers %}
             <div class="user-item" data-user-id="{{ follower.id }}">
@@ -399,27 +410,20 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', () => {
-        let activeTabId = 'followers'; // Initialize with the default active tab
+        let activeTabId = 'followers'; // Default active tab
         let debounceTimer;
 
-        // Base URL for user profiles
+        // Base URLs for dynamic navigation
         const profileBaseUrl = "{{ url_for('profile', username='USER_PLACEHOLDER') }}".replace('USER_PLACEHOLDER', '');
         const viewChatBaseUrl = "{{ url_for('view_chat', chat_room_id=0) }}".replace('/0', '');
 
         // Initialize activeTabId based on the currently active tab in HTML
-        const initialActiveTab = document.querySelector('.tab.active');
-        if (initialActiveTab) {
-            activeTabId = initialActiveTab.dataset.tabId;
+        const initialActiveTabElement = document.querySelector('.tab.active');
+        if (initialActiveTabElement) {
+            activeTabId = initialActiveTabElement.dataset.tabId;
         }
 
-        // Add click event listener to user items to navigate to profile
-        document.querySelectorAll('.user-item').forEach(item => {
-            item.addEventListener('click', function() {
-                const username = this.querySelector('.user-info small').textContent.substring(1); // Get username without '@'
-                window.location.href = `${profileBaseUrl}${username}`;
-            });
-        });
-
+        // --- Tab Switching Logic ---
         window.showTab = function(tabId) {
             document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
             document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
@@ -428,85 +432,95 @@
             document.getElementById(tabId).classList.add('active');
             activeTabId = tabId; // Update active tab ID
 
-            // Trigger search for the newly active tab
-            searchFriendsLive(true); // Pass true to force immediate search for tab switch
+            // Trigger search for the newly active tab with current search term
+            searchFriendsLive(true); 
         };
 
+        // --- Live Search Functionality ---
         window.searchFriendsLive = function(immediate = false) {
             clearTimeout(debounceTimer);
             const searchTerm = document.getElementById('searchInput').value.trim();
-            const currentTabContent = document.getElementById(activeTabId);
+            const currentTabContentElement = document.getElementById(activeTabId);
 
-            // Function to execute the search
             const executeSearch = async () => {
-                currentTabContent.innerHTML = `<div class="empty-state"><p>Searching...</p></div>`; // Show loading state
+                // Show loading state if there's a search term
+                if (searchTerm) {
+                    currentTabContentElement.innerHTML = `<div class="empty-state"><p>Searching for "${searchTerm}" in ${activeTabId}...</p></div>`;
+                } else {
+                    currentTabContentElement.innerHTML = `<div class="empty-state"><p>Loading ${activeTabId}...</p></div>`;
+                }
 
                 try {
-                    const response = await fetch(`/api/friends_search?q=${encodeURIComponent(searchTerm)}&tab=${activeTabId}`);
+                    const params = new URLSearchParams();
+                    if (searchTerm) {
+                        params.append('q', searchTerm);
+                    }
+                    params.append('tab', activeTabId); // Always send the active tab
+
+                    const response = await fetch(`/api/friends_search?${params.toString()}`);
                     if (!response.ok) {
                         throw new Error(`Failed to fetch results for ${activeTabId}.`);
                     }
-                    const data = await response.json(); // This will be a list of user objects
+                    const data = await response.json(); // Data will be a list of user objects
 
-                    renderSearchResults(data, currentTabContent, searchTerm);
+                    renderSearchResults(data, currentTabContentElement, searchTerm, activeTabId);
 
                 } catch (error) {
                     console.error(`Error searching ${activeTabId}:`, error);
-                    currentTabContent.innerHTML = `<div class="empty-state"><p>Error loading users. Please try again.</p></div>`;
+                    currentTabContentElement.innerHTML = `<div class="empty-state"><p>Error loading users. Please try again.</p></div>`;
                 }
             };
 
             if (immediate) {
                 executeSearch();
             } else {
-                debounceTimer = setTimeout(executeSearch, 300); // Debounce for 300ms
+                debounceTimer = setTimeout(executeSearch, 300);
             }
         };
 
-        function renderSearchResults(users, containerElement, searchTerm) {
+        function renderSearchResults(users, containerElement, searchTerm, currentTabId) {
             containerElement.innerHTML = ''; // Clear previous results
 
             if (users.length === 0) {
-                let message = `No ${activeTabId} found matching "${searchTerm}".`;
+                let message = `No ${currentTabId} found matching "${searchTerm}".`;
                 if (!searchTerm) {
-                    // Provide default messages if no search term
-                    if (activeTabId === 'followers') message = 'No one is following you yet.';
-                    else if (activeTabId === 'following') message = 'You are not following anyone yet.';
-                    else if (activeTabId === 'friends') message = 'You have no friends yet.';
-                    else if (activeTabId === 'requests') message = 'You have no new friend requests.';
-                    else if (activeTabId === 'suggested') message = 'No suggested users for now.';
+                    // Default messages if no search term and no results
+                    if (currentTabId === 'followers') message = 'No one is following you yet.';
+                    else if (currentTabId === 'following') message = 'You are not following anyone yet.';
+                    else if (currentTabId === 'friends') message = 'You have no friends yet.';
+                    else if (currentTabId === 'requests') message = 'You have no new friend requests.';
+                    else if (currentTabId === 'suggested') message = 'No suggested users for now.';
                 }
                 containerElement.innerHTML = `<div class="empty-state"><p>${message}</p></div>`;
                 return;
             }
 
             users.forEach(user => {
-                let buttonsHtml = '';
                 const profileLink = `${profileBaseUrl}${user.username}`;
+                let buttonsHtml = '';
 
-                // Common buttons
+                // Common buttons (Block, Message)
                 if (user.id !== {{ current_user.id }}) { // Cannot block/message self
-                     buttonsHtml += `<button onclick="event.stopPropagation(); blockUser(${user.id})"><i class="fas fa-ban"></i> Block</button>`;
-                     buttonsHtml += `<button onclick="event.stopPropagation(); messageUser(${user.id})"><i class="fas fa-comment-dots"></i> Message</button>`;
+                    if (!user.is_blocked_by_current_user) {
+                        buttonsHtml += `<button onclick="event.stopPropagation(); blockUser(${user.id})"><i class="fas fa-ban"></i> Block</button>`;
+                    }
+                    buttonsHtml += `<button onclick="event.stopPropagation(); messageUser(${user.id})"><i class="fas fa-comment-dots"></i> Message</button>`;
                 }
-               
 
-                if (activeTabId === 'followers') {
-                    // Followers tab doesn't have direct "unfollow" for the current user *from* them.
-                    // Instead, current user would 'unfriend' if they were mutual friends.
-                    // The 'Block' button remains.
-                } else if (activeTabId === 'following') {
+                // Tab-specific actions
+                if (currentTabId === 'followers') {
+                    // No specific action button here for 'followers' (like 'unfollow' from them)
+                } else if (currentTabId === 'following') {
                     buttonsHtml = `<button onclick="event.stopPropagation(); unfollowUser(${user.id})"><i class="fas fa-user-minus"></i> Unfollow</button>` + buttonsHtml;
-                } else if (activeTabId === 'friends') {
+                } else if (currentTabId === 'friends') {
                     buttonsHtml = `<button onclick="event.stopPropagation(); unfriendUser(${user.id})"><i class="fas fa-user-times"></i> Unfriend</button>` + buttonsHtml;
-                } else if (activeTabId === 'requests') {
-                    // For requests, 'user.id' is the sender_id, 'user.friendship_id' is the request ID
+                } else if (currentTabId === 'requests') {
                     buttonsHtml = `
                         <button onclick="event.stopPropagation(); acceptRequest(${user.friendship_id})"><i class="fas fa-check"></i> Accept</button>
                         <button onclick="event.stopPropagation(); declineRequest(${user.friendship_id})"><i class="fas fa-times"></i> Decline</button>
                         <button onclick="event.stopPropagation(); blockUser(${user.id})"><i class="fas fa-ban"></i> Block</button>
                     `;
-                } else if (activeTabId === 'suggested') {
+                } else if (currentTabId === 'suggested') {
                     const isFriend = user.status === 'friend';
                     const isPendingSent = user.status === 'pending_sent';
                     const isPendingReceived = user.status === 'pending_received';
@@ -517,20 +531,17 @@
                     } else if (isPendingSent) {
                         addFriendBtn = `<button disabled title="Request sent"><i class="fas fa-hourglass-half"></i> Pending</button>`;
                     } else if (isPendingReceived) {
-                        // This case is unlikely in 'suggested' but kept for completeness
                         addFriendBtn = `<button onclick="event.stopPropagation(); acceptRequest(${user.friendship_id})"><i class="fas fa-user-plus"></i> Accept</button>`;
                     } else {
                         addFriendBtn = `<button onclick="event.stopPropagation(); sendFriendRequest(${user.id})"><i class="fas fa-user-plus"></i> Add Friend</button>`;
                     }
-
                     buttonsHtml = addFriendBtn + 
                                   `<button onclick="event.stopPropagation(); removeSuggested(${user.id})"><i class="fas fa-minus-circle"></i> Remove</button>` +
                                   `<button onclick="event.stopPropagation(); blockUser(${user.id})"><i class="fas fa-ban"></i> Block</button>` +
                                   `<button onclick="event.stopPropagation(); messageUser(${user.id})"><i class="fas fa-comment-dots"></i> Message</button>`;
                 }
-
-
-                const html = `
+                
+                containerElement.insertAdjacentHTML('beforeend', `
                     <div class="user-item" data-user-id="${user.id}" onclick="window.location.href='${profileLink}'">
                         <img src="${user.profilePhoto || '{{ url_for('static', filename='img/default_profile.png') }}'}" alt="Profile">
                         <div class="user-info">
@@ -540,163 +551,127 @@
                         <div class="user-actions">
                             ${buttonsHtml}
                         </div>
-                    </div>`;
-                containerElement.insertAdjacentHTML('beforeend', html);
+                    </div>
+                `);
             });
         }
 
-        // --- Action Handlers (updated to use API endpoints and reload) ---
+        // --- Action Handlers (these now trigger searchFriendsLive(true) to refresh the current tab) ---
 
         window.sendFriendRequest = async function(userId) {
             try {
                 const response = await fetch('/api/send_friend_request/' + userId, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({}) // Empty body for POST request
+                    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({})
                 });
                 const data = await response.json();
                 if (data.success) {
-                    // alert(data.message); // Replace with custom toast/modal
+                    // Use custom notification
+                    // flashMessage(data.message, 'success'); 
                     searchFriendsLive(true); // Refresh current tab to update button state
                 } else {
-                    // alert(data.message);
+                    // Use custom notification
+                    // flashMessage(data.message, 'danger');
                 }
             } catch (error) {
                 console.error('Error sending friend request:', error);
-                // alert('An error occurred. Please try again.');
+                // flashMessage('An error occurred. Please try again.', 'danger');
             }
         };
 
         window.unfollowUser = async function(userId) {
             try {
                 const response = await fetch('/api/unfriend/' + userId, { // Use unfriend API for unfollow
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({})
+                    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({})
                 });
                 const data = await response.json();
                 if (data.success) {
-                    // alert(data.message);
+                    // flashMessage(data.message, 'info');
                     searchFriendsLive(true); // Refresh current tab
                 } else {
-                    // alert(data.message);
+                    // flashMessage(data.message, 'danger');
                 }
             } catch (error) {
                 console.error('Error unfollowing user:', error);
-                // alert('An error occurred. Please try again.');
+                // flashMessage('An error occurred. Please try again.', 'danger');
             }
         };
         
-        // This is specifically for 'Friends' tab where they are mutual friends
         window.unfriendUser = async function(userId) {
             try {
                 const response = await fetch('/api/unfriend/' + userId, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({})
+                    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({})
                 });
                 const data = await response.json();
                 if (data.success) {
-                    // alert(data.message);
+                    // flashMessage(data.message, 'info');
                     searchFriendsLive(true); // Refresh current tab
                 } else {
-                    // alert(data.message);
+                    // flashMessage(data.message, 'danger');
                 }
             } catch (error) {
                 console.error('Error unfriending user:', error);
-                // alert('An error occurred. Please try again.');
+                // flashMessage('An error occurred. Please try again.', 'danger');
             }
         };
 
         window.acceptRequest = async function(requestId) {
             try {
                 const response = await fetch('/api/accept_friend_request/' + requestId, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({})
+                    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({})
                 });
                 const data = await response.json();
                 if (data.success) {
-                    // alert(data.message);
+                    // flashMessage(data.message, 'success');
                     searchFriendsLive(true); // Refresh current tab
                 } else {
-                    // alert(data.message);
+                    // flashMessage(data.message, 'danger');
                 }
             } catch (error) {
                 console.error('Error accepting request:', error);
-                // alert('An error occurred. Please try again.');
+                // flashMessage('An error occurred. Please try again.', 'danger');
             }
         };
 
         window.declineRequest = async function(requestId) {
             try {
                 const response = await fetch('/api/decline_friend_request/' + requestId, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({})
+                    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({})
                 });
                 const data = await response.json();
                 if (data.success) {
-                    // alert(data.message);
+                    // flashMessage(data.message, 'info');
                     searchFriendsLive(true); // Refresh current tab
                 } else {
-                    // alert(data.message);
+                    // flashMessage(data.message, 'danger');
                 }
             } catch (error) {
                 console.error('Error declining request:', error);
-                // alert('An error occurred. Please try again.');
+                // flashMessage('An error occurred. Please try again.', 'danger');
             }
         };
 
         window.blockUser = async function(userId) {
             try {
                 const response = await fetch('/api/block_user/' + userId, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({})
+                    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({})
                 });
                 const data = await response.json();
                 if (data.success) {
-                    // alert(data.message);
-                    // Blocking a user should hide them from all lists. Reloading might be best.
-                    location.reload(); 
+                    // flashMessage(data.message, 'success');
+                    searchFriendsLive(true); // Re-run search as blocked users should disappear
                 } else {
-                    // alert(data.message);
+                    // flashMessage(data.message, 'danger');
                 }
             } catch (error) {
                 console.error('Error blocking user:', error);
-                // alert('An error occurred. Please try again.');
+                // flashMessage('An error occurred. Please try again.', 'danger');
             }
         };
 
         window.removeSuggested = async function(userId) {
-            // For suggested, "remove" usually means just hide for now or block
-            // As per schema, there's no explicit table for "removed suggestions".
-            // A simple implementation could be to block or just remove from view without backend persistence.
-            // For now, let's just make it a client-side removal for the current session.
-            // If persistent "remove" is needed, a new API route and table would be required.
-            try {
-                // Find and remove the element from the DOM
-                const itemToRemove = document.querySelector(`.suggested .user-item[data-user-id="${userId}"]`);
-                if (itemToRemove) {
-                    itemToRemove.remove();
-                    // Optionally, update the suggested count if you want
-                    const currentCount = parseInt(document.getElementById('suggested-count').textContent);
-                    document.getElementById('suggested-count').textContent = currentCount - 1;
-
-                    // If all suggested are removed, show empty state
-                    if (document.querySelectorAll('.suggested .user-item').length === 0) {
-                        document.getElementById('suggested').innerHTML = `<div class="empty-state"><p>No suggested users for now.</p><p>Check back later or search for people you may know.</p></div>`;
-                    }
-                }
-                // If a backend API is ever created for this:
-                // const response = await fetch('/api/remove_suggested_user/' + userId, { method: 'POST' });
-                // const data = await response.json();
-                // if (!data.success) { alert('Failed to remove suggestion.'); }
-            } catch (error) {
-                console.error('Error removing suggested user:', error);
-                // alert('An error occurred while removing suggestion.');
-            }
+            // This is a client-side "remove" for now, as a backend API for this wasn't defined.
+            // A search refresh will implicitly remove it if it no longer meets suggestion criteria.
+            searchFriendsLive(true); 
         };
 
         window.messageUser = async function(userId) {
@@ -706,16 +681,18 @@
                 if (data.success && data.chat_room_id) {
                     window.location.href = `${viewChatBaseUrl}${data.chat_room_id}`;
                 } else {
-                    // alert(data.message || 'Failed to open chat.');
+                    // flashMessage(data.message || 'Failed to open chat.', 'danger');
                 }
             } catch (error) {
                 console.error('Error opening chat:', error);
-                // alert('An error occurred while trying to open chat.');
+                // flashMessage('An error occurred while trying to open chat.', 'danger');
             }
         };
 
-        // Initial load for the active tab content
-        searchFriendsLive(true);
+        // --- Initial Load ---
+        // On initial page load, or when switching tabs, trigger a search to populate the active tab
+        // with initial data or filtered data if a search term is present.
+        searchFriendsLive(true); // Load content for the default active tab ('followers')
     });
 </script>
 {% endblock %}
