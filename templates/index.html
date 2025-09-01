@@ -839,23 +839,276 @@
         });
 
 
-        // --- Placeholder functions for post actions (these will need backend API calls) ---
-        function handleLike(postId) { console.log(`Like post ${postId}`); /* Implement AJAX call */ }
-        function handleComment(postId) { console.log(`Comment on post ${postId}`); /* Redirect to post detail page with comment section active */ }
-        function handleShare(postId) { console.log(`Share post ${postId}`); /* Open share modal */ }
-        function handleFollow(userId) { console.log(`Follow user ${userId}`); /* Implement AJAX call */ }
-        function handleSave(postId) { console.log(`Save post ${postId}`); /* Implement AJAX call */ }
-        function handleRepost(postId) { console.log(`Repost post ${postId}`); /* Implement AJAX call */ }
-        function handleViewsAnalytics(postId) { console.log(`View analytics for post ${postId}`); /* Open analytics modal */ }
-        function handleReport(itemId, itemType) { console.log(`Report ${itemType} ${itemId}`); /* Open report modal */ }
-        function handleHide(postId) { console.log(`Hide post ${postId}`); /* Implement AJAX call */ }
-        function handleNotifications(postId) { console.log(`Turn on notifications for post type ${postId}`); /* Implement AJAX call */ }
-        function handleBlockProfile(userId) { console.log(`Block user profile ${userId}`); /* Implement AJAX call */ }
+        // Function to show a toast notification
+    function showToast(message) {
+        const toast = document.getElementById('toast-notification');
+        toast.textContent = message;
+        toast.className = 'toast-notification show';
+        setTimeout(function(){
+            toast.className = toast.className.replace('show', '');
+        }, 3000);
+    }
 
+    // Modal functions for comments and reports
+    function openCommentModal(postId) {
+        document.getElementById('comment-post-id').value = postId;
+        document.getElementById('commentModal').style.display = 'block';
+    }
+
+    function closeCommentModal() {
+        document.getElementById('commentModal').style.display = 'none';
+        document.getElementById('comment-text').value = '';
+    }
+
+    function openReportModal(itemId, itemType) {
+        document.getElementById('report-item-id').value = itemId;
+        document.getElementById('report-item-type').value = itemType;
+        document.getElementById('reportModal').style.display = 'block';
+    }
+
+    function closeReportModal() {
+        document.getElementById('reportModal').style.display = 'none';
+        document.getElementById('report-reason').value = '';
+    }
+
+    // --- Asynchronous JavaScript and XML (AJAX) functions for post actions ---
+
+    async function handleLike(button) {
+        const postId = button.dataset.postId;
+        try {
+            const response = await fetch(`/api/posts/${postId}/like`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+            });
+            const result = await response.json();
+            if (result.success) {
+                showToast(result.message);
+                const likesCountElement = document.getElementById(`likes-count-${postId}`);
+                if (likesCountElement) {
+                    likesCountElement.textContent = result.new_likes_count;
+                }
+                if (result.is_liked) {
+                    button.classList.add('text-blue-500');
+                    button.classList.remove('text-gray-500');
+                } else {
+                    button.classList.add('text-gray-500');
+                    button.classList.remove('text-blue-500');
+                }
+            } else {
+                showToast(result.message);
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            showToast('An error occurred. Please try again.');
+        }
+    }
+
+    async function submitComment() {
+        const postId = document.getElementById('comment-post-id').value;
+        const commentText = document.getElementById('comment-text').value;
+        if (!commentText.trim()) {
+            showToast('Comment cannot be empty.');
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/posts/${postId}/comment`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ comment_text: commentText })
+            });
+            const result = await response.json();
+            if (result.success) {
+                showToast(result.message);
+                closeCommentModal();
+                const commentsCountElement = document.getElementById(`comments-count-${postId}`);
+                if (commentsCountElement) {
+                    commentsCountElement.textContent = result.new_comments_count;
+                }
+            } else {
+                showToast(result.message);
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            showToast('An error occurred. Please try again.');
+        }
+    }
+
+    async function handleShare(postId) {
+        if (navigator.share) {
+            try {
+                await navigator.share({
+                    title: 'Check out this post!',
+                    text: `Take a look at this post: {{ url_for('post_detail', post_id=0) }}`.replace('0', postId),
+                    url: window.location.href.split('?')[0]
+                });
+            } catch (error) {
+                console.error('Error sharing:', error);
+                showToast('Failed to share post.');
+            }
+        } else {
+            showToast('Web Share API not supported. Copying link...');
+            const postUrl = `{{ url_for('post_detail', post_id=0) }}`.replace('0', postId);
+            const tempInput = document.createElement('input');
+            tempInput.value = postUrl;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempInput);
+            showToast('Link copied to clipboard!');
+        }
+    }
+
+    async function handleFollow(userId) {
+        try {
+            const response = await fetch(`/api/users/${userId}/follow`, { method: 'POST' });
+            const result = await response.json();
+            showToast(result.message);
+        } catch (error) {
+            console.error('Error:', error);
+            showToast('An error occurred. Please try again.');
+        }
+    }
+
+    async function handleSave(button) {
+        const postId = button.dataset.postId;
+        try {
+            const response = await fetch(`/api/posts/${postId}/save`, { method: 'POST' });
+            const result = await response.json();
+            if (result.success) {
+                showToast(result.message);
+                if (result.is_saved) {
+                    button.classList.add('text-orange-500');
+                    button.classList.remove('text-gray-500');
+                } else {
+                    button.classList.add('text-gray-500');
+                    button.classList.remove('text-orange-500');
+                }
+            } else {
+                showToast(result.message);
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            showToast('An error occurred. Please try again.');
+        }
+    }
+
+    async function handleRepost(postId) {
+        try {
+            const response = await fetch(`/api/posts/${postId}/repost`, { method: 'POST' });
+            const result = await response.json();
+            showToast(result.message);
+        } catch (error) {
+            console.error('Error:', error);
+            showToast('An error occurred. Please try again.');
+        }
+    }
+
+    async function submitReport() {
+        const itemId = document.getElementById('report-item-id').value;
+        const itemType = document.getElementById('report-item-type').value;
+        const reason = document.getElementById('report-reason').value;
+        if (!reason.trim()) {
+            showToast('Please provide a reason for the report.');
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/${itemType}s/${itemId}/report`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ reason: reason })
+            });
+            const result = await response.json();
+            showToast(result.message);
+            closeReportModal();
+        } catch (error) {
+            console.error('Error:', error);
+            showToast('An error occurred. Please try again.');
+        }
+    }
+
+    async function handleHide(postId) {
+        try {
+            const response = await fetch(`/api/posts/${postId}/hide`, { method: 'POST' });
+            const result = await response.json();
+            if (result.success) {
+                showToast(result.message);
+                const postElement = document.querySelector(`.post-card[data-post-id="${postId}"]`);
+                if (postElement) {
+                    postElement.style.display = 'none';
+                }
+            } else {
+                showToast(result.message);
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            showToast('An error occurred. Please try again.');
+        }
+    }
+
+    async function handleNotifications(button) {
+        const postId = button.dataset.postId;
+        try {
+            const response = await fetch(`/api/posts/${postId}/notifications`, { method: 'POST' });
+            const result = await response.json();
+            if (result.success) {
+                showToast(result.message);
+                if (result.is_on) {
+                    button.classList.add('text-green-500');
+                } else {
+                    button.classList.remove('text-green-500');
+                }
+            } else {
+                showToast(result.message);
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            showToast('An error occurred. Please try again.');
+        }
+    }
+
+    async function handleBlockProfile(userId) {
+        try {
+            const response = await fetch(`/api/users/${userId}/block`, { method: 'POST' });
+            const result = await response.json();
+            showToast(result.message);
+        } catch (error) {
+            console.error('Error:', error);
+            showToast('An error occurred. Please try again.');
+        }
+    }
 
         // --- Initial Load ---
         loadAllPosts(); // Load all posts on initial page load
     });
 </script>
+
+<!-- Comment Modal -->
+<div id="commentModal" class="modal">
+    <div class="modal-content">
+        <span class="close-modal" onclick="closeCommentModal()">&times;</span>
+        <h2 class="text-xl font-bold mb-4">Add a Comment</h2>
+        <input type="hidden" id="comment-post-id">
+        <textarea id="comment-text" class="w-full h-24 p-2 rounded-lg border dark:bg-zinc-800 dark:border-zinc-700" placeholder="Write your comment..."></textarea>
+        <button class="mt-4 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600" onclick="submitComment()">Post Comment</button>
+    </div>
+</div>
+
+<!-- Report Modal -->
+<div id="reportModal" class="modal">
+    <div class="modal-content">
+        <span class="close-modal" onclick="closeReportModal()">&times;</span>
+        <h2 class="text-xl font-bold mb-4">Report Content</h2>
+        <input type="hidden" id="report-item-id">
+        <input type="hidden" id="report-item-type">
+        <textarea id="report-reason" class="w-full h-24 p-2 rounded-lg border dark:bg-zinc-800 dark:border-zinc-700" placeholder="Explain why you are reporting this content..."></textarea>
+        <button class="mt-4 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600" onclick="submitReport()">Submit Report</button>
+    </div>
+</div>
+
+<!-- Toast Notification -->
+<div id="toast-notification" class="toast-notification"></div>
+
 {% endblock %}
 {% block footer %}{% endblock %}
