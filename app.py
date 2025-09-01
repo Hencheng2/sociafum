@@ -507,6 +507,313 @@ def api_get_posts():
         'has_more': has_more
     })
 
+# --- API Routes for Post Actions ---
+
+@app.route('/api/posts/<int:post_id>/like', methods=['POST'])
+@login_required
+def like_post(post_id):
+    db = get_db()
+    user_id = current_user.id
+    
+    # Check if the user has already liked the post
+    existing_like = db.execute(
+        "SELECT id FROM likes WHERE user_id = ? AND post_id = ?",
+        (user_id, post_id)
+    ).fetchone()
+
+    if existing_like:
+        # If already liked, unlike the post
+        db.execute("DELETE FROM likes WHERE id = ?", (existing_like['id'],))
+        # Decrement the likes count on the post
+        db.execute("UPDATE posts SET likes_count = likes_count - 1 WHERE id = ?", (post_id,))
+        message = "Post unliked successfully."
+        is_liked = False
+    else:
+        # If not liked, like the post
+        db.execute(
+            "INSERT INTO likes (user_id, post_id, timestamp) VALUES (?, ?, ?)",
+            (user_id, post_id, datetime.now(timezone.utc))
+        )
+        # Increment the likes count on the post
+        db.execute("UPDATE posts SET likes_count = likes_count + 1 WHERE id = ?", (post_id,))
+        message = "Post liked successfully."
+        is_liked = True
+
+    db.commit()
+    # Fetch the new likes count to send back to the frontend
+    new_likes_count = db.execute("SELECT likes_count FROM posts WHERE id = ?", (post_id,)).fetchone()['likes_count']
+    return jsonify({'success': True, 'message': message, 'is_liked': is_liked, 'new_likes_count': new_likes_count})
+
+
+@app.route('/api/posts/<int:post_id>/comment', methods=['POST'])
+@login_required
+def comment_on_post(post_id):
+    db = get_db()
+    data = request.json
+    comment_text = data.get('comment_text')
+    
+    if not comment_text or not comment_text.strip():
+        return jsonify({'success': False, 'message': 'Comment text cannot be empty.'}), 400
+
+    try:
+        db.execute(
+            "INSERT INTO comments (user_id, post_id, comment_text, timestamp) VALUES (?, ?, ?, ?)",
+            (current_user.id, post_id, comment_text, datetime.now(timezone.utc))
+        )
+        # Increment the comments count on the post
+        db.execute("UPDATE posts SET comments_count = comments_count + 1 WHERE id = ?", (post_id,))
+        db.commit()
+        # Fetch the new comments count
+        new_comments_count = db.execute("SELECT comments_count FROM posts WHERE id = ?", (post_id,)).fetchone()['comments_count']
+        return jsonify({'success': True, 'message': 'Comment added successfully.', 'new_comments_count': new_comments_count})
+    except Exception as e:
+        db.rollback()
+        app.logger.error(f"Error adding comment: {e}")
+        return jsonify({'success': False, 'message': 'Failed to add comment.'}), 500
+
+
+@app.route('/api/posts/<int:post_id>/repost', methods=['POST'])
+@login_required
+def repost_post(post_id):
+    db = get_db()
+    user_id = current_user.id
+
+    original_post = db.execute("SELECT * FROM posts WHERE id = ?", (post_id,)).fetchone()
+    if not original_post:
+        return jsonify({'success': False, 'message': 'Original post not found.'}), 404
+
+    try:
+        # Create a new post entry for the repost
+        db.execute(
+            """
+            INSERT INTO posts (user_id, description, media_path, media_type, visibility, timestamp, original_post_id)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            """,
+            (user_id, original_post['description'], original_post['media_path'],
+             original_post['media_type'], original_post['visibility'], datetime.now(timezone.utc), post_id)
+        )
+        db.commit()
+        return jsonify({'success': True, 'message': 'Post reposted successfully.'})
+    except Exception as e:
+        db.rollback()
+        app.logger.error(f"Error reposting post: {e}")
+        return jsonify({'success': False, 'message': 'Failed to repost.'}), 500
+
+
+@app.route('/api/users/<int:user_id>/follow', methods=['POST'])
+@login_required
+def follow_user(user_id):
+    db = get_db()
+    current_user_id = current_user.id
+
+    if current_user_id == user_id:
+        return jsonify({'success': False, 'message': 'You cannot follow yourself.'}), 400
+    
+    # Check for existing friendship/follow relationship
+    existing_friendship = db.execute(
+        """
+        SELECT id FROM friendships
+        WHERE (user1_id = ? AND user2_id = ?) OR (user1_id = ? AND user2_id = ?)
+        """,
+        (current_user_id, user_id, user_id, current_user_id)
+    ).fetchone()
+
+    if existing_friendship:
+        return jsonify({'success': False, 'message': 'You are already friends or have a pending request with this user.'}), 409
+
+    # Check the target user's profile locking setting
+    target_user_settings = db.execute(
+        "SELECT profile_locking FROM users WHERE id = ?", (user_id,)
+    ).fetchone()
+
+    if not target_user_settings:
+        return jsonify({'success': False, 'message': 'User not found.'}), 404
+
+    # Determine the status based on the target user's privacy setting
+    if target_user_settings['profile_locking'] == 1:
+        # Private profile: send a pending friend request
+        status = 'pending'
+        message = 'Friend request sent.'
+    else:
+        # Public profile: auto-accept friendship
+        status = 'accepted'
+        message = 'You are now following this user.'
+
+    try:
+        db.execute(
+            "INSERT INTO friendships (user1_id, user2_id, status) VALUES (?, ?, ?)",
+            (current_user_id, user_id, status)
+        )
+        db.commit()
+        return jsonify({'success': True, 'message': message, 'status': status})
+    except Exception as e:
+        db.rollback()
+        app.logger.error(f"Error following user: {e}")
+        return jsonify({'success': False, 'message': 'Failed to follow user.'}), 500
+
+
+@app.route('/api/users/<int:user_id>/unfollow', methods=['POST'])
+@login_required
+def unfollow_user(user_id):
+    db = get_db()
+    current_user_id = current_user.id
+
+    try:
+        db.execute(
+            """
+            DELETE FROM friendships
+            WHERE (user1_id = ? AND user2_id = ?) OR (user1_id = ? AND user2_id = ?)
+            """,
+            (current_user_id, user_id, user_id, current_user_id)
+        )
+        db.commit()
+        return jsonify({'success': True, 'message': 'User unfollowed successfully.'})
+    except Exception as e:
+        db.rollback()
+        app.logger.error(f"Error unfollowing user: {e}")
+        return jsonify({'success': False, 'message': 'Failed to unfollow user.'}), 500
+
+
+@app.route('/api/posts/<int:post_id>/save', methods=['POST'])
+@login_required
+def save_post(post_id):
+    db = get_db()
+    user_id = current_user.id
+    
+    # Check if the post is already saved
+    existing_save = db.execute(
+        "SELECT id FROM saved_posts WHERE user_id = ? AND post_id = ?",
+        (user_id, post_id)
+    ).fetchone()
+
+    if existing_save:
+        # Un-save the post
+        db.execute("DELETE FROM saved_posts WHERE id = ?", (existing_save['id'],))
+        message = "Post un-saved successfully."
+        is_saved = False
+    else:
+        # Save the post
+        db.execute(
+            "INSERT INTO saved_posts (user_id, post_id, timestamp) VALUES (?, ?, ?)",
+            (user_id, post_id, datetime.now(timezone.utc))
+        )
+        message = "Post saved successfully."
+        is_saved = True
+
+    db.commit()
+    return jsonify({'success': True, 'message': message, 'is_saved': is_saved})
+
+@app.route('/api/posts/<int:post_id>/hide', methods=['POST'])
+@login_required
+def hide_post(post_id):
+    db = get_db()
+    try:
+        db.execute(
+            "INSERT OR IGNORE INTO hidden_posts (user_id, post_id) VALUES (?, ?)",
+            (current_user.id, post_id)
+        )
+        db.commit()
+        return jsonify({'success': True, 'message': 'Post hidden successfully.'})
+    except Exception as e:
+        db.rollback()
+        app.logger.error(f"Error hiding post: {e}")
+        return jsonify({'success': False, 'message': 'Failed to hide post.'}), 500
+
+
+@app.route('/api/posts/<int:post_id>/notifications', methods=['POST'])
+@login_required
+def toggle_post_notifications(post_id):
+    db = get_db()
+    try:
+        existing_notification = db.execute(
+            "SELECT id FROM post_notifications WHERE user_id = ? AND post_id = ?",
+            (current_user.id, post_id)
+        ).fetchone()
+
+        if existing_notification:
+            db.execute("DELETE FROM post_notifications WHERE id = ?", (existing_notification['id'],))
+            db.commit()
+            return jsonify({'success': True, 'message': 'Post notifications turned OFF.', 'is_on': False})
+        else:
+            db.execute(
+                "INSERT INTO post_notifications (user_id, post_id, timestamp) VALUES (?, ?, ?)",
+                (current_user.id, post_id, datetime.now(timezone.utc))
+            )
+            db.commit()
+            return jsonify({'success': True, 'message': 'Post notifications turned ON.', 'is_on': True})
+    except Exception as e:
+        db.rollback()
+        app.logger.error(f"Error toggling post notifications: {e}")
+        return jsonify({'success': False, 'message': 'Failed to toggle notifications.'}), 500
+
+
+@app.route('/api/posts/<int:post_id>/report', methods=['POST'])
+@login_required
+def report_post(post_id):
+    db = get_db()
+    data = request.json
+    reason = data.get('reason')
+
+    if not reason:
+        return jsonify({'success': False, 'message': 'A reason is required to report.'}), 400
+
+    try:
+        db.execute(
+            "INSERT INTO reports (reported_by_user_id, reported_item_type, reported_item_id, reason) VALUES (?, ?, ?, ?)",
+            (current_user.id, 'post', post_id, reason)
+        )
+        db.commit()
+        # Optionally, notify an admin
+        admin_id = get_admin_user_id()
+        if admin_id:
+            message = f"New report submitted for Post ID: {post_id}. Reason: {reason}"
+            send_system_notification(admin_id, message, link=url_for('admin_reports_page'))
+        return jsonify({'success': True, 'message': 'Post reported successfully. An administrator will review it shortly.'})
+    except Exception as e:
+        db.rollback()
+        app.logger.error(f"Error reporting post: {e}")
+        return jsonify({'success': False, 'message': 'Failed to report post.'}), 500
+
+
+@app.route('/api/users/<int:user_id>/block', methods=['POST'])
+@login_required
+def block_user(user_id):
+    db = get_db()
+    current_user_id = current_user.id
+
+    if current_user_id == user_id:
+        return jsonify({'success': False, 'message': 'You cannot block yourself.'}), 400
+
+    try:
+        # Check if the user is already blocked
+        existing_block = db.execute(
+            "SELECT id FROM blocked_users WHERE blocker_id = ? AND blocked_id = ?",
+            (current_user_id, user_id)
+        ).fetchone()
+
+        if existing_block:
+            return jsonify({'success': False, 'message': 'User is already blocked.'}), 409
+
+        # Insert the new block
+        db.execute(
+            "INSERT INTO blocked_users (blocker_id, blocked_id) VALUES (?, ?)",
+            (current_user_id, user_id)
+        )
+        # Also remove any friendship relationship, if it exists
+        db.execute(
+            """
+            DELETE FROM friendships
+            WHERE (user1_id = ? AND user2_id = ?) OR (user1_id = ? AND user2_id = ?)
+            """,
+            (current_user_id, user_id, user_id, current_user_id)
+        )
+        db.commit()
+        return jsonify({'success': True, 'message': 'User blocked successfully.'})
+    except Exception as e:
+        db.rollback()
+        app.logger.error(f"Error blocking user: {e}")
+        return jsonify({'success': False, 'message': 'Failed to block user.'}), 500
+
 # --- API Route to Get Stories ---
 @app.route('/api/get_stories')
 @login_required
