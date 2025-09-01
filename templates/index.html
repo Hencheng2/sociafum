@@ -342,6 +342,92 @@
         padding: 20px;
         display: none; /* Hidden by default */
     }
+
+    /* Modal for Commenting, Reporting, etc. */
+    .dialog-modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        display: none; /* Hidden by default */
+        align-items: center;
+        justify-content: center;
+        z-index: 1001;
+    }
+
+    .dialog-content {
+        background-color: white;
+        padding: 2rem;
+        border-radius: 0.75rem;
+        width: 90%;
+        max-width: 500px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        position: relative;
+    }
+
+    .dark .dialog-content {
+        background-color: #1f2937;
+        color: #e2e8f0;
+    }
+
+    .close-btn {
+        position: absolute;
+        top: 0.5rem;
+        right: 0.5rem;
+        background: none;
+        border: none;
+        font-size: 1.5rem;
+        cursor: pointer;
+        color: #4a5568;
+    }
+
+    .dark .close-btn {
+        color: #cbd5e0;
+    }
+
+    .dialog-input, .dialog-select {
+        width: 100%;
+        padding: 0.5rem;
+        border-radius: 0.5rem;
+        border: 1px solid #e2e8f0;
+        margin-top: 0.5rem;
+        margin-bottom: 1rem;
+    }
+
+    .dark .dialog-input, .dark .dialog-select {
+        background-color: #2d3748;
+        border-color: #4a5568;
+        color: #e2e8f0;
+    }
+
+    .dialog-buttons {
+        display: flex;
+        justify-content: flex-end;
+        gap: 0.5rem;
+    }
+
+    .dialog-buttons button {
+        padding: 0.5rem 1rem;
+        border-radius: 0.5rem;
+    }
+
+    .dialog-buttons .primary-btn {
+        background-color: var(--primary);
+        color: white;
+    }
+
+    .dialog-buttons .secondary-btn {
+        background-color: #e2e8f0;
+        color: #4a5568;
+    }
+
+    .dark .dialog-buttons .secondary-btn {
+        background-color: #4a5568;
+        color: #e2e8f0;
+    }
+
 </style>
 
 {% if current_user.is_authenticated %}
@@ -399,6 +485,53 @@
         <p id="story-modal-description" class="story-modal-description hidden"></p>
     </div>
 </div>
+
+<!-- Comment Modal -->
+<div id="comment-modal" class="dialog-modal">
+    <div class="dialog-content">
+        <button class="close-btn" onclick="closeCommentModal()">&times;</button>
+        <h3 class="text-lg font-semibold mb-4">Add a Comment</h3>
+        <textarea id="comment-input" class="dialog-input h-24" placeholder="Write your comment..."></textarea>
+        <div class="dialog-buttons">
+            <button class="primary-btn" onclick="submitComment()">Post Comment</button>
+        </div>
+    </div>
+</div>
+
+<!-- Report Modal -->
+<div id="report-modal" class="dialog-modal">
+    <div class="dialog-content">
+        <button class="close-btn" onclick="closeReportModal()">&times;</button>
+        <h3 class="text-lg font-semibold mb-4">Report Content</h3>
+        <p>Please select a reason for reporting this content:</p>
+        <select id="report-reason-select" class="dialog-select">
+            <option value="">Select a reason</option>
+            <option value="Hate Speech">Hate Speech</option>
+            <option value="Harassment">Harassment</option>
+            <option value="Spam">Spam</option>
+            <option value="Nudity">Nudity or Sexual Content</option>
+            <option value="Violence">Violence</option>
+            <option value="Intellectual Property">Intellectual Property Violation</option>
+            <option value="Other">Other</option>
+        </select>
+        <div class="dialog-buttons">
+            <button class="secondary-btn" onclick="closeReportModal()">Cancel</button>
+            <button class="primary-btn" onclick="submitReport()">Submit Report</button>
+        </div>
+    </div>
+</div>
+
+<!-- Simple Alert Modal for feedback -->
+<div id="alert-modal" class="dialog-modal">
+    <div class="dialog-content">
+        <button class="close-btn" onclick="closeAlertModal()">&times;</button>
+        <p id="alert-message" class="text-center"></p>
+        <div class="dialog-buttons mt-4">
+            <button class="primary-btn" onclick="closeAlertModal()">OK</button>
+        </div>
+    </div>
+</div>
+
 
 {% endif %}
 
@@ -793,18 +926,18 @@
                                 <p class="post-description">${post.description}</p>
                                 ${post.media_path ? (post.media_type === 'image' ? `<img src="${post.media_path}" alt="Post Media" class="rounded-lg mt-2">` : `<video src="${post.media_path}" controls class="rounded-lg mt-2"></video>`) : ''}
                             </div>
-                            <div class="post-actions">
-                                <button onclick="handleLike(${post.id})"><i class="fas fa-heart"></i> Like (${post.likes_count || 0})</button>
-                                <button onclick="handleComment(${post.id})"><i class="fas fa-comment"></i> Comment (${post.comments_count || 0})</button>
+                            <div class="post-actions" data-post-id="${post.id}" data-user-id="${post.user_id}">
+                                <button onclick="handleLike(event, ${post.id})"><i class="fas fa-heart"></i> <span id="likes-count-${post.id}">Like (${post.likes_count || 0})</span></button>
+                                <button onclick="openCommentModal(${post.id})"><i class="fas fa-comment"></i> <span id="comments-count-${post.id}">Comment (${post.comments_count || 0})</span></button>
                                 <button onclick="handleShare(${post.id})"><i class="fas fa-share-alt"></i> Share</button>
-                                <button onclick="handleFollow(${post.user_id})"><i class="fas fa-user-plus"></i> Follow</button>
-                                <button onclick="handleSave(${post.id})"><i class="fas fa-bookmark"></i> Save Post</button>
-                                <button onclick="handleRepost(${post.id})"><i class="fas fa-retweet"></i> Repost</button>
+                                <button onclick="handleFollow(event, ${post.user_id})"><i class="fas fa-user-plus"></i> Follow</button>
+                                <button onclick="handleSave(event, ${post.id})"><i class="fas fa-bookmark"></i> Save Post</button>
+                                <button onclick="handleRepost(event, ${post.id})"><i class="fas fa-retweet"></i> Repost</button>
                                 <button onclick="handleViewsAnalytics(${post.id})"><i class="fas fa-chart-bar"></i> Views (${post.views_count || 0})</button>
-                                <button onclick="handleReport(${post.id}, 'post')"><i class="fas fa-flag"></i> Report Post</button>
-                                <button onclick="handleHide(${post.id})"><i class="fas fa-eye-slash"></i> Hide Post</button>
-                                <button onclick="handleNotifications(${post.id})"><i class="fas fa-bell"></i> Notifications</button>
-                                <button onclick="handleBlockProfile(${post.user_id})"><i class="fas fa-ban"></i> Block ${post.username}</button>
+                                <button onclick="openReportModal(${post.id})"><i class="fas fa-flag"></i> Report Post</button>
+                                <button onclick="handleHide(event, ${post.id})"><i class="fas fa-eye-slash"></i> Hide Post</button>
+                                <button onclick="handleNotifications(event, ${post.id})"><i class="fas fa-bell"></i> Notifications</button>
+                                <button onclick="handleBlockProfile(event, ${post.user_id})"><i class="fas fa-ban"></i> Block ${post.username}</button>
                             </div>
                         `;
                         container.appendChild(postElement);
@@ -838,69 +971,207 @@
             }
         });
 
+        // --- Modal Functionality ---
+        let currentPostId = null;
 
-       // --- Functions for post actions ---
-        async function handleLike(postId) {
-            try {
-                const response = await fetch(`/api/posts/${postId}/like`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                });
-                const data = await response.json();
-                if (data.success) {
-                    const postCard = document.querySelector(`.post-card[data-post-id="${postId}"]`);
-                    if (postCard) {
-                        const likeCountSpan = postCard.querySelector('.like-count');
-                        const likeIcon = postCard.querySelector('.like-button i');
-                        likeCountSpan.textContent = data.new_likes_count;
-                        if (data.is_liked) {
-                            likeIcon.classList.remove('text-gray-500');
-                            likeIcon.classList.add('text-blue-500');
-                        } else {
-                            likeIcon.classList.remove('text-blue-500');
-                            likeIcon.classList.add('text-gray-500');
-                        }
-                    }
+        function showModal(modalId) {
+            document.getElementById(modalId).style.display = 'flex';
+        }
+
+        function hideModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+
+        function showAlertDialog(message) {
+            document.getElementById('alert-message').textContent = message;
+            showModal('alert-modal');
+        }
+
+        function closeAlertModal() {
+            hideModal('alert-modal');
+        }
+        
+        // Comment Modal
+        function openCommentModal(postId) {
+            currentPostId = postId;
+            document.getElementById('comment-input').value = '';
+            showModal('comment-modal');
+        }
+
+        function closeCommentModal() {
+            hideModal('comment-modal');
+        }
+
+        // Report Modal
+        function openReportModal(postId) {
+            currentPostId = postId;
+            document.getElementById('report-reason-select').value = '';
+            showModal('report-modal');
+        }
+
+        function closeReportModal() {
+            hideModal('report-modal');
+        }
+
+
+        // --- API Calls for Post Actions ---
+
+        async function handleLike(event, postId) {
+            const button = event.currentTarget;
+            const response = await fetch(`/api/posts/${postId}/like`, { method: 'POST' });
+            const data = await response.json();
+            if (data.success) {
+                const likesCountElement = document.getElementById(`likes-count-${postId}`);
+                likesCountElement.textContent = `Like (${data.new_likes_count})`;
+                if (data.is_liked) {
+                     // Add a visual indicator for "liked" state
+                     button.style.color = 'red';
+                     button.querySelector('i').classList.add('fa-solid');
+                     button.querySelector('i').classList.remove('fa-regular');
                 } else {
-                    console.error('Failed to like/unlike post:', data.message);
+                     // Remove "liked" state
+                     button.style.color = '';
+                     button.querySelector('i').classList.remove('fa-solid');
+                     button.querySelector('i').classList.add('fa-regular');
                 }
-            } catch (error) {
-                console.error('Error:', error);
+                showAlertDialog(data.message);
+            } else {
+                showAlertDialog(data.message);
             }
         }
 
-        function handleComment(postId) {
-            console.log(`Comment on post ${postId}`);
-            window.location.href = `/posts/${postId}/comment`; // Example URL
-        }
+        async function submitComment() {
+            const commentText = document.getElementById('comment-input').value;
+            if (!commentText.trim()) {
+                showAlertDialog('Comment cannot be empty.');
+                return;
+            }
 
-        async function handleRepost(postId) {
-            try {
-                const response = await fetch(`/api/posts/${postId}/repost`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                });
-                const data = await response.json();
-                if (data.success) {
-                    alert('Post reposted successfully!');
-                } else {
-                    console.error('Failed to repost:', data.message);
-                    alert('Failed to repost.');
-                }
-            } catch (error) {
-                console.error('Error:', error);
-                alert('An error occurred while reposting.');
+            const response = await fetch(`/api/posts/${currentPostId}/comment`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ comment_text: commentText })
+            });
+            const data = await response.json();
+            if (data.success) {
+                const commentsCountElement = document.getElementById(`comments-count-${currentPostId}`);
+                commentsCountElement.textContent = `Comment (${data.new_comments_count})`;
+                closeCommentModal();
+                showAlertDialog('Comment added successfully!');
+            } else {
+                showAlertDialog(data.message);
             }
         }
 
-        function handleShare(postId) { console.log(`Share post ${postId}`); /* Open share modal */ }
-        function handleFollow(userId) { console.log(`Follow user ${userId}`); /* Implement AJAX call */ }
-        function handleSave(postId) { console.log(`Save post ${postId}`); /* Implement AJAX call */ }
-        function handleViewsAnalytics(postId) { console.log(`View analytics for post ${postId}`); /* Open analytics modal */ }
-        function handleReport(itemId, itemType) { console.log(`Report ${itemType} ${itemId}`); /* Open report modal */ }
-        function handleHide(postId) { console.log(`Hide post ${postId}`); /* Implement AJAX call */ }
-        function handleNotifications(postId) { console.log(`Turn on notifications for post type ${postId}`); /* Implement AJAX call */ }
-        function handleBlockProfile(userId) { console.log(`Block user profile ${userId}`); /* Implement AJAX call */ }
+        async function handleRepost(event, postId) {
+            const response = await fetch(`/api/posts/${postId}/repost`, { method: 'POST' });
+            const data = await response.json();
+            if (data.success) {
+                showAlertDialog('Post reposted successfully!');
+                // Optional: Reload posts or prepend the new repost to the feed
+                // For this example, we'll just reload the page to show the new post
+                // This is not the most efficient but simple for this case.
+                setTimeout(() => window.location.reload(), 1500);
+            } else {
+                showAlertDialog(data.message);
+            }
+        }
+
+        async function handleFollow(event, userId) {
+            const response = await fetch(`/api/users/${userId}/follow`, { method: 'POST' });
+            const data = await response.json();
+            showAlertDialog(data.message);
+        }
+
+        async function handleSave(event, postId) {
+            const response = await fetch(`/api/posts/${postId}/save`, { method: 'POST' });
+            const data = await response.json();
+            if (data.success) {
+                const button = event.currentTarget;
+                if (data.is_saved) {
+                    button.style.color = 'green';
+                    showAlertDialog('Post saved successfully!');
+                } else {
+                    button.style.color = '';
+                    showAlertDialog('Post un-saved successfully!');
+                }
+            } else {
+                showAlertDialog(data.message);
+            }
+        }
+
+        async function handleHide(event, postId) {
+            const response = await fetch(`/api/posts/${postId}/hide`, { method: 'POST' });
+            const data = await response.json();
+            if (data.success) {
+                // Find and remove the post element from the DOM
+                const postElement = event.currentTarget.closest('.post-card');
+                if (postElement) {
+                    postElement.remove();
+                    showAlertDialog('Post hidden successfully.');
+                }
+            } else {
+                showAlertDialog(data.message);
+            }
+        }
+
+        async function handleNotifications(event, postId) {
+            const response = await fetch(`/api/posts/${postId}/notifications`, { method: 'POST' });
+            const data = await response.json();
+            if (data.success) {
+                const button = event.currentTarget;
+                if (data.is_on) {
+                    button.style.color = 'blue';
+                } else {
+                    button.style.color = '';
+                }
+                showAlertDialog(data.message);
+            } else {
+                showAlertDialog(data.message);
+            }
+        }
+
+        async function submitReport() {
+            const reason = document.getElementById('report-reason-select').value;
+            if (!reason) {
+                showAlertDialog('Please select a reason.');
+                return;
+            }
+
+            const response = await fetch(`/api/posts/${currentPostId}/report`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ reason: reason })
+            });
+            const data = await response.json();
+            if (data.success) {
+                closeReportModal();
+                showAlertDialog(data.message);
+            } else {
+                showAlertDialog(data.message);
+            }
+        }
+
+        async function handleBlockProfile(event, userId) {
+            const response = await fetch(`/api/users/${userId}/block`, { method: 'POST' });
+            const data = await response.json();
+            if (data.success) {
+                // If the block is successful, you might want to remove the user's posts from the feed
+                // This is a simple implementation that removes all posts by that user
+                document.querySelectorAll(`[data-user-id='${userId}']`).forEach(postActionElement => {
+                    postActionElement.closest('.post-card').remove();
+                });
+            }
+            showAlertDialog(data.message);
+        }
+        
+        function handleShare(postId) {
+            showAlertDialog(`Share functionality for post ${postId} is not yet implemented.`);
+        }
+
+        function handleViewsAnalytics(postId) {
+            showAlertDialog(`Analytics for post ${postId} is not yet implemented.`);
+        }
 
 
         // --- Initial Load ---
