@@ -9,7 +9,6 @@ import base64  # Needed for base64 decoding camera/voice note data
 import re  # Needed for process_mentions_and_links
 from pathlib import Path
 
-# Removed: import google.generativeai as genai
 import firebase_admin
 from firebase_admin import credentials, firestore, initialize_app  # initialize_app is needed if credentials path exists
 
@@ -87,8 +86,6 @@ if config.FIREBASE_ADMIN_CREDENTIALS_PATH and os.path.exists(config.FIREBASE_ADM
         app.logger.error(f"Failed to initialize Firebase Admin SDK: {e}")
 else:
     app.logger.warning("Firebase Admin SDK credentials file not found or path not configured. Firebase Admin SDK not initialized.")
-
-# Removed: Gemini API Setup (as per user's explicit request to ignore AI)
 
 
 # --- Database Helper Functions ---
@@ -1080,15 +1077,6 @@ def profile(username):
         current_year=current_year
     )
 
-# Removed: @app.route('/list_members') and associated function
-# as 'members_list.html' is not on the user's list.
-# Functionality to view members can be integrated into 'friends.html' or search results.
-
-
-# Removed: @app.route('/add_member', methods=['GET', 'POST']) and associated function
-# as 'add-member.html' is not on the user's list and not in sociafam.doc.
-
-
 # --- Friendship Routes (API endpoints for AJAX) ---
 
 @app.route('/api/send_friend_request/<int:receiver_id>', methods=['POST'])
@@ -1596,8 +1584,6 @@ def api_get_inbox_contacts():
 
 
 # --- Messaging & Chat Rooms ---
-
-# In app.py, find the inbox route and replace its current implementation with this:
 
 @app.route('/inbox')
 @login_required
@@ -2433,11 +2419,6 @@ def create_story():
             background_audio_path = save_uploaded_file(audio_file, app.config['VOICE_NOTES_FOLDER'])
             if not background_audio_path:
                 return jsonify({'success': False, 'message': 'Invalid background audio file type for story.'}), 400
-        
-        # Note: The frontend JavaScript is designed to convert camera/voice note captures
-        # into a File object and attach it to the 'file' input. Therefore, the base64
-        # fallback logic from previous versions in app.py is no longer strictly needed here,
-        # as 'file' should always be present and correctly formatted if media was selected.
 
         db = get_db()
         try:
@@ -2479,7 +2460,6 @@ def create_story():
     return render_template('create_story.html', current_year=current_year)
 
 # --- Search Route ---
-# --- Search Route (Now just renders the template) ---
 @app.route('/search', methods=['GET'])
 @login_required
 def search():
@@ -2679,9 +2659,6 @@ def api_dynamic_search():
 
     return jsonify({'results': results})
 
-# --- Other API routes (e.g., /api/send_friend_request, /api/join_group, /api/posts/<id>, /api/reels/<id>) ---
-# Make sure these routes exist and return JSON as expected by the JS below.
-# I've included placeholder definitions for them for completeness if they weren't fully there.
 
 @app.route('/api/send_friend_request/<int:receiver_id>', methods=['POST'])
 @login_required
@@ -2845,28 +2822,6 @@ def api_get_chat_room_id(user_id):
 def dashboard_redirect():
     flash('Dashboard is not available. Redirecting to your profile.', 'info')
     return redirect(url_for('my_profile'))
-
-
-# Removed: @app.route('/status_feed') and associated function
-# as 'status_feed.html' is not on the user's list.
-# Any status functionality will be integrated directly into 'my_profile.html' where relevant.
-
-
-# Removed: @app.route('/upload_status_video', methods=['POST']) and associated function
-# as status_feed is removed and this was for temporary videos which can be handled by stories.
-
-# Removed: @app.route('/admin_delete_user_status/<int:member_id>', methods=['POST'])
-# as status_feed and individual statuses are not explicitly rendered via a template.
-
-
-# Removed: @app.route('/success') and associated function
-# as 'success.html' is not on the user's list.
-# All successes will use flash messages and redirect.
-
-
-# --- Games ---
-# Removed: All game-related routes and functions as per user's explicit request.
-
 
 # --- Notifications ---
 @app.route('/notifications')
