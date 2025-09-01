@@ -33,828 +33,602 @@
     /* What's on your mind / Create Post input */
     .whats-on-mind-input {
         background-color: #f0f2f5; /* Light gray */
-        border: 1px solid #e0e0e0;
-        border-radius: 9999px; /* Full rounded */
-        padding: 0.75rem 1rem;
-        cursor: pointer;
-        font-size: 0.95rem;
-        color: #4a5568;
-        display: flex;
-        align-items: center;
-        width: 100%;
+        border: 1px solid #e0e0e0; /* Subtle border */
+        color: #606770; /* Gray text */
     }
     .dark .whats-on-mind-input {
-        background-color: #2d3748; /* Darker gray */
-        border-color: #4a5568;
-        color: #cbd5e0;
-    }
-    .whats-on-mind-input:focus {
-        outline: none;
-        border-color: var(--primary); /* Indigo */
-    }
-
-    /* Stories Container */
-    .stories-container {
-        display: flex;
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
-        padding: 0.5rem 0;
-        margin-bottom: 1rem;
-        border-radius: 0.75rem;
-        scrollbar-width: none; /* Firefox */
-        -ms-overflow-style: none; /* IE 10+ */
-    }
-    .stories-container::-webkit-scrollbar {
-        display: none; /* Chrome, Safari, Opera */
-    }
-    .story-item {
-        flex-shrink: 0; /* Prevent shrinking */
-        width: 80px; /* Fixed width for each story */
-        margin: 0 0.5rem;
-        text-align: center;
-        cursor: pointer;
-        position: relative;
-    }
-    .story-ring {
-        width: 65px;
-        height: 65px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin: 0 auto 0.25rem;
-        background: linear-gradient(45deg, #f09433 0%,#e6683c 25%,#dc2743 50%,#cc2366 75%,#bc1888 100%); /* Instagram-like gradient */
-        padding: 2px; /* Ring thickness */
-        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-    }
-    .story-item img {
-        width: 100%;
-        height: 100%;
-        border-radius: 50%;
-        object-fit: cover;
-        border: 2px solid white; /* Inner border */
-    }
-    .dark .story-item img {
-        border: 2px solid #1a202c; /* Inner border for dark mode */
-    }
-    .story-username {
-        font-size: 0.75rem;
-        color: #4a5568;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-    .dark .story-username {
-        color: #cbd5e0;
-    }
-    .add-story-icon {
-        position: absolute;
-        bottom: 15px;
-        right: 15px;
-        background-color: var(--primary);
-        color: white;
-        border-radius: 50%;
-        width: 24px;
-        height: 24px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 0.9rem;
-        border: 2px solid white;
-    }
-    .dark .add-story-icon {
-        border: 2px solid #1a202c;
+        background-color: #3a3b3c; /* Dark gray */
+        border: 1px solid #4d4d4e;
+        color: #b0b3b8;
     }
 
     /* Post Card Styling */
     .post-card {
         background-color: white;
-        border-radius: 0.75rem;
-        box-shadow: 0 1px 4px rgba(0,0,0,0.08);
-        margin-bottom: 1.5rem;
-        padding: 1rem;
-        transition: background-color 0.3s ease, box-shadow 0.3s ease;
+        transition: background-color 0.3s ease;
     }
     .dark .post-card {
-        background-color: #1f2937; /* Darker gray for cards */
-        box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+        background-color: #242526;
     }
-    .post-card .post-header {
-        display: flex;
-        align-items: center;
-        margin-bottom: 1rem;
-    }
-    .post-card .post-header .profile-pic {
-        width: 48px;
-        height: 48px;
-        border-radius: 50%;
-        object-fit: cover;
-        margin-right: 0.75rem;
-        border: 2px solid var(--primary);
-    }
-    .post-card .post-header .username-realname {
-        font-weight: 600;
-        color: #1a202c;
-    }
-    .dark .post-card .post-header .username-realname {
-        color: #e2e8f0;
-    }
-    .post-card .post-header .post-meta {
-        font-size: 0.85rem;
-        color: #718096;
-    }
-    .dark .post-card .post-header .post-meta {
-        color: #a0aec0;
-    }
-    .post-card .post-content img,
-    .post-card .post-content video {
-        max-width: 100%;
-        height: auto;
-        border-radius: 0.5rem;
-        margin-top: 1rem;
-    }
-    .post-card .post-description {
-        line-height: 1.5;
-        color: #2d3748;
-    }
-    .dark .post-card .post-description {
-        color: #cbd5e0;
-    }
-    .post-card .post-actions {
-        display: flex;
-        flex-wrap: wrap; /* Allow wrapping on small screens */
-        gap: 0.5rem;
-        margin-top: 1rem;
-        padding-top: 0.75rem;
-        border-top: 1px solid #e2e8f0;
-    }
-    .dark .post-card .post-actions {
-        border-top-color: #4a5568;
-    }
-    .post-card .post-actions button {
-        background-color: #edf2f7;
-        color: #4a5568;
-        padding: 0.5rem 1rem;
-        border-radius: 9999px;
-        font-size: 0.85rem;
-        font-weight: 500;
-        border: none;
-        cursor: pointer;
-        transition: background-color 0.2s ease, color 0.2s ease;
-        display: flex;
-        align-items: center;
-        white-space: nowrap; /* Prevent text wrapping */
-    }
-    .dark .post-card .post-actions button {
-        background-color: #4a5568;
-        color: #e2e8f0;
-    }
-    .post-card .post-actions button:hover {
-        background-color: #e2e8f0; /* Lighter hover for dark mode buttons */
-        color: #2d3748;
-    }
-    .dark .post-card .post-actions button:hover {
-        background-color: #6366f1; /* Accent hover for dark mode buttons */
-        color: white;
-    }
-    .post-card .post-actions button i {
-        margin-right: 0.5rem;
+    .post-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
     }
 
-    /* Story Modal */
-    .story-modal {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background-color: black;
-        z-index: 1000;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        opacity: 0;
-        visibility: hidden;
-        transition: opacity 0.3s ease, visibility 0.3s ease;
-    }
-    .story-modal.active {
-        opacity: 1;
-        visibility: visible;
-    }
-    .story-modal-content {
-        position: relative;
-        width: 100%;
-        height: 100%;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        overflow: hidden; /* Important for swipe effect */
-    }
-    .story-modal-media {
-        max-width: 100%;
-        max-height: 100%;
-        object-fit: contain;
-    }
-    .story-modal-progress-bar {
-        position: absolute;
-        top: 10px;
-        left: 10px;
-        right: 10px;
-        height: 3px;
-        background-color: rgba(255,255,255,0.3);
-        border-radius: 1.5px;
-        display: flex;
-        gap: 2px;
-    }
-    .story-modal-progress-segment {
-        flex-grow: 1;
-        background-color: rgba(255,255,255,0.6);
-        border-radius: 1.5px;
-        position: relative;
-        overflow: hidden;
-    }
-    .story-modal-progress-fill {
-        width: 0%;
-        height: 100%;
-        background-color: white;
-        transition: width 0.1s linear; /* Smooth fill */
-    }
-    .story-modal-progress-segment.active .story-modal-progress-fill {
-        transition: width linear; /* Controlled by JS for animation */
-    }
-    .story-modal-header {
-        position: absolute;
-        top: 20px;
-        left: 20px;
-        right: 20px;
-        display: flex;
-        align-items: center;
-        color: white;
-        z-index: 1010;
-        text-shadow: 0 1px 3px rgba(0,0,0,0.5);
-    }
-    .story-modal-header .profile-pic {
-        width: 36px;
-        height: 36px;
-        border-radius: 50%;
-        object-fit: cover;
-        margin-right: 0.75rem;
-        border: 1px solid white;
-    }
-    .story-modal-header .username {
-        font-weight: 600;
-        font-size: 1.1rem;
-    }
-    .story-modal-header .timestamp {
-        font-size: 0.8rem;
-        margin-left: 0.5rem;
-        opacity: 0.8;
-    }
-    .story-modal-close-btn {
-        background: none;
-        border: none;
-        color: white;
-        font-size: 1.8rem;
-        margin-left: auto;
-        cursor: pointer;
-        opacity: 0.8;
-    }
-    .story-modal-description {
-        position: absolute;
-        bottom: 20px;
-        left: 20px;
-        right: 20px;
-        color: white;
-        text-align: center;
-        z-index: 1010;
-        text-shadow: 0 1px 3px rgba(0,0,0,0.5);
-        background: rgba(0,0,0,0.3);
-        padding: 0.5rem 1rem;
-        border-radius: 0.5rem;
-        max-height: 30%; /* Limit height */
-        overflow-y: auto;
+    /* Action Buttons */
+    .action-button {
+        transition: color 0.2s, transform 0.2s;
+        /* Default color for action icons */
+        color: #606770;
     }
 
-    /* Loader for infinite scroll */
-    #infinite-scroll-loader {
-        text-align: center;
-        padding: 20px;
+    .dark .action-button {
+        color: #b0b3b8;
+    }
+
+    /* Specific button colors on hover/active */
+    .action-button.like-button:hover {
+        color: #1877f2; /* Facebook Blue */
+    }
+    .action-button.comment-button:hover {
+        color: #4CAF50; /* Green */
+    }
+    .action-button.share-button:hover {
+        color: #FF5722; /* Orange */
+    }
+    .action-button.repost-button:hover {
+        color: #00bcd4; /* Cyan */
+    }
+    .action-button.save-button:hover {
+        color: #ff9800; /* Amber */
+    }
+    .action-button.follow-button:hover {
+        color: #9c27b0; /* Purple */
+    }
+
+    /* Modal Styling */
+    .modal {
         display: none; /* Hidden by default */
+        position: fixed; /* Stay in place */
+        z-index: 100; /* Sit on top */
+        left: 0;
+        top: 0;
+        width: 100%; /* Full width */
+        height: 100%; /* Full height */
+        overflow: auto; /* Enable scroll if needed */
+        background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+    }
+    .modal-content {
+        background-color: #fefefe;
+        margin: 15% auto; /* 15% from the top and centered */
+        padding: 20px;
+        border: 1px solid #888;
+        width: 80%; /* Could be more or less, depending on screen size */
+        border-radius: 1rem;
+    }
+    .dark .modal-content {
+        background-color: #242526;
+        color: white;
+    }
+    .close-modal {
+        color: #aaa;
+        float: right;
+        font-size: 28px;
+        font-weight: bold;
+    }
+    .close-modal:hover, .close-modal:focus {
+        color: black;
+        text-decoration: none;
+        cursor: pointer;
+    }
+    .dark .close-modal:hover, .dark .close-modal:focus {
+        color: white;
+    }
+
+    /* Toast Notification */
+    .toast-notification {
+        visibility: hidden; /* Hidden by default. Visible on click */
+        min-width: 250px;
+        background-color: #333;
+        color: #fff;
+        text-align: center;
+        border-radius: 2px;
+        padding: 16px;
+        position: fixed;
+        z-index: 1;
+        left: 50%;
+        bottom: 30px;
+        transform: translateX(-50%);
+        font-size: 17px;
+        border-radius: 0.5rem;
+    }
+    .toast-notification.show {
+        visibility: visible;
+        -webkit-animation: fadein 0.5s, fadeout 0.5s 2.5s;
+        animation: fadein 0.5s, fadeout 0.5s 2.5s;
+    }
+    @-webkit-keyframes fadein {
+        from {bottom: 0; opacity: 0;}
+        to {bottom: 30px; opacity: 1;}
+    }
+    @keyframes fadein {
+        from {bottom: 0; opacity: 0;}
+        to {bottom: 30px; opacity: 1;}
+    }
+    @-webkit-keyframes fadeout {
+        from {bottom: 30px; opacity: 1;}
+        to {bottom: 0; opacity: 0;}
+    }
+    @keyframes fadeout {
+        from {bottom: 30px; opacity: 1;}
+        to {bottom: 0; opacity: 0;}
     }
 </style>
 
-{% if current_user.is_authenticated %}
-<div class="container mx-auto p-4 sm:px-6 lg:px-8">
-    
-    <!-- Fixed Top Section (Stories + Create Post/Search) -->
-    <div class="top-section-fixed rounded-lg">
-        <div class="mb-4 px-2">
-            <div class="flex items-center space-x-3">
-                <img src="{{ current_user.get_member_profile().profilePhoto | default(url_for('static', filename='img/default_profile.png')) }}" alt="Profile" class="w-10 h-10 rounded-full object-cover">
-                <input type="text" placeholder="What's on your mind?" class="whats-on-mind-input" readonly onclick="window.location.href='{{ url_for('create_post') }}'">
-                <a href="{{ url_for('search') }}" class="text-gray-700 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400">
-                    <i class="fas fa-search text-xl"></i>
-                </a>
+<div class="top-section-fixed w-full flex flex-col items-center">
+    <!-- Stories Carousel Placeholder -->
+    <div class="stories-carousel w-full overflow-x-auto flex space-x-4 p-4">
+        <!-- Story item placeholder -->
+        <div class="story-item flex flex-col items-center flex-shrink-0">
+            <div class="w-16 h-16 bg-gray-300 rounded-full border-2 border-blue-500 flex items-center justify-center text-center text-xs">
+                +<br>New
+            </div>
+            <span class="mt-1 text-xs text-gray-600 dark:text-gray-400">Your Story</span>
+        </div>
+        <!-- Repeat for other stories -->
+        <div class="story-item flex flex-col items-center flex-shrink-0">
+            <div class="w-16 h-16 bg-gray-300 rounded-full border-2 border-transparent"></div>
+            <span class="mt-1 text-xs text-gray-600 dark:text-gray-400">User 1</span>
+        </div>
+    </div>
+
+    <!-- What's on your mind? / Create Post Section -->
+    <div class="w-full max-w-2xl px-4 py-2 flex items-center bg-white dark:bg-zinc-800 rounded-xl shadow-sm my-4">
+        <img src="{{ url_for('static', filename='uploads/profile_photos/default.png') }}" class="w-10 h-10 rounded-full mr-4" alt="User Profile">
+        <input type="text" placeholder="What's on your mind?" class="whats-on-mind-input w-full p-2 rounded-full cursor-pointer transition-colors duration-200" onclick="window.location.href='{{ url_for('create_post') }}'">
+    </div>
+</div>
+
+<!-- Main Feed Container -->
+<div id="posts-container" class="w-full max-w-2xl mx-auto py-4 space-y-4">
+    <!-- Posts will be dynamically inserted here by JavaScript -->
+</div>
+
+<!-- Post template to be used by JavaScript -->
+<template id="post-template">
+    <div class="post-card p-4 rounded-xl shadow-md border border-gray-200 dark:border-zinc-700">
+        <!-- Post Header -->
+        <div class="flex items-center space-x-3 mb-4">
+            <img src="" class="post-profile-photo w-12 h-12 rounded-full object-cover border-2 border-blue-500" alt="Profile Photo">
+            <div class="flex-grow">
+                <a href="#" class="post-username font-semibold text-lg hover:underline"></a>
+                <p class="post-timestamp text-sm text-gray-500 dark:text-gray-400"></p>
+            </div>
+            <div class="relative group">
+                <button class="text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200">
+                    <i class="fas fa-ellipsis-h"></i>
+                </button>
+                <div class="absolute right-0 mt-2 w-48 bg-white dark:bg-zinc-700 rounded-lg shadow-xl z-20 hidden group-hover:block">
+                    <a href="#" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-zinc-600 rounded-t-lg" onclick="handleReport(this.dataset.itemId, this.dataset.itemType)">Report Post</a>
+                    <a href="#" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-zinc-600" onclick="handleHide(this.dataset.postId)">Hide Post</a>
+                    <a href="#" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-zinc-600 rounded-b-lg" onclick="handleBlockProfile(this.dataset.userId)">Block User</a>
+                </div>
             </div>
         </div>
 
-        <!-- Stories Container -->
-        <div id="stories-container" class="stories-container bg-gray-50 dark:bg-gray-800 shadow-inner rounded-xl px-2">
-            <!-- Your Story Link -->
-            <a href="{{ url_for('create_story') }}" class="story-item" id="your-story-link">
-                <div class="story-ring bg-gray-200 dark:bg-gray-700">
-                    <img src="{{ current_user.get_member_profile().profilePhoto | default(url_for('static', filename='img/default_profile.png')) }}" alt="Your Story" class="border-white dark:border-gray-900">
-                </div>
-                <div class="add-story-icon"><i class="fas fa-plus"></i></div>
-                <p class="story-username dark:text-gray-300">Your Story</p>
-            </a>
-            <!-- Stories will be loaded here by JavaScript -->
+        <!-- Post Body -->
+        <div class="post-content mb-4 text-gray-800 dark:text-gray-200">
+            <p class="post-description mb-2"></p>
+            <img src="" class="post-media-photo w-full rounded-lg my-2 hidden" alt="Post Photo">
+            <video src="" class="post-media-video w-full rounded-lg my-2 hidden" controls></video>
+        </div>
+
+        <!-- Stats Section -->
+        <div class="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400 mb-3 border-b pb-2 border-gray-200 dark:border-zinc-700">
+            <div class="flex items-center space-x-2">
+                <span id="likes-count-" class="likes-count">0</span>
+                <span>Likes</span>
+            </div>
+            <div class="flex items-center space-x-2">
+                <span id="comments-count-" class="comments-count">0</span>
+                <span>Comments</span>
+            </div>
+            <div class="flex items-center space-x-2">
+                <span class="views-count">0</span>
+                <span>Views</span>
+            </div>
+        </div>
+
+        <!-- Action Buttons Section -->
+        <div class="flex justify-between items-center text-gray-500 dark:text-gray-400">
+            <button class="flex items-center space-x-2 action-button like-button" onclick="handleLike(this.dataset.postId)" data-post-id="">
+                <i class="far fa-thumbs-up text-lg"></i>
+                <span>Like</span>
+            </button>
+            <button class="flex items-center space-x-2 action-button comment-button" onclick="openCommentModal(this.dataset.postId)" data-post-id="">
+                <i class="far fa-comment-alt text-lg"></i>
+                <span>Comment</span>
+            </button>
+            <button class="flex items-center space-x-2 action-button share-button" onclick="handleShare(this.dataset.postId)" data-post-id="">
+                <i class="far fa-share-square text-lg"></i>
+                <span>Share</span>
+            </button>
+            <button class="flex items-center space-x-2 action-button save-button" onclick="handleSave(this.dataset.postId)" data-post-id="">
+                <i class="far fa-bookmark text-lg"></i>
+                <span>Save Post</span>
+            </button>
+            <button class="flex items-center space-x-2 action-button repost-button" onclick="handleRepost(this.dataset.postId)" data-post-id="">
+                <i class="fas fa-retweet text-lg"></i>
+                <span>Repost</span>
+            </button>
         </div>
     </div>
+</template>
 
-    <!-- Main Posts Section (no tabs) -->
-    <div id="posts-container" class="mt-4">
-        <!-- All posts will be loaded here by JavaScript -->
-    </div>
-    <div id="infinite-scroll-loader" class="text-center py-4 hidden">
-        <i class="fas fa-spinner fa-spin text-2xl text-indigo-500"></i>
-        <p class="text-gray-600 dark:text-gray-400">Loading more posts...</p>
+<!-- Comment Modal -->
+<div id="commentModal" class="modal">
+    <div class="modal-content">
+        <span class="close-modal" onclick="closeCommentModal()">&times;</span>
+        <h2 class="text-xl font-bold mb-4">Add a Comment</h2>
+        <input type="hidden" id="comment-post-id">
+        <textarea id="comment-text" class="w-full h-24 p-2 rounded-lg border dark:bg-zinc-800 dark:border-zinc-700" placeholder="Write your comment..."></textarea>
+        <button class="mt-4 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600" onclick="submitComment()">Post Comment</button>
     </div>
 </div>
 
-<!-- Story Viewer Modal -->
-<div id="story-viewer-modal" class="story-modal">
-    <div class="story-modal-content">
-        <div class="story-modal-progress-bar" id="story-progress-bar"></div>
-        <div class="story-modal-header">
-            <img id="story-modal-profile-pic" src="" alt="Profile" class="profile-pic">
-            <span id="story-modal-username" class="username"></span>
-            <span id="story-modal-timestamp" class="timestamp"></span>
-            <button class="story-modal-close-btn" onclick="closeStoryModal()">&times;</button>
-        </div>
-        <div id="story-modal-media-content" class="w-full h-full flex items-center justify-center">
-            <!-- Story media (image/video/audio) will be loaded here -->
-        </div>
-        <p id="story-modal-description" class="story-modal-description hidden"></p>
+<!-- Report Modal -->
+<div id="reportModal" class="modal">
+    <div class="modal-content">
+        <span class="close-modal" onclick="closeReportModal()">&times;</span>
+        <h2 class="text-xl font-bold mb-4">Report Content</h2>
+        <input type="hidden" id="report-item-id">
+        <input type="hidden" id="report-item-type">
+        <textarea id="report-reason" class="w-full h-24 p-2 rounded-lg border dark:bg-zinc-800 dark:border-zinc-700" placeholder="Explain why you are reporting this content..."></textarea>
+        <button class="mt-4 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600" onclick="submitReport()">Submit Report</button>
     </div>
 </div>
 
-{% endif %}
+<!-- Toast Notification -->
+<div id="toast-notification" class="toast-notification"></div>
 
+{% endblock %}
+
+{% block scripts %}
 <script>
-    document.addEventListener('DOMContentLoaded', (event) => { 
-        // --- Dark Mode Initialization (if not handled by base.html) ---
-        // This is usually handled in base.html now. Remove if redundant.
-        if (localStorage.getItem('theme') === 'dark' || (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-            document.documentElement.classList.add('dark');
-        } else {
-            document.documentElement.classList.remove('dark');
+    document.addEventListener('DOMContentLoaded', function () {
+        // Function to show a toast notification
+        function showToast(message) {
+            const toast = document.getElementById('toast-notification');
+            toast.textContent = message;
+            toast.className = 'toast-notification show';
+            setTimeout(function(){
+                toast.className = toast.className.replace('show', '');
+            }, 3000);
         }
 
-        // --- Stories Section Logic ---
-        const storiesContainer = document.getElementById('stories-container');
-        const storyViewerModal = document.getElementById('story-viewer-modal');
-        const storyModalMediaContent = document.getElementById('story-modal-media-content');
-        const storyModalProfilePic = document.getElementById('story-modal-profile-pic');
-        const storyModalUsername = document.getElementById('story-modal-username');
-        const storyModalTimestamp = document.getElementById('story-modal-timestamp');
-        const storyModalDescription = document.getElementById('story-modal-description');
-        const storyProgressBar = document.getElementById('story-progress-bar');
-        const yourStoryLink = document.getElementById('your-story-link'); // Get the static 'Your Story' link
+        // --- Asynchronous JavaScript and XML (AJAX) functions for post actions ---
 
-        let currentStoryIndex = { user: 0, story: 0 }; // Track current user and story within that user's sequence
-        let activeStoriesData = []; // To store fetched stories, grouped by user
-        let storyInterval; // For progress bar animation
-        let storyTimeout; // For auto-advancing story
-        let isStoryPaused = false;
-        let startTime;
-        let elapsedTime = 0;
-        const storyDuration = 5000; // 5 seconds per story
-
-        async function fetchAndRenderStories() {
+        async function handleLike(button) {
+            const postId = button.dataset.postId;
             try {
-                const response = await fetch('/api/get_stories');
-                if (!response.ok) {
-                    throw new Error('Failed to fetch stories.');
+                const response = await fetch(`/api/posts/${postId}/like`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                });
+                const result = await response.json();
+                if (result.success) {
+                    showToast(result.message);
+                    const likesCountElement = document.getElementById(`likes-count-${postId}`);
+                    if (likesCountElement) {
+                        likesCountElement.textContent = result.new_likes_count;
+                    }
+                    if (result.is_liked) {
+                        button.classList.add('text-blue-500');
+                        button.classList.remove('text-gray-500');
+                    } else {
+                        button.classList.add('text-gray-500');
+                        button.classList.remove('text-blue-500');
+                    }
+                } else {
+                    showToast(result.message);
                 }
-                const data = await response.json();
-                activeStoriesData = data; // Data is already grouped by user from API
-
-                // Regardless of whether activeStoriesData is empty or not,
-                // the static "Your Story" link is always present in the HTML.
-                // So we always proceed to render other stories.
-                renderStories();
             } catch (error) {
-                console.error('Error fetching stories:', error);
-                // Optionally show an error message to the user
+                console.error('Error:', error);
+                showToast('An error occurred. Please try again.');
             }
         }
 
-        function renderStories() {
-            // Clear all dynamically added story elements (children after 'Your Story' link)
-            // Loop backwards to safely remove elements while iterating
-            let child = storiesContainer.lastElementChild;
-            while (child && child !== yourStoryLink) {
-                storiesContainer.removeChild(child);
-                child = storiesContainer.lastElementChild;
-            }
-            
-            activeStoriesData.forEach((userStories, userIndex) => {
-                const latestStory = userStories.stories[0]; // Assuming stories are ordered latest first
-                const storyItem = document.createElement('div');
-                storyItem.classList.add('story-item');
-                storyItem.dataset.userIndex = userIndex; // To identify which user's stories to open
-                storyItem.innerHTML =
-                    '<div class="story-ring">' +
-                        `<img src="${latestStory.profile_pic}" alt="${latestStory.username} Story">` +
-                    '</div>' +
-                    `<p class="story-username dark:text-gray-300">${latestStory.username}</p>`;
-                storiesContainer.appendChild(storyItem);
-
-                storyItem.addEventListener('click', (e) => {
-                    // Stop any potential background audio from a previous story if modal was closed manually
-                    const activeAudio = storyModalMediaContent.querySelector('audio');
-                    if (activeAudio) {
-                        activeAudio.pause();
-                        activeAudio.currentTime = 0;
-                    }
-                    openStoryModal(userIndex, 0); // Open the first story of this user
-                });
-            });
+        function openCommentModal(postId) {
+            document.getElementById('comment-post-id').value = postId;
+            document.getElementById('commentModal').style.display = 'block';
         }
 
-        // The addStory function is no longer needed since the 'Your Story' is now a direct link.
-        // function addStory() {
-        //     window.location.href = '{{ url_for('create_story') }}';
-        // }
-
-        function openStoryModal(userIndex, storyLocalIndex) {
-            currentStoryIndex = { user: userIndex, story: storyLocalIndex };
-            
-            const userStories = activeStoriesData[userIndex];
-            const story = userStories.stories[storyLocalIndex];
-
-            storyModalProfilePic.src = story.profile_pic;
-            storyModalUsername.textContent = story.username;
-            storyModalTimestamp.textContent = moment(story.timestamp).fromNow();
-            storyModalDescription.textContent = story.description || '';
-            storyModalDescription.classList.toggle('hidden', !story.description);
-
-            storyModalMediaContent.innerHTML = ''; // Clear previous media
-
-            let mediaElement;
-            if (story.media_type === 'image') {
-                mediaElement = document.createElement('img');
-                mediaElement.src = story.media_path;
-                mediaElement.classList.add('story-modal-media');
-            } else if (story.media_type === 'video') {
-                mediaElement = document.createElement('video');
-                mediaElement.src = story.media_path;
-                mediaElement.classList.add('story-modal-media');
-                mediaElement.autoplay = true;
-                mediaElement.loop = false; // Only loop once, then advance
-                mediaElement.muted = false; // Videos typically start muted in stories
-                mediaElement.playsInline = true; // For iOS compatibility
-                mediaElement.volume = 0.8; // Set default volume
-                mediaElement.addEventListener('ended', () => {
-                    goToNextStory(true); // Automatically advance after video ends
-                });
-            } else if (story.media_type === 'audio') {
-                mediaElement = document.createElement('audio');
-                mediaElement.src = story.media_path;
-                mediaElement.autoplay = true;
-                mediaElement.controls = true; // Show controls for audio-only stories
-                mediaElement.addEventListener('ended', () => {
-                    goToNextStory(true); // Automatically advance after audio ends
-                });
-            }
-
-            if (mediaElement) {
-                storyModalMediaContent.appendChild(mediaElement);
-            }
-            
-            // Handle background audio for image/video stories
-            if (story.background_audio_path && (story.media_type === 'image' || story.media_type === 'video')) {
-                const backgroundAudio = new Audio(story.background_audio_path);
-                backgroundAudio.loop = true;
-                backgroundAudio.volume = 0.5; // Lower volume for background
-                backgroundAudio.play().catch(e => console.warn("Background audio play failed:", e));
-                storyModalMediaContent.appendChild(backgroundAudio); // Keep reference to stop it later
-            }
-
-
-            renderProgressBar(userStories.stories.length, storyLocalIndex);
-            // Start timer only for image/audio stories, videos handle their own advance on 'ended'
-            if (story.media_type === 'image' || story.media_type === 'audio') {
-                startStoryTimer();
-            }
-
-            storyViewerModal.classList.add('active');
-            // Add touch/mouse listeners for navigation and pause
-            storyViewerModal.addEventListener('touchstart', handleStoryTouchStart);
-            storyViewerModal.addEventListener('touchend', handleStoryTouchEnd);
-            storyViewerModal.addEventListener('mousedown', handleStoryMouseDown);
-            storyViewerModal.addEventListener('mouseup', handleStoryMouseUp);
+        function closeCommentModal() {
+            document.getElementById('commentModal').style.display = 'none';
+            document.getElementById('comment-text').value = '';
         }
 
-        function closeStoryModal() {
-            storyViewerModal.classList.remove('active');
-            clearTimeout(storyTimeout);
-            clearInterval(storyInterval);
-            // Stop all media playback when closing
-            const mediaElements = storyModalMediaContent.querySelectorAll('video, audio, img');
-            mediaElements.forEach(el => {
-                if (el.tagName === 'VIDEO' || el.tagName === 'AUDIO') {
-                    el.pause();
-                    el.currentTime = 0;
-                }
-                el.remove(); // Clear all media
-            });
-            // Remove listeners
-            storyViewerModal.removeEventListener('touchstart', handleStoryTouchStart);
-            storyViewerModal.removeEventListener('touchend', handleStoryTouchEnd);
-            storyViewerModal.removeEventListener('mousedown', handleStoryMouseDown);
-            storyViewerModal.removeEventListener('mouseup', handleStoryMouseUp);
-        }
-
-        function renderProgressBar(totalSegments, activeSegmentIndex) {
-            storyProgressBar.innerHTML = '';
-            for (let i = 0; i < totalSegments; i++) {
-                const segment = document.createElement('div');
-                segment.classList.add('story-modal-progress-segment');
-                segment.innerHTML = '<div class="story-modal-progress-fill"></div>';
-                if (i < activeSegmentIndex) {
-                    segment.querySelector('.story-modal-progress-fill').style.width = '100%';
-                    segment.classList.add('active');
-                } else if (i === activeSegmentIndex) {
-                    segment.classList.add('active');
-                }
-                storyProgressBar.appendChild(segment);
+        async function submitComment() {
+            const postId = document.getElementById('comment-post-id').value;
+            const commentText = document.getElementById('comment-text').value;
+            if (!commentText.trim()) {
+                showToast('Comment cannot be empty.');
+                return;
             }
-        }
-
-        function startStoryTimer() {
-            clearTimeout(storyTimeout);
-            clearInterval(storyInterval);
-            isStoryPaused = false;
-            elapsedTime = 0;
-            startTime = Date.now();
-
-            const currentSegmentFill = storyProgressBar.children[currentStoryIndex.story].querySelector('.story-modal-progress-fill');
-            currentSegmentFill.style.width = '0%'; // Reset for new story
-            currentSegmentFill.style.transition = `width ${storyDuration}ms linear`; // Set transition for animation
-
-            // This starts the CSS animation
-            setTimeout(() => {
-                currentSegmentFill.style.width = '100%';
-            }, 50); // Small delay to ensure transition is applied
-
-            storyTimeout = setTimeout(() => {
-                goToNextStory(true); // Automatically go to next story
-            }, storyDuration);
-        }
-
-        function pauseStoryTimer() {
-            if (!isStoryPaused) {
-                isStoryPaused = true;
-                clearTimeout(storyTimeout);
-                
-                // Pause any playing video/audio
-                const playingMedia = storyModalMediaContent.querySelector('video, audio');
-                if (playingMedia && !playingMedia.paused) {
-                    playingMedia.pause();
-                }
-
-                const currentSegmentFill = storyProgressBar.children[currentStoryIndex.story].querySelector('.story-modal-progress-fill');
-                // Stop CSS animation by setting width to current computed width and removing transition
-                const computedWidth = window.getComputedStyle(currentSegmentFill).width;
-                currentSegmentFill.style.transition = 'none';
-                currentSegmentFill.style.width = computedWidth;
-                elapsedTime = Date.now() - startTime;
-            }
-        }
-
-        function resumeStoryTimer() {
-            if (isStoryPaused) {
-                isStoryPaused = false;
-                startTime = Date.now() - elapsedTime; // Adjust start time
-                const remainingDuration = storyDuration - elapsedTime;
-                if (remainingDuration > 0) {
-                    // Resume any paused video/audio
-                    const pausedMedia = storyModalMediaContent.querySelector('video, audio');
-                    if (pausedMedia && pausedMedia.paused) {
-                        pausedMedia.play().catch(e => console.warn("Media resume failed:", e));
-                    }
-
-                    const currentSegmentFill = storyProgressBar.children[currentStoryIndex.story].querySelector('.story-modal-progress-fill');
-                    currentSegmentFill.style.transition = `width ${remainingDuration}ms linear`;
-                    currentSegmentFill.style.width = '100%';
-                    storyTimeout = setTimeout(() => {
-                        goToNextStory(true);
-                    }, remainingDuration);
-                } else {
-                    goToNextStory(true); // If already past duration, go to next story
-                }
-            }
-        }
-
-        function goToNextStory(autoAdvance = false) {
-            const userStories = activeStoriesData[currentStoryIndex.user].stories;
-            if (currentStoryIndex.story < userStories.length - 1) {
-                // Next story in the same user's sequence
-                currentStoryIndex.story++;
-                openStoryModal(currentStoryIndex.user, currentStoryIndex.story);
-            } else {
-                // No more stories for this user, go to next user's first story
-                if (currentStoryIndex.user < activeStoriesData.length - 1) {
-                    currentStoryIndex.user++;
-                    currentStoryIndex.story = 0;
-                    openStoryModal(currentStoryIndex.user, currentStoryIndex.story);
-                } else {
-                    // All stories viewed, close modal
-                    closeStoryModal();
-                }
-            }
-        }
-
-        function goToPreviousStory() {
-            if (currentStoryIndex.story > 0) {
-                // Previous story in the same user's sequence
-                currentStoryIndex.story--;
-                openStoryModal(currentStoryIndex.user, currentStoryIndex.story);
-            } else {
-                // First story of current user, go to previous user's last story
-                if (currentStoryIndex.user > 0) {
-                    currentStoryIndex.user--;
-                    currentStoryIndex.story = activeStoriesData[currentStoryIndex.user].stories.length - 1;
-                    openStoryModal(currentStoryIndex.user, currentStoryIndex.story);
-                } else {
-                    // Already at the very first story, do nothing or loop
-                    // For now, do nothing
-                }
-            }
-        }
-
-        let touchStartX = 0;
-        let touchStartY = 0;
-
-        function handleStoryTouchStart(e) {
-            touchStartX = e.touches[0].clientX;
-            touchStartY = e.touches[0].clientY;
-            pauseStoryTimer();
-        }
-
-        function handleStoryTouchEnd(e) {
-            const touchEndX = e.changedTouches[0].clientX;
-            const touchEndY = e.changedTouches[0].clientY;
-            const deltaX = touchEndX - touchStartX;
-            const deltaY = touchEndY - touchStartY;
-
-            const horizontalSwipeThreshold = 50;
-            const verticalSwipeThreshold = 80;
-
-            if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > horizontalSwipeThreshold) {
-                // Horizontal swipe
-                if (deltaX < 0) { // Swiped left (next story)
-                    goToNextStory();
-                } else { // Swiped right (previous story)
-                    goToPreviousStory();
-                }
-            } else if (Math.abs(deltaY) > Math.abs(deltaX) && Math.abs(deltaY) > verticalSwipeThreshold) {
-                // Vertical swipe (swipe down to close)
-                if (deltaY > 0) { // Swiped down
-                    closeStoryModal();
-                } else { // Swiped up (no action for now)
-                    resumeStoryTimer();
-                }
-            } else {
-                // Tap or small movement, resume story
-                resumeStoryTimer();
-            }
-        }
-
-        function handleStoryMouseDown(e) {
-            // Only pause if not clicking on close button
-            if (!e.target.closest('.story-modal-close-btn')) {
-                pauseStoryTimer();
-            }
-        }
-
-        function handleStoryMouseUp(e) {
-            if (!e.target.closest('.story-modal-close-btn')) {
-                resumeStoryTimer();
-            }
-        }
-
-        // Call the new fetch function on load
-        fetchAndRenderStories(); 
-
-        // --- Posts Loading Logic (Consolidated) ---
-        let currentPage = 1;
-        const postsPerPage = 10; // Number of posts to load per request
-        let isFetchingPosts = false;
-
-        async function loadAllPosts() {
-            const container = document.getElementById('posts-container');
-            const loader = document.getElementById('infinite-scroll-loader');
-
-            if (currentPage === 1) { // Clear posts only for the first page load
-                container.innerHTML = '';
-            }
-            loader.classList.remove('hidden');
 
             try {
-                const apiUrl = `/api/get_posts?page=${currentPage}&per_page=${postsPerPage}`;
-                const response = await fetch(apiUrl);
-                if (!response.ok) {
-                    throw new Error(`Failed to fetch posts: ${response.statusText}`);
-                }
-                const data = await response.json();
-                const posts = data.posts || []; // API should return { posts: [...], has_more: true/false }
-
-                if (posts.length === 0 && currentPage === 1) {
-                    container.innerHTML = `<p class="text-center text-gray-500 mt-8 dark:text-gray-400">No posts to display.</p>`;
+                const response = await fetch(`/api/posts/${postId}/comment`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ comment_text: commentText })
+                });
+                const result = await response.json();
+                if (result.success) {
+                    showToast(result.message);
+                    closeCommentModal();
+                    // Update the comments count on the page
+                    const commentsCountElement = document.getElementById(`comments-count-${postId}`);
+                    if (commentsCountElement) {
+                        commentsCountElement.textContent = result.new_comments_count;
+                    }
                 } else {
-                    posts.forEach(post => {
-                        const postElement = document.createElement('div');
-                        postElement.classList.add('post-card');
-                        // No changes needed here, as this template literal interpolation does not involve Jinja2 directly
-                        // and is handled correctly by the browser's JavaScript engine.
-                        postElement.innerHTML = `
-                            <div class="post-header">
-                                <img src="${post.profile_pic}" alt="${post.username}" class="profile-pic">
-                                <div class="flex-grow">
-                                    <a href="{{ url_for('profile', username='PLACEHHOLDER_USERNAME') | replace('PLACEHOLDER_USERNAME', '') }}${post.username}" class="username-realname block">${post.originalName || post.username}</a>
-                                    <small class="post-meta">@${post.username} &middot; ${moment.utc(post.timestamp).fromNow()}</small>
-                                </div>
-                            </div>
-                            <div class="post-content">
-                                <p class="post-description">${post.description}</p>
-                                ${post.media_path ? (post.media_type === 'image' ? `<img src="${post.media_path}" alt="Post Media" class="rounded-lg mt-2">` : `<video src="${post.media_path}" controls class="rounded-lg mt-2"></video>`) : ''}
-                            </div>
-                            <div class="post-actions">
-                                <button onclick="handleLike(${post.id})"><i class="fas fa-heart"></i> Like (${post.likes_count || 0})</button>
-                                <button onclick="handleComment(${post.id})"><i class="fas fa-comment"></i> Comment (${post.comments_count || 0})</button>
-                                <button onclick="handleShare(${post.id})"><i class="fas fa-share-alt"></i> Share</button>
-                                <button onclick="handleFollow(${post.user_id})"><i class="fas fa-user-plus"></i> Follow</button>
-                                <button onclick="handleSave(${post.id})"><i class="fas fa-bookmark"></i> Save Post</button>
-                                <button onclick="handleRepost(${post.id})"><i class="fas fa-retweet"></i> Repost</button>
-                                <button onclick="handleViewsAnalytics(${post.id})"><i class="fas fa-chart-bar"></i> Views (${post.views_count || 0})</button>
-                                <button onclick="handleReport(${post.id}, 'post')"><i class="fas fa-flag"></i> Report Post</button>
-                                <button onclick="handleHide(${post.id})"><i class="fas fa-eye-slash"></i> Hide Post</button>
-                                <button onclick="handleNotifications(${post.id})"><i class="fas fa-bell"></i> Notifications</button>
-                                <button onclick="handleBlockProfile(${post.user_id})"><i class="fas fa-ban"></i> Block ${post.username}</button>
-                            </div>
-                        `;
-                        container.appendChild(postElement);
+                    showToast(result.message);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showToast('An error occurred. Please try again.');
+            }
+        }
+
+        async function handleShare(postId) {
+            // Check if Web Share API is available
+            if (navigator.share) {
+                try {
+                    await navigator.share({
+                        title: 'Check out this post!',
+                        text: `Take a look at this post: {{ url_for('post_detail', post_id=0) }}`.replace('0', postId),
+                        url: window.location.href.split('?')[0]
                     });
+                    console.log('Post shared successfully');
+                } catch (error) {
+                    console.error('Error sharing:', error);
+                    showToast('Failed to share post.');
                 }
-                
-                // If there's more data, increment page, otherwise hide loader permanently
-                if (data.has_more) {
-                    currentPage++;
+            } else {
+                // Fallback for browsers that don't support Web Share API
+                showToast('Web Share API not supported. Copying link...');
+                const postUrl = `{{ url_for('post_detail', post_id=0) }}`.replace('0', postId);
+                const tempInput = document.createElement('input');
+                tempInput.value = postUrl;
+                document.body.appendChild(tempInput);
+                tempInput.select();
+                document.execCommand('copy');
+                document.body.removeChild(tempInput);
+                showToast('Link copied to clipboard!');
+            }
+        }
+        
+        async function handleFollow(userId) {
+            try {
+                const response = await fetch(`/api/users/${userId}/follow`, { method: 'POST' });
+                const result = await response.json();
+                if (result.success) {
+                    showToast(result.message);
                 } else {
-                    loader.classList.add('hidden');
+                    showToast(result.message);
                 }
-
             } catch (error) {
-                console.error(`Error loading posts:`, error);
-                if (currentPage === 1) { // Only show error message if no posts were loaded initially
-                    container.innerHTML = `<div class="text-center text-red-500 mt-8 dark:text-red-400">Error loading posts. Please try again later.</div>`;
-                }
-            } finally {
-                loader.classList.add('hidden');
-                isFetchingPosts = false; // Reset fetching flag
+                console.error('Error:', error);
+                showToast('An error occurred. Please try again.');
             }
         }
 
-        // --- Infinite Scroll Logic ---
-        window.addEventListener('scroll', () => {
-            // Check if user is near the bottom of the page and not already fetching
-            if ((window.innerHeight + window.scrollY) >= (document.body.offsetHeight - 500) && !isFetchingPosts) {
-                isFetchingPosts = true;
-                loadAllPosts(); // Load more posts for the single feed
+        async function handleSave(button) {
+            const postId = button.dataset.postId;
+            try {
+                const response = await fetch(`/api/posts/${postId}/save`, { method: 'POST' });
+                const result = await response.json();
+                if (result.success) {
+                    showToast(result.message);
+                    if (result.is_saved) {
+                        button.classList.add('text-orange-500');
+                        button.classList.remove('text-gray-500');
+                    } else {
+                        button.classList.add('text-gray-500');
+                        button.classList.remove('text-orange-500');
+                    }
+                } else {
+                    showToast(result.message);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showToast('An error occurred. Please try again.');
+            }
+        }
+
+        async function handleRepost(postId) {
+            try {
+                const response = await fetch(`/api/posts/${postId}/repost`, { method: 'POST' });
+                const result = await response.json();
+                showToast(result.message);
+            } catch (error) {
+                console.error('Error:', error);
+                showToast('An error occurred. Please try again.');
+            }
+        }
+
+        function handleViewsAnalytics(postId) {
+            // This would likely redirect to a dedicated analytics page for the post
+            window.location.href = `{{ url_for('post_analytics', post_id=0) }}`.replace('0', postId);
+        }
+
+        function openReportModal(itemId, itemType) {
+            document.getElementById('report-item-id').value = itemId;
+            document.getElementById('report-item-type').value = itemType;
+            document.getElementById('reportModal').style.display = 'block';
+        }
+
+        function closeReportModal() {
+            document.getElementById('reportModal').style.display = 'none';
+            document.getElementById('report-reason').value = '';
+        }
+
+        async function submitReport() {
+            const itemId = document.getElementById('report-item-id').value;
+            const itemType = document.getElementById('report-item-type').value;
+            const reason = document.getElementById('report-reason').value;
+            if (!reason.trim()) {
+                showToast('Please provide a reason for the report.');
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/${itemType}s/${itemId}/report`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ reason: reason })
+                });
+                const result = await response.json();
+                showToast(result.message);
+                closeReportModal();
+            } catch (error) {
+                console.error('Error:', error);
+                showToast('An error occurred. Please try again.');
+            }
+        }
+
+        async function handleHide(postId) {
+            try {
+                const response = await fetch(`/api/posts/${postId}/hide`, { method: 'POST' });
+                const result = await response.json();
+                if (result.success) {
+                    showToast(result.message);
+                    // Optionally remove the post from the DOM
+                    document.querySelector(`.post-card[data-post-id="${postId}"]`).style.display = 'none';
+                } else {
+                    showToast(result.message);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showToast('An error occurred. Please try again.');
+            }
+        }
+
+        async function handleNotifications(button) {
+            const postId = button.dataset.postId;
+            try {
+                const response = await fetch(`/api/posts/${postId}/notifications`, { method: 'POST' });
+                const result = await response.json();
+                if (result.success) {
+                    showToast(result.message);
+                    if (result.is_on) {
+                        button.classList.add('text-green-500');
+                    } else {
+                        button.classList.remove('text-green-500');
+                    }
+                } else {
+                    showToast(result.message);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showToast('An error occurred. Please try again.');
+            }
+        }
+
+        async function handleBlockProfile(userId) {
+            try {
+                const response = await fetch(`/api/users/${userId}/block`, { method: 'POST' });
+                const result = await response.json();
+                showToast(result.message);
+            } catch (error) {
+                console.error('Error:', error);
+                showToast('An error occurred. Please try again.');
+            }
+        }
+
+        // --- Post Rendering and Initial Load ---
+        async function loadAllPosts() {
+            try {
+                const response = await fetch('/api/posts');
+                const posts = await response.json();
+                const postsContainer = document.getElementById('posts-container');
+                const template = document.getElementById('post-template');
+
+                postsContainer.innerHTML = ''; // Clear existing posts
+                
+                posts.forEach(post => {
+                    const postCard = template.content.cloneNode(true);
+                    
+                    // Populate post details
+                    const profilePhoto = postCard.querySelector('.post-profile-photo');
+                    profilePhoto.src = post.profile_photo || `{{ url_for('static', filename='uploads/profile_photos/default.png') }}`;
+                    
+                    const usernameLink = postCard.querySelector('.post-username');
+                    usernameLink.href = `{{ url_for('profile', username=0) }}`.replace('0', post.username);
+                    usernameLink.textContent = post.username;
+
+                    const timestamp = postCard.querySelector('.post-timestamp');
+                    timestamp.textContent = post.timestamp;
+
+                    const description = postCard.querySelector('.post-description');
+                    description.textContent = post.description;
+
+                    // Handle media
+                    const mediaPhoto = postCard.querySelector('.post-media-photo');
+                    const mediaVideo = postCard.querySelector('.post-media-video');
+                    if (post.media_type === 'photo' && post.media_path) {
+                        mediaPhoto.src = post.media_path;
+                        mediaPhoto.classList.remove('hidden');
+                    } else if (post.media_type === 'video' && post.media_path) {
+                        mediaVideo.src = post.media_path;
+                        mediaVideo.classList.remove('hidden');
+                    }
+
+                    // Update stats
+                    postCard.querySelector('.likes-count').textContent = post.likes_count;
+                    postCard.querySelector('.comments-count').textContent = post.comments_count;
+                    postCard.querySelector('.views-count').textContent = post.views_count;
+
+                    // Set data attributes for buttons
+                    const buttons = postCard.querySelectorAll('[data-post-id]');
+                    buttons.forEach(button => button.dataset.postId = post.id);
+                    
+                    // Special cases
+                    postCard.querySelector('.like-button').dataset.postId = post.id;
+                    postCard.querySelector('.comment-button').dataset.postId = post.id;
+                    postCard.querySelector('.repost-button').dataset.postId = post.id;
+                    postCard.querySelector('.save-button').dataset.postId = post.id;
+                    postCard.querySelector('.share-button').dataset.postId = post.id;
+                    
+                    // Append the populated card to the container
+                    postsContainer.appendChild(postCard);
+                });
+            } catch (error) {
+                console.error('Error fetching posts:', error);
+            }
+        }
+
+        // --- Event Listeners for Dynamic Elements ---
+        document.getElementById('posts-container').addEventListener('click', function(event) {
+            const button = event.target.closest('[data-post-id]');
+            if (button) {
+                const postId = button.dataset.postId;
+                if (button.classList.contains('like-button')) {
+                    handleLike(button);
+                } else if (button.classList.contains('comment-button')) {
+                    openCommentModal(postId);
+                } else if (button.classList.contains('share-button')) {
+                    handleShare(postId);
+                } else if (button.classList.contains('save-button')) {
+                    handleSave(button);
+                } else if (button.classList.contains('repost-button')) {
+                    handleRepost(postId);
+                }
             }
         });
 
-
-        // --- Placeholder functions for post actions (these will need backend API calls) ---
-        function handleLike(postId) { console.log(`Like post ${postId}`); /* Implement AJAX call */ }
-        function handleComment(postId) { console.log(`Comment on post ${postId}`); /* Redirect to post detail page with comment section active */ }
-        function handleShare(postId) { console.log(`Share post ${postId}`); /* Open share modal */ }
-        function handleFollow(userId) { console.log(`Follow user ${userId}`); /* Implement AJAX call */ }
-        function handleSave(postId) { console.log(`Save post ${postId}`); /* Implement AJAX call */ }
-        function handleRepost(postId) { console.log(`Repost post ${postId}`); /* Implement AJAX call */ }
-        function handleViewsAnalytics(postId) { console.log(`View analytics for post ${postId}`); /* Open analytics modal */ }
-        function handleReport(itemId, itemType) { console.log(`Report ${itemType} ${itemId}`); /* Open report modal */ }
-        function handleHide(postId) { console.log(`Hide post ${postId}`); /* Implement AJAX call */ }
-        function handleNotifications(postId) { console.log(`Turn on notifications for post type ${postId}`); /* Implement AJAX call */ }
-        function handleBlockProfile(userId) { console.log(`Block user profile ${userId}`); /* Implement AJAX call */ }
-
-
         // --- Initial Load ---
-        loadAllPosts(); // Load all posts on initial page load
+        loadAllPosts();
     });
 </script>
 {% endblock %}
