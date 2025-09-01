@@ -839,13 +839,63 @@
         });
 
 
-        // --- Placeholder functions for post actions (these will need backend API calls) ---
-        function handleLike(postId) { console.log(`Like post ${postId}`); /* Implement AJAX call */ }
-        function handleComment(postId) { console.log(`Comment on post ${postId}`); /* Redirect to post detail page with comment section active */ }
+       // --- Functions for post actions ---
+        async function handleLike(postId) {
+            try {
+                const response = await fetch(`/api/posts/${postId}/like`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                });
+                const data = await response.json();
+                if (data.success) {
+                    const postCard = document.querySelector(`.post-card[data-post-id="${postId}"]`);
+                    if (postCard) {
+                        const likeCountSpan = postCard.querySelector('.like-count');
+                        const likeIcon = postCard.querySelector('.like-button i');
+                        likeCountSpan.textContent = data.new_likes_count;
+                        if (data.is_liked) {
+                            likeIcon.classList.remove('text-gray-500');
+                            likeIcon.classList.add('text-blue-500');
+                        } else {
+                            likeIcon.classList.remove('text-blue-500');
+                            likeIcon.classList.add('text-gray-500');
+                        }
+                    }
+                } else {
+                    console.error('Failed to like/unlike post:', data.message);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        function handleComment(postId) {
+            console.log(`Comment on post ${postId}`);
+            window.location.href = `/posts/${postId}/comment`; // Example URL
+        }
+
+        async function handleRepost(postId) {
+            try {
+                const response = await fetch(`/api/posts/${postId}/repost`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                });
+                const data = await response.json();
+                if (data.success) {
+                    alert('Post reposted successfully!');
+                } else {
+                    console.error('Failed to repost:', data.message);
+                    alert('Failed to repost.');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('An error occurred while reposting.');
+            }
+        }
+
         function handleShare(postId) { console.log(`Share post ${postId}`); /* Open share modal */ }
         function handleFollow(userId) { console.log(`Follow user ${userId}`); /* Implement AJAX call */ }
         function handleSave(postId) { console.log(`Save post ${postId}`); /* Implement AJAX call */ }
-        function handleRepost(postId) { console.log(`Repost post ${postId}`); /* Implement AJAX call */ }
         function handleViewsAnalytics(postId) { console.log(`View analytics for post ${postId}`); /* Open analytics modal */ }
         function handleReport(itemId, itemType) { console.log(`Report ${itemType} ${itemId}`); /* Open report modal */ }
         function handleHide(postId) { console.log(`Hide post ${postId}`); /* Implement AJAX call */ }
